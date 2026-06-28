@@ -1,0 +1,89 @@
+{
+  "source": "LoadProfileGenerator 10.10.0",
+  "generated": "2026-06-28",
+  "load_type": "Electricity",
+  "steps": 1440,
+  "resolution_minutes": 1,
+  "archetypes": [
+    {
+      "id": "CHR01",
+      "name": "CHR01_Couple_both_at_Work",
+      "label": "Couple both at Work",
+      "annual_kwh": 3776.1,
+      "mean_kw": 0.43106,
+      "peak_kw": 9.64289,
+      "n_variants": 18,
+      "file": "CHR01.json"
+    },
+    {
+      "id": "CHR03",
+      "name": "CHR03_Family_1_child_both_at_work",
+      "label": "Family 1 child both at work",
+      "annual_kwh": 4539.9,
+      "mean_kw": 0.51825,
+      "peak_kw": 10.33108,
+      "n_variants": 18,
+      "file": "CHR03.json"
+    },
+    {
+      "id": "CHR05",
+      "name": "CHR05_Family_3_children_both_with_work",
+      "label": "Family 3 children both with work",
+      "annual_kwh": 5562.2,
+      "mean_kw": 0.63496,
+      "peak_kw": 11.90381,
+      "n_variants": 18,
+      "file": "CHR05.json"
+    },
+    {
+      "id": "CHR07",
+      "name": "CHR07_Single_with_work",
+      "label": "Single with work",
+      "annual_kwh": 2248.1,
+      "mean_kw": 0.25663,
+      "peak_kw": 7.69678,
+      "n_variants": 18,
+      "file": "CHR07.json"
+    },
+    {
+      "id": "CHR16",
+      "name": "CHR16_Couple_over_65_years",
+      "label": "Couple over 65 years",
+      "annual_kwh": 3841.6,
+      "mean_kw": 0.43854,
+      "peak_kw": 7.79148,
+      "n_variants": 18,
+      "file": "CHR16.json"
+    },
+    {
+      "id": "CHR30",
+      "name": "CHR30_Single_Retired_Man",
+      "label": "Single Retired Man",
+      "annual_kwh": 2141.6,
+      "mean_kw": 0.24448,
+      "peak_kw": 7.87194,
+      "n_variants": 18,
+      "file": "CHR30.json"
+    },
+    {
+      "id": "CHR22",
+      "name": "CHR22_Single_woman_1_child_with_work",
+      "label": "Single woman 1 child with work",
+      "annual_kwh": 1620.4,
+      "mean_kw": 0.18498,
+      "peak_kw": 4.84765,
+      "n_variants": 18,
+      "file": "CHR22.json"
+    },
+    {
+      "id": "CHR52",
+      "name": "CHR52_Student_Flatsharing",
+      "label": "Student Flatsharing",
+      "annual_kwh": 3160.9,
+      "mean_kw": 0.36084,
+      "peak_kw": 8.45174,
+      "n_variants": 18,
+      "file": "CHR52.json"
+    }
+  ]
+}

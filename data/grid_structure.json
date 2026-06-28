@@ -1,0 +1,31 @@
+{
+  "name": "Example LV feeder",
+  "f_hz": 50.0,
+  "buses": [
+    {
+      "name": "Substation (MV/LV)",
+      "vn_kv": 0.4,
+      "zone": "LV"
+    },
+    {
+      "name": "Bus 1",
+      "vn_kv": 0.4,
+      "zone": "LV"
+    },
+    {
+      "name": "Bus 2",
+      "vn_kv": 0.4,
+      "zone": "LV"
+    },
+    {
+      "name": "Bus 3",
+      "vn_kv": 0.4,
+      "zone": "LV"
+    },
+    {
+      "name": "Bus 4",
+      "vn_kv": 0.4,
+      "zone": "LV"
+    }
+  ]
+}

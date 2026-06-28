@@ -1,0 +1,123 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1f242d;
+  --border: #2a313c;
+  --text: #e6e6e6;
+  --muted: #8a93a3;
+  --accent: #7fd1ff;
+  --accent-2: #2563eb;
+  --good: #22c55e;
+  --bad: #ef4444;
+  --warn: #f59e0b;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); }
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ---- top bar ---- */
+.topbar {
+  display: flex; align-items: center; gap: 1.2rem;
+  padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.brand { font-weight: 700; font-size: 1.05rem; }
+.muted { color: var(--muted); font-weight: 400; }
+.tabs { display: flex; gap: 0.3rem; }
+.tabs button {
+  background: transparent; color: var(--text); border: 1px solid transparent;
+  padding: 0.35rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+}
+.tabs button.on { background: var(--panel-2); border-color: var(--border); color: var(--accent); }
+.tabs button:disabled { color: #555; cursor: not-allowed; }
+.active-chip { margin-left: auto; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+
+.content { flex: 1; min-height: 0; overflow: hidden; }
+
+/* ---- generic ---- */
+button.primary {
+  background: var(--accent-2); color: white; border: none; padding: 0.5rem 1rem;
+  border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+}
+button.primary:disabled { background: #334155; cursor: not-allowed; }
+button.ghost {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer;
+}
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+.tag {
+  font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+}
+
+/* ---- grid browser ---- */
+.browser { display: grid; grid-template-columns: 1fr 360px; height: 100%; }
+.grid-gallery { padding: 1rem; overflow: auto; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.8rem; }
+.grid-card { overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+.grid-card:hover { border-color: var(--accent); }
+.grid-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.grid-card .thumb { height: 120px; background: #0b0d11 center/contain no-repeat; border-bottom: 1px solid var(--border); }
+.grid-card .meta { padding: 0.5rem 0.6rem; }
+.grid-card .meta .title { font-size: 0.82rem; font-weight: 600; }
+.grid-card .meta .sub { font-size: 0.72rem; color: var(--muted); }
+.preview-pane { border-left: 1px solid var(--border); padding: 1rem; overflow: auto; background: var(--panel); }
+
+/* ---- load studio ---- */
+.studio { display: grid; grid-template-columns: 340px 1fr; height: 100%; }
+.studio .controls { padding: 1rem; overflow: auto; border-right: 1px solid var(--border); }
+.studio .preview { padding: 1rem; overflow: auto; }
+.field { margin-bottom: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.field label { font-size: 0.8rem; color: var(--muted); }
+.field input[type="number"], .field select {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 0.4rem;
+}
+.arch-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.arch-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; padding: 0.25rem 0.4rem; border-radius: 6px; }
+.arch-row:hover { background: var(--panel-2); }
+.kpis { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+.kpi { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.8rem; }
+.kpi .v { font-size: 1.2rem; font-weight: 700; }
+.kpi .k { font-size: 0.7rem; color: var(--muted); }
+
+/* ---- live view ---- */
+.live { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: 1fr auto; height: 100%; }
+.diagram-wrap { position: relative; overflow: hidden; background: #0b0d11; }
+.layout-toggle { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; gap: 2px; }
+.layout-toggle button {
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.78rem;
+}
+.layout-toggle button:first-child { border-radius: 6px 0 0 6px; }
+.layout-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.layout-toggle button.on { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+.side { border-left: 1px solid var(--border); padding: 0.9rem; overflow: auto; background: var(--panel); }
+.controls-bar {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.5rem 1rem; border-top: 1px solid var(--border); background: var(--panel);
+}
+.controls-bar input[type="range"] { flex: 1; }
+.clock { font-variant-numeric: tabular-nums; font-size: 1.1rem; font-weight: 700; }
+.stat-row { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
+.stat-row .v { font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 0.6rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--muted); margin-top: 0.4rem; }
+.legend span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.tooltip {
+  position: absolute; pointer-events: none; background: #0b0d11ee; border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.75rem; z-index: 10; max-width: 240px;
+}
+.empty { display: grid; place-items: center; height: 100%; color: var(--muted); text-align: center; padding: 2rem; }
+.note { font-size: 0.75rem; color: var(--warn); }
+.spinner { color: var(--muted); padding: 1rem; }
+
+/* flow animation for energized branches */
+.flow { stroke-dasharray: 6 6; animation: dash 1s linear infinite; }
+.flow.rev { animation-direction: reverse; }
+@keyframes dash { to { stroke-dashoffset: -12; } }

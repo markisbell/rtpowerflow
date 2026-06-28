@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+results/
+
+# Large input archives (hundreds of MB) — keep out of git. The LPG binaries
+# extract into the pylpg package; data/lpg_library/ holds the cached profiles.
+European Archetpye Distribution Grid Models.zip
+LPG10.10.0_core.zip
