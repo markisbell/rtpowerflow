@@ -30,6 +30,8 @@ def test_osm_lv_grid_has_line_geometry_and_solves():
     assert topo["has_geo"] is True
     # geometry survives all the way to the /network topology, mapped by line id
     assert all(ln.get("geometry") for ln in topo["lines"])
+    # cable cabinets (green circles) are exposed for the map to draw
+    assert len(topo.get("cabinet_buses", [])) >= 1
 
     res = sim.run_step(76)
     assert res.converged

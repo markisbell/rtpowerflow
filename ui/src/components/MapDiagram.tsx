@@ -69,19 +69,21 @@ export default function MapDiagram({ topo, latest }: Props) {
     }
 
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
+    const cabs = new Set(topo.cabinet_buses ?? []);
     busRef.current.clear();
     for (const bus of topo.buses) {
       const p = pos.get(bus.id);
       if (!p) continue;
       const isExt = ext.has(bus.id);
+      const isCab = cabs.has(bus.id);  // LV cable cabinet → green circle
       const cm = L.circleMarker(p, {
-        radius: isExt ? 7 : 3,
-        color: isExt ? "#7a5400" : stroke,
-        weight: isExt ? 1.5 : 0.5,
-        fillColor: isExt ? STATION_COLOR : "rgb(200,200,200)",
-        fillOpacity: isExt ? 1 : 0.9,
+        radius: isExt ? 7 : isCab ? 5 : 3,
+        color: isExt ? "#7a5400" : isCab ? "#1a7a1a" : stroke,
+        weight: isExt ? 1.5 : isCab ? 2 : 0.5,
+        fillColor: isExt ? STATION_COLOR : isCab ? "#eafbe7" : "rgb(200,200,200)",
+        fillOpacity: isExt ? 1 : isCab ? 1 : 0.9,
       }).addTo(map);
-      cm.bindTooltip(`${isExt ? "MV station " : "Bus "}${bus.name} · ${bus.vn_kv} kV`);
+      cm.bindTooltip(`${isExt ? "MV station " : isCab ? "Cable cabinet " : "Bus "}${bus.name} · ${bus.vn_kv} kV`);
       busRef.current.set(bus.id, cm);
     }
 
@@ -121,10 +123,11 @@ export default function MapDiagram({ topo, latest }: Props) {
     tileRef.current = L.tileLayer(theme.url, { maxZoom: 20 }).addTo(map);
     tileRef.current.bringToBack();
     map.getContainer().style.background = theme.bg;
-    // node outlines need to flip with the background for contrast
+    // node outlines need to flip with the background for contrast (keep cabinets green)
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
+    const cabs = new Set(topo.cabinet_buses ?? []);
     for (const [id, cm] of busRef.current) {
-      if (!ext.has(id)) cm.setStyle({ color: theme.stroke });
+      if (!ext.has(id) && !cabs.has(id)) cm.setStyle({ color: theme.stroke });
     }
   }, [light, topo]);
 
@@ -138,9 +141,10 @@ export default function MapDiagram({ topo, latest }: Props) {
       pl.setStyle({ color: jetColor(live?.loading_percent), weight: live ? currentWidth(live.i_ka, maxIka) : 1.5 });
     }
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
+    const cabs = new Set(topo.cabinet_buses ?? []);
     const vm = new Map(latest.buses.map((b) => [b.index, b.vm_pu]));
     for (const [id, cm] of busRef.current) {
-      if (ext.has(id)) continue;
+      if (ext.has(id) || cabs.has(id)) continue;  // cabinets stay green
       cm.setStyle({ fillColor: voltageReds(vm.get(id)) });
     }
   }, [latest, topo]);

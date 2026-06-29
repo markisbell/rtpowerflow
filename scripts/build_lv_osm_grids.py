@@ -133,55 +133,49 @@ def build_lv_grid(district_dir: Path, lvid: str) -> dict | None:
 
     # tap each served building onto its nearest road; record the road and the
     # connection node (its nearer endpoint), which the backbone must reach
-    served_taps, used, needed = [], set(), {station_node}
+    # the main line runs along the road each served building sits on
+    bld_edge, used = [], set()
     for (c, _nd) in served:
-        _, u, v, tap = nearest_edge(c)
-        end = u if (G.nodes[u]["x"] - c[0]) ** 2 + (G.nodes[u]["y"] - c[1]) ** 2 \
-            < (G.nodes[v]["x"] - c[0]) ** 2 + (G.nodes[v]["y"] - c[1]) ** 2 else v
-        served_taps.append((c, end, tap))
-        used.add(frozenset((u, v))); needed.add(end)
-    # candidate backbone = tapped roads + shortest paths joining them to the station
-    cand_edges = set(used)
-    for node in {station_node} | {n for e in used for n in e}:
+        _, u, v, _tap = nearest_edge(c)
+        bld_edge.append(c); used.add(frozenset((u, v)))
+    # connectors: shortest street paths joining those roads to the substation
+    conn = set()
+    for node in {n for e in used for n in e}:
         p = paths.get(node, [])
         for i in range(len(p) - 1):
-            cand_edges.add(frozenset((p[i], p[i + 1])))
-    # spanning tree (drops loops), then prune dead-end branches that carry no load
-    adjE = defaultdict(set)
-    for e in cand_edges:
-        a, b = tuple(e); adjE[a].add(b); adjE[b].add(a)
-    seen_t = {station_node}; tq = deque([station_node]); back_edges = set()
-    while tq:
-        u = tq.popleft()
-        for w in sorted(adjE[u]):
-            if w not in seen_t:
-                seen_t.add(w); back_edges.add(frozenset((u, w))); tq.append(w)
-    deg = defaultdict(int)
-    for e in back_edges:
-        a, b = tuple(e); deg[a] += 1; deg[b] += 1
-    changed = True
-    while changed:
-        changed = False
-        for e in list(back_edges):
-            a, b = tuple(e)
-            for leaf, other in ((a, b), (b, a)):
-                if deg[leaf] == 1 and leaf not in needed:
-                    back_edges.discard(e); deg[leaf] -= 1; deg[other] -= 1; changed = True
-                    break
-    back_nodes = {station_node} | {n for e in back_edges for n in e} | needed
-
+            conn.add(frozenset((p[i], p[i + 1])))
+    used = {e for e in used if len(e) == 2}     # drop self-loop streets (size-1)
+    conn = {e for e in conn if len(e) == 2}
+    # backbone = spanning tree that KEEPS every house-street (added first), plus
+    # the shortest connectors — so the main line always follows the houses
+    uf = {}
+    def find(x):
+        uf.setdefault(x, x); r = x
+        while uf[r] != r:
+            r = uf[r]
+        while uf[x] != r:
+            uf[x], x = r, uf[x]
+        return r
+    back_edges = set()
+    for e in list(used) + sorted(conn, key=lambda e: elen(*tuple(e))):
+        a, b = tuple(e)
+        if find(a) != find(b):
+            uf[find(a)] = find(b); back_edges.add(e)
     buses, bus_id = [], {}
     def addbus(name, lon, lat, role):
         bus_id[name] = len(buses)
         buses.append({"name": name, "vn_kv": 0.4, "geo": [round(lon, 6), round(lat, 6)], "role": role})
-    # the substation IS the backbone root node: the main feeders branch directly
-    # out of it (no separate connector line / stem from the station to the street)
+    # the substation IS the backbone root node (main feeders branch out of it);
+    # backbone junction buses are created lazily so pruned branches leave none behind
     sj = G.nodes[station_node]
     addbus("LV_station", sj["x"], sj["y"], "slack")
-    def bn(nd): return "LV_station" if nd == station_node else f"j{nd}"
-    for nd in back_nodes:
-        if nd != station_node:
-            addbus(f"j{nd}", G.nodes[nd]["x"], G.nodes[nd]["y"], "backbone")
+    def bn(nd):
+        if nd == station_node:
+            return "LV_station"
+        nm = f"j{nd}"
+        if nm not in bus_id:
+            addbus(nm, G.nodes[nd]["x"], G.nodes[nd]["y"], "backbone")
+        return nm
 
     lines = []
     def addline(a, c, length_m, cab, geom):
@@ -189,14 +183,91 @@ def build_lv_grid(district_dir: Path, lvid: str) -> dict | None:
                       "r_ohm_per_km": cab["r"], "x_ohm_per_km": cab["x"], "c_nf_per_km": 0.0,
                       "max_i_ka": cab["imax"], "parallel": 1,
                       "geometry": [[round(x, 6), round(y, 6)] for x, y in geom]})
-    for e in back_edges:
-        u, v = tuple(e); addline(bn(u), bn(v), elen(u, v), BACK, egeom(u, v))
 
-    load_specs = []
-    for i, (c, end, tap) in enumerate(served_taps):
-        nm = f"load{i}"; addbus(nm, c[0], c[1], "load")
-        addline(nm, bn(end), _hav(c, tap) + 1, SERV, [[c[0], c[1]], [tap[0], tap[1]]])
-        load_specs.append({"bus": bus_id[nm], "peak_mw": round(peaks[i], 6)})
+    # per backbone edge: geometry + cumulative length (metres) for tapping
+    edge_geom = {}
+    for e in back_edges:
+        u, v = tuple(e); geom = egeom(u, v); gm = [mxy(x, y) for x, y in geom]
+        cums = [0.0]
+        for k in range(len(gm) - 1):
+            cums.append(cums[-1] + math.hypot(gm[k + 1][0] - gm[k][0], gm[k + 1][1] - gm[k][1]))
+        edge_geom[e] = (geom, cums)
+    def nearest_back(c):
+        pm = mxy(*c); best = None
+        for e in back_edges:
+            geom, cums = edge_geom[e]
+            for k in range(len(geom) - 1):
+                a = mxy(*geom[k]); b = mxy(*geom[k + 1])
+                dx, dy = b[0] - a[0], b[1] - a[1]; L2 = dx * dx + dy * dy
+                t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((pm[0] - a[0]) * dx + (pm[1] - a[1]) * dy) / L2))
+                cx, cy = a[0] + t * dx, a[1] + t * dy; dd = (pm[0] - cx) ** 2 + (pm[1] - cy) ** 2
+                if best is None or dd < best[0]:
+                    best = (dd, e, cums[k] + t * (cums[k + 1] - cums[k]))
+        return best
+    taps_on = defaultdict(list)                # backbone edge -> [(pos_m, building_idx)]
+    for i, c in enumerate(bld_edge):
+        _, e, pos = nearest_back(c)
+        taps_on[e].append((pos, i))
+
+    # prune whole backbone branches whose subtree carries no cabinet (the empty
+    # connector roads that reach no houses), keeping the tree rooted at the station
+    adjB = defaultdict(list)
+    for e in back_edges:
+        a, b = tuple(e); adjB[a].append(b); adjB[b].append(a)
+    parent = {station_node: None}; order = [station_node]; dq = deque([station_node])
+    while dq:
+        u = dq.popleft()
+        for w in adjB[u]:
+            if w not in parent:
+                parent[w] = u; order.append(w); dq.append(w)
+    children = defaultdict(list)
+    for node in order:
+        if parent[node] is not None:
+            children[parent[node]].append(node)
+    subtree_tap = defaultdict(bool)
+    for node in reversed(order):
+        for c in children[node]:
+            if subtree_tap[c] or taps_on.get(frozenset((node, c))):
+                subtree_tap[node] = True
+    back_edges = {frozenset((parent[n], n)) for n in order if parent[n] is not None
+                  and (subtree_tap[n] or taps_on.get(frozenset((parent[n], n))))}
+
+    # split each backbone edge into segments through CABLE CABINETS — taps within
+    # 30 m merge into one cabinet that serves those houses (their service cables)
+    def point_at(geom, cums, pos):
+        for k in range(len(cums) - 1):
+            if cums[k] <= pos <= cums[k + 1]:
+                seg = cums[k + 1] - cums[k]; t = 0.0 if seg == 0 else (pos - cums[k]) / seg
+                return (geom[k][0] + t * (geom[k + 1][0] - geom[k][0]),
+                        geom[k][1] + t * (geom[k + 1][1] - geom[k][1]))
+        return tuple(geom[-1])
+    def slice_geom(geom, cums, a, b):
+        pts = [list(point_at(geom, cums, a))]
+        for k in range(len(cums)):
+            if a < cums[k] < b:
+                pts.append(list(geom[k]))
+        pts.append(list(point_at(geom, cums, b)))
+        return pts
+    load_specs = []; cab_n = 0
+    for e in back_edges:
+        u, v = tuple(e); geom, cums = edge_geom[e]; total = cums[-1]
+        cabinets = []                          # (pos, [building_idx,...])
+        for pos, bi in sorted(taps_on.get(e, [])):
+            if cabinets and pos - cabinets[-1][0] <= 30.0:
+                cabinets[-1][1].append(bi)
+            else:
+                cabinets.append([pos, [bi]])
+        prev, prev_pos = bn(u), 0.0
+        for pos, bis in cabinets:
+            cab = f"cab{cab_n}"; cab_n += 1; cp = point_at(geom, cums, pos)
+            addbus(cab, cp[0], cp[1], "cabinet")
+            addline(prev, cab, max(pos - prev_pos, 1.0), BACK, slice_geom(geom, cums, prev_pos, pos))
+            for bi in bis:                     # houses served by this cabinet
+                c = bld_edge[bi]; ln = f"load{bi}"; addbus(ln, c[0], c[1], "load")
+                addline(ln, cab, _hav(c, cp) + 1, SERV, [[c[0], c[1]], [cp[0], cp[1]]])
+                load_specs.append({"bus": bus_id[ln], "peak_mw": round(peaks[bi], 6)})
+            prev, prev_pos = cab, pos
+        addline(prev, bn(v), max(total - prev_pos, 1.0), BACK, slice_geom(geom, cums, prev_pos, total))
 
     # size cables by downstream peak load (parallel cables), rooted at the station
     adj = defaultdict(list)

@@ -23,6 +23,8 @@ class BusSpec(BaseModel):
     # Real-world position [longitude, latitude] (WGS84) when known (e.g. ding0
     # grids); enables rendering on an actual map. None for grids without GIS data.
     geo: Optional[List[float]] = None
+    # Optional role tag, e.g. "cabinet" for an LV cable cabinet (drawn distinctly).
+    kind: Optional[str] = None
 
 
 class GridStructure(BaseModel):

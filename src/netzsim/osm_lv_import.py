@@ -22,7 +22,9 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
     name = name or g.get("name", Path(path).stem)
 
     buses = [{"name": b["name"], "vn_kv": b["vn_kv"], "type": "b", "zone": "LV",
-              "in_service": True, "geo": b["geo"]} for b in g["buses"]]
+              "in_service": True, "geo": b["geo"],
+              "kind": "cabinet" if b.get("role") == "cabinet" else None}
+             for b in g["buses"]]
 
     line_specs: list[dict[str, Any]] = []
     for i, l in enumerate(g["lines"]):

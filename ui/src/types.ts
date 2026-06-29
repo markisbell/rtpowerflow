@@ -118,6 +118,7 @@ export interface Topology {
   ext_grids: { id: number; name: string; bus: number }[];
   load_buses: number[];
   sgen_buses: number[];
+  cabinet_buses?: number[];
   n_load: number;
   n_sgen: number;
   n_trafo: number;
