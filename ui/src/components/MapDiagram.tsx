@@ -52,10 +52,18 @@ export default function MapDiagram({ topo, latest }: Props) {
 
     lineRef.current.clear();
     for (const ln of topo.lines) {
-      const a = pos.get(ln.from_bus);
-      const c = pos.get(ln.to_bus);
-      if (!a || !c) continue;
-      const pl = L.polyline([a, c], { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
+      // OSM-routed cables carry a [lon,lat] polyline that follows the streets;
+      // otherwise draw a straight segment between the two bus coordinates.
+      let latlngs: L.LatLngExpression[];
+      if (ln.geometry && ln.geometry.length >= 2) {
+        latlngs = ln.geometry.map(([lon, lat]) => [lat, lon] as [number, number]);
+      } else {
+        const a = pos.get(ln.from_bus);
+        const c = pos.get(ln.to_bus);
+        if (!a || !c) continue;
+        latlngs = [a, c];
+      }
+      const pl = L.polyline(latlngs, { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(`Line ${ln.name ?? ln.id}`);
       lineRef.current.set(ln.id, pl);
     }

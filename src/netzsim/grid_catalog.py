@@ -36,6 +36,7 @@ class GridEntry:
     nodes: int | None = None          # node count for this scope
     scope: str = "full"               # convert_ding0_csv scope: full | mv | lv
     lv_grid_id: str | None = None
+    osm_grid: str | None = None        # path to an OSM-routed LV grid JSON (overrides scope)
 
 
 class GridCatalog:
@@ -64,15 +65,17 @@ class GridCatalog:
     def _load_manifest(self) -> None:
         data = json.loads(self.manifest.read_text())
         base = self.ding0_dir or (self.manifest.parent / "ding0_grids")
+        data_dir = self.manifest.parent
         for g in data.get("grids", []):
             src = base / g["source_dir"]
+            osm = str(data_dir / g["osm_grid"]) if g.get("osm_grid") else None
             self._entries[g["id"]] = GridEntry(
                 id=g["id"], name=g.get("name", g["id"]),
                 category=f"{g.get('character', '')} · {g.get('voltage', '')}".strip(" ·"),
                 member=str(src), source="library",
                 voltage=g.get("voltage"), character=g.get("character"),
                 nodes=g.get("nodes"), scope=g.get("scope", "full"),
-                lv_grid_id=g.get("lv_grid_id"),
+                lv_grid_id=g.get("lv_grid_id"), osm_grid=osm,
             )
 
     def _scan_ding0(self) -> None:
@@ -133,7 +136,10 @@ class GridCatalog:
         key = (grid_id, steps)
         if key not in self._cache:
             e = self._entries[grid_id]
-            if e.source in ("library", "ding0"):
+            if e.osm_grid:
+                from .osm_lv_import import convert_osm_lv
+                self._cache[key] = convert_osm_lv(e.osm_grid, name=e.name, steps=steps)
+            elif e.source in ("library", "ding0"):
                 from .ding0_import import convert_ding0_csv
                 self._cache[key] = convert_ding0_csv(
                     e.member, name=e.name, steps=steps,

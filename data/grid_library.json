@@ -5,170 +5,187 @@
       "name": "Rural LV grid \u00b7 121699",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 31,
+      "nodes": 16,
       "source_dir": "ding0_oep_2915",
       "scope": "lv",
-      "lv_grid_id": "121699"
+      "lv_grid_id": "121699",
+      "osm_grid": "lv_osm/lv_rural_2915_121699.json"
     },
     {
       "id": "lv_rural_3150_300266",
       "name": "Rural LV grid \u00b7 300266",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 31,
+      "nodes": 19,
       "source_dir": "ding0_oep_3150",
       "scope": "lv",
-      "lv_grid_id": "300266"
+      "lv_grid_id": "300266",
+      "osm_grid": "lv_osm/lv_rural_3150_300266.json"
     },
     {
       "id": "lv_rural_2915_121999",
       "name": "Rural LV grid \u00b7 121999",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 97,
+      "nodes": 45,
       "source_dir": "ding0_oep_2915",
       "scope": "lv",
-      "lv_grid_id": "121999"
+      "lv_grid_id": "121999",
+      "osm_grid": "lv_osm/lv_rural_2915_121999.json"
     },
     {
       "id": "lv_rural_3150_300668",
       "name": "Rural LV grid \u00b7 300668",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 100,
+      "nodes": 39,
       "source_dir": "ding0_oep_3150",
       "scope": "lv",
-      "lv_grid_id": "300668"
+      "lv_grid_id": "300668",
+      "osm_grid": "lv_osm/lv_rural_3150_300668.json"
     },
     {
       "id": "lv_rural_2915_120409",
       "name": "Rural LV grid \u00b7 120409",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 250,
+      "nodes": 99,
       "source_dir": "ding0_oep_2915",
       "scope": "lv",
-      "lv_grid_id": "120409"
+      "lv_grid_id": "120409",
+      "osm_grid": "lv_osm/lv_rural_2915_120409.json"
     },
     {
       "id": "lv_rural_3150_300575",
       "name": "Rural LV grid \u00b7 300575",
       "voltage": "LV",
       "character": "rural",
-      "nodes": 292,
+      "nodes": 117,
       "source_dir": "ding0_oep_3150",
       "scope": "lv",
-      "lv_grid_id": "300575"
+      "lv_grid_id": "300575",
+      "osm_grid": "lv_osm/lv_rural_3150_300575.json"
     },
     {
       "id": "lv_suburban_2279_473888",
       "name": "Suburban LV grid \u00b7 473888",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 28,
+      "nodes": 13,
       "source_dir": "ding0_oep_2279",
       "scope": "lv",
-      "lv_grid_id": "473888"
+      "lv_grid_id": "473888",
+      "osm_grid": "lv_osm/lv_suburban_2279_473888.json"
     },
     {
       "id": "lv_suburban_1864_249743",
       "name": "Suburban LV grid \u00b7 249743",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 31,
+      "nodes": 24,
       "source_dir": "ding0_oep_1864",
       "scope": "lv",
-      "lv_grid_id": "249743"
+      "lv_grid_id": "249743",
+      "osm_grid": "lv_osm/lv_suburban_1864_249743.json"
     },
     {
       "id": "lv_suburban_2279_315183",
       "name": "Suburban LV grid \u00b7 315183",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 100,
+      "nodes": 42,
       "source_dir": "ding0_oep_2279",
       "scope": "lv",
-      "lv_grid_id": "315183"
+      "lv_grid_id": "315183",
+      "osm_grid": "lv_osm/lv_suburban_2279_315183.json"
     },
     {
       "id": "lv_suburban_1864_265991",
       "name": "Suburban LV grid \u00b7 265991",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 100,
+      "nodes": 51,
       "source_dir": "ding0_oep_1864",
       "scope": "lv",
-      "lv_grid_id": "265991"
+      "lv_grid_id": "265991",
+      "osm_grid": "lv_osm/lv_suburban_1864_265991.json"
     },
     {
       "id": "lv_suburban_2279_315184",
       "name": "Suburban LV grid \u00b7 315184",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 268,
+      "nodes": 94,
       "source_dir": "ding0_oep_2279",
       "scope": "lv",
-      "lv_grid_id": "315184"
+      "lv_grid_id": "315184",
+      "osm_grid": "lv_osm/lv_suburban_2279_315184.json"
     },
     {
       "id": "lv_suburban_1864_273437",
       "name": "Suburban LV grid \u00b7 273437",
       "voltage": "LV",
       "character": "suburban",
-      "nodes": 268,
+      "nodes": 102,
       "source_dir": "ding0_oep_1864",
       "scope": "lv",
-      "lv_grid_id": "273437"
+      "lv_grid_id": "273437",
+      "osm_grid": "lv_osm/lv_suburban_1864_273437.json"
     },
     {
       "id": "lv_urban_2338_177066",
       "name": "Urban LV grid \u00b7 177066",
       "voltage": "LV",
       "character": "urban",
-      "nodes": 10,
+      "nodes": 8,
       "source_dir": "ding0_oep_2338",
       "scope": "lv",
-      "lv_grid_id": "177066"
+      "lv_grid_id": "177066",
+      "osm_grid": "lv_osm/lv_urban_2338_177066.json"
     },
     {
       "id": "lv_urban_83_45769",
       "name": "Urban LV grid \u00b7 45769",
       "voltage": "LV",
       "character": "urban",
-      "nodes": 40,
+      "nodes": 29,
       "source_dir": "ding0_oep_83",
       "scope": "lv",
-      "lv_grid_id": "45769"
+      "lv_grid_id": "45769",
+      "osm_grid": "lv_osm/lv_urban_83_45769.json"
     },
     {
       "id": "lv_urban_2338_461980",
       "name": "Urban LV grid \u00b7 461980",
       "voltage": "LV",
       "character": "urban",
-      "nodes": 64,
+      "nodes": 27,
       "source_dir": "ding0_oep_2338",
       "scope": "lv",
-      "lv_grid_id": "461980"
+      "lv_grid_id": "461980",
+      "osm_grid": "lv_osm/lv_urban_2338_461980.json"
     },
     {
       "id": "lv_urban_83_189499",
       "name": "Urban LV grid \u00b7 189499",
       "voltage": "LV",
       "character": "urban",
-      "nodes": 94,
+      "nodes": 43,
       "source_dir": "ding0_oep_83",
       "scope": "lv",
-      "lv_grid_id": "189499"
+      "lv_grid_id": "189499",
+      "osm_grid": "lv_osm/lv_urban_83_189499.json"
     },
     {
       "id": "lv_urban_83_45770",
       "name": "Urban LV grid \u00b7 45770",
       "voltage": "LV",
       "character": "urban",
-      "nodes": 295,
+      "nodes": 157,
       "source_dir": "ding0_oep_83",
       "scope": "lv",
-      "lv_grid_id": "45770"
+      "lv_grid_id": "45770",
+      "osm_grid": "lv_osm/lv_urban_83_45770.json"
     },
     {
       "id": "mv_rural_2915",

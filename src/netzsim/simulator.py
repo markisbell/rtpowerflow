@@ -182,15 +182,21 @@ class Simulator:
             else:
                 g = layout_geo.get(i, [0.0, 0.0])
                 b["x"], b["y"] = g[0], g[1]    # length-aware synthetic layout
+        # lines + optional per-line geometry (OSM-routed cables follow the streets);
+        # net.line index == position in data.lines.lines, so geometry maps by id.
+        specs = self.data.lines.lines
+        lines_out = net.line.reset_index().rename(columns={"index": "id"})[
+            ["id", "name", "from_bus", "to_bus", "length_km"]].to_dict(orient="records")
+        for ln in lines_out:
+            i = int(ln["id"])
+            ln["geometry"] = specs[i].geometry if i < len(specs) else None
         return {
             "name": net.name,
             "f_hz": float(net.f_hz),
             "steps_per_day": self.steps_per_day,
             "has_geo": has_geo,
             "buses": buses,
-            "lines": net.line.reset_index().rename(columns={"index": "id"})
-                [["id", "name", "from_bus", "to_bus", "length_km"]]
-                .to_dict(orient="records"),
+            "lines": lines_out,
             "trafos": net.trafo.reset_index().rename(columns={"index": "id"})
                 [["id", "name", "hv_bus", "lv_bus", "sn_mva"]]
                 .to_dict(orient="records"),

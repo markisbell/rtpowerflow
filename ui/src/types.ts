@@ -97,6 +97,7 @@ export interface TopoLine {
   from_bus: number;
   to_bus: number;
   length_km: number;
+  geometry?: [number, number][] | null; // [lon,lat] polyline (OSM-routed cables)
 }
 export interface TopoTrafo {
   id: number;

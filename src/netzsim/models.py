@@ -49,6 +49,9 @@ class LineSpec(BaseModel):
     max_i_ka: Optional[float] = None
     parallel: int = 1
     in_service: bool = True
+    # optional [[lon,lat],...] polyline so the map can draw the cable along the
+    # streets (OSM-routed LV grids); falls back to a straight segment if absent.
+    geometry: Optional[List[List[float]]] = None
 
     @model_validator(mode="after")
     def _check_params(self) -> "LineSpec":

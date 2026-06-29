@@ -389,6 +389,23 @@ provisioned datasource + dashboard, all in compose.
   lumped load at its feeding MV bus; `"lv"` extracts one standalone 0.4 kV grid fed
   at its busbar; `"full"` is the whole district (default). One generated district
   thus yields several library entries (1 MV + a few LV by size bucket).
+- **Street-routed LV grids (OSM)**: ding0 0.2.1 does **not** geo-reference LV grids
+  (its LV builder is a statistical cable-string model with no coordinates; `osmnx`
+  is never called, and there is no published street-routed dataset). So LV library
+  grids are **rebuilt geographically from OpenStreetMap** by
+  `scripts/build_lv_osm_grids.py` (ding0 conda env, needs internet): it takes the
+  LV station + load count from the committed ding0 grid, places loads at OSM
+  **building footprints**, routes a cable **backbone along the streets**
+  (shortest-path tree from the station, sized for downstream load via parallel
+  cables) and taps each building onto the nearest road point. Output is a small
+  JSON per grid under `data/lv_osm/<entry_id>.json`; each line carries a
+  `geometry` polyline. Manifest LV entries gain `osm_grid` (path) which
+  `GridCatalog.get_inputs` dispatches to `netzsim.osm_lv_import.convert_osm_lv`
+  (overrides `scope`). **Line geometry** flows `LineSpec.geometry` →
+  `simulator.topology()` (attached by line index) → `/network` → `MapDiagram`,
+  which draws each cable as a Leaflet polyline along the road (else a straight
+  segment). MV grids are unaffected (ding0 already geo-references them). See
+  `[[lv-grid-geo-next-step]]` for the decision history.
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```
