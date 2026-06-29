@@ -1,0 +1,3 @@
+name,bus0,bus1,s_nom,r,x,type,type_info
+Transformer_lv_grid_394025_1,BusBar_mvgd_1605_lvgd_394025_MV,BusBar_mvgd_1605_lvgd_394025_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV
+Transformer_lv_grid_105132_1,BusBar_mvgd_1605_lvgd_105132_MV,BusBar_mvgd_1605_lvgd_105132_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV

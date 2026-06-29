@@ -356,10 +356,20 @@ provisioned datasource + dashboard, all in compose.
   grid has geo, `/network` sets `has_geo: true` and per-bus `geo: [lon, lat]`, and
   the UI defaults to the **Map** view (Leaflet + CARTO/OSM dark tiles,
   `MapDiagram.tsx`). Non-geo (xlsx) grids fall back to the synthetic Geographic/
-  Schematic SVG views. *Live ding0 **generation** was attempted but abandoned: the
-  OEP REST API can't run ding0's PostGIS queries (HTTP 400). The Python-3.9 ding0
-  env (`C:\Users\bell\{python39,ding0env,ding0mamba}`, `~/.egoio`) is kept but
-  unused — only needed if revisiting local-Postgres generation.*
+  Schematic SVG views.
+- **ding0 live generation WORKS over the OEP** (no local Postgres needed). Use
+  `scripts/generate_ding0_grid.py <district_id ...>` with the Python-3.9 ding0
+  conda env (`C:\Users\bell\ding0mamba\python.exe`) + a valid `~/.egoio`
+  `[oedb]` token. It writes `data/ding0_grids/ding0_oep_<id>/` (auto-discovered by
+  the catalog). The earlier "HTTP 400" was **not** a PostGIS-over-REST limit — it
+  was two ding0/OEP bugs the script works around without editing site-packages:
+  (1) ding0 passes `ST_Transform`'s SRID as a *string* (`'4326'`) which the OEP
+  parser rejects — coerce it to int in the request body; (2) the generator
+  materialized views `supply.ego_dp_*_powerplant_sq_mview` were dropped from the
+  OEP (404) — skip `import_generators` (netzsim layers its own PV/EV). Verified:
+  districts 1605 (14 buses) and 1003 (4395 buses) generate in seconds and solve.
+  See `docs/DING0_GENERATION.md`. (Other Py-3.9 envs `C:\Users\bell\{python39,
+  ding0env}` are leftover and unused.)
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```
