@@ -354,9 +354,14 @@ provisioned datasource + dashboard, all in compose.
   grids (eDisGo CSV) with **real WGS84 lon/lat**. `ding0_import.convert_ding0_csv`
   carries coords onto `BusSpec.geo` (LV buses get their station's coord). When a
   grid has geo, `/network` sets `has_geo: true` and per-bus `geo: [lon, lat]`, and
-  the UI defaults to the **Map** view (Leaflet + CARTO/OSM dark tiles,
-  `MapDiagram.tsx`). Non-geo (xlsx) grids fall back to the synthetic Geographic/
-  Schematic SVG views.
+  the UI defaults to the **Map** view (`MapDiagram.tsx`, Leaflet + CARTO/OSM
+  tiles). The map mimics ding0's `plot_mv_topology` aesthetic: **light** CARTO
+  basemap by default (Light/Dark toggle), lines on a **jet** colormap by loading,
+  buses on a **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
+  colorbars — all animating from live results. Colormaps live in `scales.ts`
+  (`jetColor`, `voltageReds`, `JET_GRADIENT`, `REDS_GRADIENT`). Non-geo (xlsx)
+  grids fall back to the synthetic Geographic/Schematic SVG views (which keep the
+  discrete traffic-light scales).
 - **ding0 live generation WORKS over the OEP** (no local Postgres needed). Use
   `scripts/generate_ding0_grid.py <district_id ...>` with the Python-3.9 ding0
   conda env (`C:\Users\bell\ding0mamba\python.exe`) + a valid `~/.egoio`

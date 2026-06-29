@@ -1,35 +1,52 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { StepResult, Topology } from "../types";
-import { currentWidth, loadingColor, voltageColor } from "../scales";
+import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT } from "../scales";
 
 interface Props {
   topo: Topology;
   latest: StepResult | null;
 }
 
-/** Live power-flow grid rendered on real OSM map tiles, using each bus's WGS84
- *  coordinates (ding0 grids). Lines/buses/transformers are Leaflet canvas vector
- *  layers, restyled in place on every WebSocket tick. */
+const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
+
+const TILES = {
+  light: {
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    bg: "#e9eaec",
+    stroke: "#3a3a3a", // node outline on light bg
+  },
+  dark: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    bg: "#0b0d11",
+    stroke: "#0b0d11",
+  },
+};
+
+/** Live power-flow grid on real OSM tiles at each bus's WGS84 coordinate (ding0
+ *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
+ *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
+ *  All vector layers are Leaflet canvas markers restyled in place every tick. */
 export default function MapDiagram({ topo, latest }: Props) {
   const elRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
   const lineRef = useRef<Map<number, L.Polyline>>(new Map());
   const busRef = useRef<Map<number, L.CircleMarker>>(new Map());
   const trafoRef = useRef<Map<number, L.CircleMarker>>(new Map());
+  const [light, setLight] = useState(true);
 
   // build map + static layers when the grid changes
   useEffect(() => {
     if (!elRef.current) return;
-    const map = L.map(elRef.current, { preferCanvas: true, zoomSnap: 0.25 });
+    const map = L.map(elRef.current, { preferCanvas: true, zoomSnap: 0.25, attributionControl: false });
     mapRef.current = map;
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 20,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    }).addTo(map);
+    L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution(
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    ).addTo(map);
 
+    const stroke = (light ? TILES.light : TILES.dark).stroke;
     const pos = new Map<number, [number, number]>(); // bus id -> [lat, lon]
     for (const b of topo.buses) if (b.geo) pos.set(b.id, [b.geo[1], b.geo[0]]);
 
@@ -38,7 +55,7 @@ export default function MapDiagram({ topo, latest }: Props) {
       const a = pos.get(ln.from_bus);
       const c = pos.get(ln.to_bus);
       if (!a || !c) continue;
-      const pl = L.polyline([a, c], { color: "#64748b", weight: 2, opacity: 0.95 }).addTo(map);
+      const pl = L.polyline([a, c], { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(`Line ${ln.name ?? ln.id}`);
       lineRef.current.set(ln.id, pl);
     }
@@ -50,26 +67,26 @@ export default function MapDiagram({ topo, latest }: Props) {
       if (!p) continue;
       const isExt = ext.has(bus.id);
       const cm = L.circleMarker(p, {
-        radius: isExt ? 6 : 3,
-        color: isExt ? "#7fd1ff" : "#94a3b8",
-        weight: isExt ? 2 : 1,
-        fillColor: isExt ? "#e6e6e6" : "#94a3b8",
-        fillOpacity: 0.9,
+        radius: isExt ? 7 : 3,
+        color: isExt ? "#7a5400" : stroke,
+        weight: isExt ? 1.5 : 0.5,
+        fillColor: isExt ? STATION_COLOR : "rgb(200,200,200)",
+        fillOpacity: isExt ? 1 : 0.9,
       }).addTo(map);
-      cm.bindTooltip(`${isExt ? "Slack " : "Bus "}${bus.name} · ${bus.vn_kv} kV`);
+      cm.bindTooltip(`${isExt ? "MV station " : "Bus "}${bus.name} · ${bus.vn_kv} kV`);
       busRef.current.set(bus.id, cm);
     }
 
     trafoRef.current.clear();
     for (const tr of topo.trafos) {
-      const at = pos.get(tr.hv_bus) ?? pos.get(tr.lv_bus);
+      const at = pos.get(tr.lv_bus) ?? pos.get(tr.hv_bus);
       if (!at) continue;
       const cm = L.circleMarker(at, {
-        radius: 7,
-        color: "#f59e0b",
-        weight: 2,
-        fillColor: "#0b0d11",
-        fillOpacity: 1,
+        radius: 4,
+        color: "#7a5400",
+        weight: 1,
+        fillColor: STATION_COLOR,
+        fillOpacity: 0.95,
       }).addTo(map);
       cm.bindTooltip(`Trafo ${tr.name ?? tr.id} · ${(tr.sn_mva * 1000).toFixed(0)} kVA`);
       trafoRef.current.set(tr.id, cm);
@@ -83,30 +100,64 @@ export default function MapDiagram({ topo, latest }: Props) {
       clearTimeout(t);
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
     };
   }, [topo]);
 
-  // restyle from live results
+  // (re)apply the basemap when the light/dark choice or grid changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const theme = light ? TILES.light : TILES.dark;
+    if (tileRef.current) map.removeLayer(tileRef.current);
+    tileRef.current = L.tileLayer(theme.url, { maxZoom: 20 }).addTo(map);
+    tileRef.current.bringToBack();
+    map.getContainer().style.background = theme.bg;
+    // node outlines need to flip with the background for contrast
+    const ext = new Set(topo.ext_grids.map((e) => e.bus));
+    for (const [id, cm] of busRef.current) {
+      if (!ext.has(id)) cm.setStyle({ color: theme.stroke });
+    }
+  }, [light, topo]);
+
+  // restyle from live results (jet by loading, Reds by voltage)
   useEffect(() => {
     if (!latest || !mapRef.current) return;
     const maxIka = Math.max(1e-6, ...latest.lines.map((l) => l.i_ka));
     const lineLive = new Map(latest.lines.map((l) => [l.index, l]));
     for (const [id, pl] of lineRef.current) {
       const live = lineLive.get(id);
-      pl.setStyle({ color: loadingColor(live?.loading_percent), weight: live ? currentWidth(live.i_ka, maxIka) : 1.5 });
+      pl.setStyle({ color: jetColor(live?.loading_percent), weight: live ? currentWidth(live.i_ka, maxIka) : 1.5 });
     }
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
     const vm = new Map(latest.buses.map((b) => [b.index, b.vm_pu]));
     for (const [id, cm] of busRef.current) {
       if (ext.has(id)) continue;
-      const c = voltageColor(vm.get(id));
-      cm.setStyle({ color: c, fillColor: c });
-    }
-    const trLive = new Map(latest.trafos.map((t) => [t.index, t]));
-    for (const [id, cm] of trafoRef.current) {
-      cm.setStyle({ color: loadingColor(trLive.get(id)?.loading_percent) });
+      cm.setStyle({ fillColor: voltageReds(vm.get(id)) });
     }
   }, [latest, topo]);
 
-  return <div ref={elRef} className="map-canvas" />;
+  return (
+    <div className="map-wrap">
+      <div ref={elRef} className="map-canvas" />
+      <button className="map-basemap" onClick={() => setLight((v) => !v)} title="Toggle basemap">
+        {light ? "🌙 Dark" : "☀ Light"}
+      </button>
+      <div className="map-colorbars">
+        <Colorbar gradient={JET_GRADIENT} top="100%" bottom="0%" caption="line loading" />
+        <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption="bus voltage Δ" />
+      </div>
+    </div>
+  );
+}
+
+function Colorbar({ gradient, top, bottom, caption }: { gradient: string; top: string; bottom: string; caption: string }) {
+  return (
+    <div className="colorbar">
+      <span className="cb-top">{top}</span>
+      <div className="cb-ramp" style={{ background: gradient }} />
+      <span className="cb-bot">{bottom}</span>
+      <span className="cb-cap">{caption}</span>
+    </div>
+  );
 }

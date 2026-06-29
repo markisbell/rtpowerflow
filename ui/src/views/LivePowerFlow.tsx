@@ -108,33 +108,39 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <Stat label="losses" value={s ? `${fmt(s.total_losses_mw * 1000, 2)} kW` : "—"} />
         <Stat label="solve time" value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
 
-        <div className="legend">
-          <span>
-            <i className="swatch" style={{ background: loadingColor(10) }} /> &lt;50%
-          </span>
-          <span>
-            <i className="swatch" style={{ background: loadingColor(65) }} /> &lt;80%
-          </span>
-          <span>
-            <i className="swatch" style={{ background: loadingColor(90) }} /> &lt;100%
-          </span>
-          <span>
-            <i className="swatch" style={{ background: loadingColor(120) }} /> overload
-          </span>
-        </div>
-        <div className="legend">
-          <span>
-            <i className="swatch" style={{ background: voltageColor(0.9) }} /> under-V
-          </span>
-          <span>
-            <i className="swatch" style={{ background: voltageColor(1.0) }} /> ok
-          </span>
-          <span>
-            <i className="swatch" style={{ background: voltageColor(1.1) }} /> over-V
-          </span>
-        </div>
+        {layout !== "map" && (
+          <>
+            <div className="legend">
+              <span>
+                <i className="swatch" style={{ background: loadingColor(10) }} /> &lt;50%
+              </span>
+              <span>
+                <i className="swatch" style={{ background: loadingColor(65) }} /> &lt;80%
+              </span>
+              <span>
+                <i className="swatch" style={{ background: loadingColor(90) }} /> &lt;100%
+              </span>
+              <span>
+                <i className="swatch" style={{ background: loadingColor(120) }} /> overload
+              </span>
+            </div>
+            <div className="legend">
+              <span>
+                <i className="swatch" style={{ background: voltageColor(0.9) }} /> under-V
+              </span>
+              <span>
+                <i className="swatch" style={{ background: voltageColor(1.0) }} /> ok
+              </span>
+              <span>
+                <i className="swatch" style={{ background: voltageColor(1.1) }} /> over-V
+              </span>
+            </div>
+          </>
+        )}
         <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.6rem" }}>
-          Line width ∝ current. Scroll to zoom, drag to pan.
+          {layout === "map"
+            ? "Lines on a jet colormap by loading; nodes reddened by voltage Δ — like ding0's plot. Scroll to zoom, drag to pan."
+            : "Line width ∝ current. Scroll to zoom, drag to pan."}
         </p>
       </aside>
 

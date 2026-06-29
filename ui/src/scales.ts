@@ -28,3 +28,63 @@ export function fmt(n: number | null | undefined, digits = 2): string {
   if (n == null) return "–";
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
+
+// ---- continuous colormaps matching ding0's plot_mv_topology -----------------
+// ding0 colors lines on matplotlib 'jet' by loading % (0..100) and nodes on
+// 'Reds' by voltage deviation. We reproduce both so the Map view looks like the
+// ding0 example plot while animating from live results.
+
+type Stop = [number, [number, number, number]];
+
+const JET: Stop[] = [
+  [0.0, [0, 0, 143]],
+  [0.125, [0, 0, 255]],
+  [0.375, [0, 255, 255]],
+  [0.625, [255, 255, 0]],
+  [0.875, [255, 0, 0]],
+  [1.0, [128, 0, 0]],
+];
+
+const REDS: Stop[] = [
+  [0.0, [255, 245, 240]],
+  [0.25, [252, 187, 161]],
+  [0.5, [251, 106, 74]],
+  [0.75, [203, 24, 29]],
+  [1.0, [103, 0, 13]],
+];
+
+function ramp(stops: Stop[], t: number): string {
+  const x = Math.min(1, Math.max(0, t));
+  for (let i = 1; i < stops.length; i++) {
+    if (x <= stops[i][0]) {
+      const [t0, c0] = stops[i - 1];
+      const [t1, c1] = stops[i];
+      const f = t1 === t0 ? 0 : (x - t0) / (t1 - t0);
+      const c = c0.map((v, k) => Math.round(v + (c1[k] - v) * f));
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+  }
+  const last = stops[stops.length - 1][1];
+  return `rgb(${last[0]},${last[1]},${last[2]})`;
+}
+
+/** Line loading % -> 'jet' color (blue=idle … red=overload), as in ding0. */
+export function jetColor(pct: number | null | undefined): string {
+  if (pct == null) return "rgb(120,120,120)";
+  return ramp(JET, pct / 100);
+}
+
+/** Bus voltage [pu] -> 'Reds' by deviation from 1.0 (white=nominal, red=stressed). */
+export function voltageReds(vm: number | null | undefined): string {
+  if (vm == null) return "rgb(200,200,200)";
+  return ramp(REDS, Math.abs(vm - 1.0) / 0.06);
+}
+
+/** CSS linear-gradient string for a colorbar legend of the given colormap. */
+function gradientCss(stops: Stop[]): string {
+  const parts = stops.map(([t, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${(t * 100).toFixed(0)}%`);
+  return `linear-gradient(to top, ${parts.join(", ")})`;
+}
+
+export const JET_GRADIENT = gradientCss(JET);
+export const REDS_GRADIENT = gradientCss(REDS);
