@@ -174,9 +174,14 @@ def build_lv_grid(district_dir: Path, lvid: str) -> dict | None:
     def addbus(name, lon, lat, role):
         bus_id[name] = len(buses)
         buses.append({"name": name, "vn_kv": 0.4, "geo": [round(lon, 6), round(lat, 6)], "role": role})
-    addbus("LV_station", lon0, lat0, "slack")
+    # the substation IS the backbone root node: the main feeders branch directly
+    # out of it (no separate connector line / stem from the station to the street)
+    sj = G.nodes[station_node]
+    addbus("LV_station", sj["x"], sj["y"], "slack")
+    def bn(nd): return "LV_station" if nd == station_node else f"j{nd}"
     for nd in back_nodes:
-        addbus(f"j{nd}", G.nodes[nd]["x"], G.nodes[nd]["y"], "backbone")
+        if nd != station_node:
+            addbus(f"j{nd}", G.nodes[nd]["x"], G.nodes[nd]["y"], "backbone")
 
     lines = []
     def addline(a, c, length_m, cab, geom):
@@ -184,16 +189,13 @@ def build_lv_grid(district_dir: Path, lvid: str) -> dict | None:
                       "r_ohm_per_km": cab["r"], "x_ohm_per_km": cab["x"], "c_nf_per_km": 0.0,
                       "max_i_ka": cab["imax"], "parallel": 1,
                       "geometry": [[round(x, 6), round(y, 6)] for x, y in geom]})
-    sj = G.nodes[station_node]
-    addline("LV_station", f"j{station_node}", _hav((lon0, lat0), (sj["x"], sj["y"])) + 1, SERV,
-            [[lon0, lat0], [sj["x"], sj["y"]]])
     for e in back_edges:
-        u, v = tuple(e); addline(f"j{u}", f"j{v}", elen(u, v), BACK, egeom(u, v))
+        u, v = tuple(e); addline(bn(u), bn(v), elen(u, v), BACK, egeom(u, v))
 
     load_specs = []
     for i, (c, end, tap) in enumerate(served_taps):
         nm = f"load{i}"; addbus(nm, c[0], c[1], "load")
-        addline(nm, f"j{end}", _hav(c, tap) + 1, SERV, [[c[0], c[1]], [tap[0], tap[1]]])
+        addline(nm, bn(end), _hav(c, tap) + 1, SERV, [[c[0], c[1]], [tap[0], tap[1]]])
         load_specs.append({"bus": bus_id[nm], "peak_mw": round(peaks[i], 6)})
 
     # size cables by downstream peak load (parallel cables), rooted at the station
@@ -221,7 +223,8 @@ def build_lv_grid(district_dir: Path, lvid: str) -> dict | None:
         li = pline[v]; I_ka = sub[v] / (math.sqrt(3) * 0.4)
         lines[li]["parallel"] = max(1, int(math.ceil(I_ka / (lines[li]["max_i_ka"] * 0.6))))
 
-    return {"name": f"osm_lv_{district_dir.name}_{lvid}", "station": [round(lon0, 6), round(lat0, 6)],
+    return {"name": f"osm_lv_{district_dir.name}_{lvid}",
+            "station": [round(sj["x"], 6), round(sj["y"], 6)],
             "buses": buses, "lines": lines, "loads": load_specs, "slack_bus": bus_id["LV_station"]}
 
 
