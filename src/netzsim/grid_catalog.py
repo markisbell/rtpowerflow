@@ -27,20 +27,33 @@ class GridEntry:
     id: str
     name: str
     category: str
-    member: str                    # workbook path inside the archive
+    member: str                    # workbook path in archive, or ding0 grid dir
     thumbnail_member: str | None   # matching PNG path, if any
+    source: str = "archetype"      # "archetype" (xlsx) | "ding0" (CSV, geo-referenced)
 
 
 class GridCatalog:
-    """Lists grid workbooks in an archive and converts them on demand."""
+    """Lists importable grids (xlsx archetypes + ding0 CSV grids) and converts on demand."""
 
-    def __init__(self, archive: str | Path | None, filter_substring: str = ""):
+    def __init__(self, archive: str | Path | None, filter_substring: str = "",
+                 ding0_dir: str | Path | None = None):
         self.archive = Path(archive) if archive else None
         self.filter = filter_substring
+        self.ding0_dir = Path(ding0_dir) if ding0_dir else None
         self._entries: dict[str, GridEntry] = {}
         self._cache: dict[tuple[str, int], GridInputs] = {}
         if self.archive and self.archive.exists():
             self._scan()
+        if self.ding0_dir and self.ding0_dir.exists():
+            self._scan_ding0()
+
+    def _scan_ding0(self) -> None:
+        for sub in sorted(self.ding0_dir.iterdir()):
+            if sub.is_dir() and (sub / "buses.csv").exists():
+                self._entries[sub.name] = GridEntry(
+                    id=sub.name, name=sub.name, category="ding0 · geographic",
+                    member=str(sub), thumbnail_member=None, source="ding0",
+                )
 
     @property
     def available(self) -> bool:
@@ -73,6 +86,8 @@ class GridCatalog:
                 "id": e.id,
                 "name": e.name,
                 "category": e.category,
+                "source": e.source,
+                "geo": e.source == "ding0",  # has real lat/lon → map-capable
                 "thumbnail": f"/grids/{e.id}/thumbnail" if e.thumbnail_member else None,
             }
             cached = next((g for (gid, _), g in self._cache.items() if gid == e.id), None)
@@ -87,10 +102,14 @@ class GridCatalog:
         key = (grid_id, steps)
         if key not in self._cache:
             e = self._entries[grid_id]
-            with zipfile.ZipFile(self.archive) as zf:
-                raw = zf.read(e.member)
-            with pd.ExcelFile(io.BytesIO(raw)) as xl:
-                self._cache[key] = convert_workbook(xl, name=e.name, steps=steps)
+            if e.source == "ding0":
+                from .ding0_import import convert_ding0_csv
+                self._cache[key] = convert_ding0_csv(e.member, name=e.name, steps=steps)
+            else:
+                with zipfile.ZipFile(self.archive) as zf:
+                    raw = zf.read(e.member)
+                with pd.ExcelFile(io.BytesIO(raw)) as xl:
+                    self._cache[key] = convert_workbook(xl, name=e.name, steps=steps)
         return self._cache[key]
 
     def thumbnail_bytes(self, grid_id: str) -> bytes | None:

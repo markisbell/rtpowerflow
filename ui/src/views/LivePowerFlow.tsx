@@ -1,15 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import type { EngineStatus, Topology } from "../types";
 import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor } from "../scales";
 import GridDiagram from "../components/GridDiagram";
+import MapDiagram from "../components/MapDiagram";
+
+type Layout = "map" | "geographic" | "tree";
 
 export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [topo, setTopo] = useState<Topology | null>(null);
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [layout, setLayout] = useState<"force" | "tree">("force");
+  const [layout, setLayout] = useState<Layout>("geographic");
+  const [showMap, setShowMap] = useState(true);
+  const layoutInit = useRef(false);
   const { latest, status: wsStatus } = useStepStream(true);
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
@@ -22,6 +27,14 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
+
+  // default to the real OSM map for grids that carry geo-coordinates
+  useEffect(() => {
+    if (topo && !layoutInit.current) {
+      layoutInit.current = true;
+      setLayout(topo.has_geo ? "map" : "geographic");
+    }
+  }, [topo]);
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -39,14 +52,34 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     <div className="live">
       <div className="diagram-wrap">
         <div className="layout-toggle">
-          <button className={layout === "force" ? "on" : ""} onClick={() => setLayout("force")}>
+          {topo.has_geo && (
+            <button className={layout === "map" ? "on" : ""} onClick={() => setLayout("map")}
+                    title="Real OpenStreetMap basemap at the grid's coordinates">
+              🗺 Map
+            </button>
+          )}
+          <button className={layout === "geographic" ? "on" : ""} onClick={() => setLayout("geographic")}>
             Geographic
           </button>
           <button className={layout === "tree" ? "on" : ""} onClick={() => setLayout("tree")}>
             Schematic
           </button>
+          {layout === "geographic" && (
+            <button
+              className={showMap ? "on" : ""}
+              style={{ marginLeft: 6, borderRadius: 6, borderLeft: "1px solid var(--border)" }}
+              onClick={() => setShowMap((m) => !m)}
+              title="Toggle the street/house underlay"
+            >
+              Streets
+            </button>
+          )}
         </div>
-        <GridDiagram topo={topo} latest={latest} layout={layout} />
+        {layout === "map" ? (
+          <MapDiagram topo={topo} latest={latest} />
+        ) : (
+          <GridDiagram topo={topo} latest={latest} layout={layout === "tree" ? "tree" : "geographic"} showMap={showMap} />
+        )}
       </div>
 
       <aside className="side">

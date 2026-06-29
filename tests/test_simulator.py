@@ -59,10 +59,13 @@ def test_topology_carries_both_layouts(data_dir):
     buses = topo["buses"]
     assert len(buses) == 5
     for b in buses:
-        for key in ("x", "y", "tx", "ty"):  # force (x,y) + tree (tx,ty)
+        for key in ("x", "y", "tx", "ty"):  # geographic (x,y) + tree (tx,ty)
             assert key in b and 0.0 <= b[key] <= 1.0
-    # force positions are all distinct (no two buses on top of each other)
+    # geographic positions are all distinct (no two buses on top of each other)
     assert len({(b["x"], b["y"]) for b in buses}) == 5
+    # load buses exposed for the map underlay (sample has 4 loads on buses 1–4)
+    assert topo["load_buses"] == [1, 2, 3, 4]
+    assert topo["sgen_buses"] == [3, 4]  # sample PV on buses 3 & 4
 
 
 def test_result_is_strict_json_safe():

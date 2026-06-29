@@ -213,10 +213,27 @@ netzsim `:8000`.
    bus-voltage coloring, pan/zoom, WS stream, controls. **Verified end-to-end in
    a browser** (grid → LPG loads → live power flow).
 8. Polish: **PV/rooftop solar ✅**, **EV chargers ✅** (synthetic additive — see §5),
-   and **geographic (force-directed) layout ✅** with a Geographic/Schematic toggle
-   (`layout.py` ships both in `/network`; the source grids have **no GIS data**).
+   and **geographic layout ✅** — `layout.py` builds a **length-aware** radial
+   layout (feeders fan from the substation, edge lengths ∝ real cable length;
+   the source grids have **no GIS data** — coords exist only in the PNG pixels,
+   untangleable for dense grids). Geographic/Schematic + Map toggle; the diagram
+   has a **street/house map underlay** (streets trace feeders, houses at
+   `load_buses`, panels at `sgen_buses`, a substation building) for a
+   navigation-map feel.
    Remaining: voltage/loading alerts, per-load archetype override, CSV export,
    multi-grid compare. (Isolated-feeder islands ✅ fixed — §4c.)
+9. **Real-map view (ding0 grids) ✅** — the archetype xlsx grids have no GIS data,
+   so we added **pre-generated ding0 grids** (`data/ding0_grids/`, eDisGo CSV from
+   openego/eDisGo) which carry **real WGS84 lon/lat**. `ding0_import.py` converts
+   them (coords → `BusSpec.geo`; LV buses inherit their station's coord); the
+   catalog exposes them (`source:"ding0"`, `geo:true`); `/network` emits `has_geo`
+   + per-bus `geo`. The Live view defaults to a **Map** layout — `MapDiagram.tsx`
+   (Leaflet + CARTO/OSM dark tiles) draws the grid at its real coordinates with the
+   live power-flow overlay (loading colors, current width, transformer loading,
+   voltages) restyled each WS tick. Verified end-to-end: ding0_1 renders near
+   Waldkirch (Black Forest). *Live ding0 generation was abandoned — the OEP REST
+   API can't execute ding0's PostGIS queries (HTTP 400); local-Postgres generation
+   is the only route and was deferred.*
 
 ## 8. Open questions / risks
 - **Layout coordinates:** xlsx has no geo data → generate a layout server-side

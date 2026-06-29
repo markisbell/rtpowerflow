@@ -71,8 +71,9 @@ EchtzeitNetzSimulator/
 │   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + monitor
 │   ├── grid_import/          # xlsx grid-model -> netzsim inputs (European Archetype)
 │   │   └── xlsx.py           # convert_workbook / convert_from_zip / write_inputs
-│   ├── grid_catalog.py       # scan archive, list/preview/convert grids for /grids
-│   ├── layout.py             # tree layout (x,y per bus) for the single-line diagram
+│   ├── grid_catalog.py       # list/convert grids for /grids (xlsx archetypes + ding0)
+│   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
+│   ├── layout.py             # bus coords: length-aware geographic (x,y) + tidy tree (tx,ty)
 │   ├── loadgen/              # cached LPG library reader + assignment (runtime, no pylpg)
 │   │   ├── library.py        # LoadLibrary: read data/lpg_library/{index,*}.json
 │   │   ├── assign.py         # assign_to_loads: archetype/variant -> per-load household profiles
@@ -80,14 +81,16 @@ EchtzeitNetzSimulator/
 │   │   └── ev.py             # assign_ev: synthetic additive EV home-charging loads
 │   └── main.py               # uvicorn entry point (console script: `netzsim`)
 ├── data/lpg_library/         # committed LPG profiles (index.json + {CHRxx}.json)
+├── data/ding0_grids/         # committed pre-generated ding0 grids (eDisGo CSV, real lat/lon)
 ├── tests/
 │   ├── test_simulator.py     # smoke tests (load/build/solve/day-wrap)
 │   ├── test_grid_import.py   # converter tests (+ real-archetype end-to-end)
 │   ├── test_runtime_swap.py  # grid catalog + engine.reconfigure (live grid swap)
-│   └── test_loadgen.py       # LPG library reader + assignment
+│   ├── test_loadgen.py       # LPG library reader + assignment
+│   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
 ├── ui/                       # app 3: React + Vite + TS frontend (served by nginx)
 │   ├── src/views/            # GridBrowser, LoadStudio, LivePowerFlow (3-step flow)
-│   ├── src/components/       # GridDiagram (SVG single-line), Sparkline
+│   ├── src/components/       # GridDiagram (SVG), MapDiagram (Leaflet/OSM), Sparkline
 │   ├── src/api.ts · types.ts · useWebSocket.ts · scales.ts
 │   ├── Dockerfile · nginx.conf   # build static -> nginx, proxies /api + /ws
 │   └── vite.config.ts        # dev proxy to netzsim (use 127.0.0.1, not localhost)
@@ -347,6 +350,16 @@ provisioned datasource + dashboard, all in compose.
   `network_10` needed it across the 25 LV grids.
 - **Collector resilience**: it waits for both services' `/health`, retries on
   failure, and skips writes until the first step is solved (`/state` 404).
+- **ding0 geo grids & the map**: `data/ding0_grids/` holds pre-generated ding0
+  grids (eDisGo CSV) with **real WGS84 lon/lat**. `ding0_import.convert_ding0_csv`
+  carries coords onto `BusSpec.geo` (LV buses get their station's coord). When a
+  grid has geo, `/network` sets `has_geo: true` and per-bus `geo: [lon, lat]`, and
+  the UI defaults to the **Map** view (Leaflet + CARTO/OSM dark tiles,
+  `MapDiagram.tsx`). Non-geo (xlsx) grids fall back to the synthetic Geographic/
+  Schematic SVG views. *Live ding0 **generation** was attempted but abandoned: the
+  OEP REST API can't run ding0's PostGIS queries (HTTP 400). The Python-3.9 ding0
+  env (`C:\Users\bell\{python39,ding0env,ding0mamba}`, `~/.egoio`) is kept but
+  unused — only needed if revisiting local-Postgres generation.*
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```

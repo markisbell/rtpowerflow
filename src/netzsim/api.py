@@ -64,7 +64,8 @@ async def lifespan(app: FastAPI):
     runtime.engine = RealtimeEngine(
         simulator, runtime.store, settings.step_interval_seconds
     )
-    runtime.catalog = GridCatalog(settings.grid_archive, settings.grid_filter)
+    runtime.catalog = GridCatalog(settings.grid_archive, settings.grid_filter,
+                                  ding0_dir=settings.ding0_dir)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
     log.info("Grid catalog: %d grid(s); LPG library: %d archetype(s)",

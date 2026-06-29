@@ -4,15 +4,21 @@ The source workbooks carry **no geographic data**, so coordinates are derived
 from the topology. Two layouts are produced and both shipped in ``/network`` so
 the UI can toggle without a round-trip:
 
-* **force** — a Fruchterman-Reingold (spring) embedding, like the organic look of
-  pandapower's generic coordinates / the archive's thumbnail PNGs. Seeded with the
-  tree layout for speed and stability, deterministic via a fixed seed.
+* **geographic** — a length-aware radial layout: feeders fan out from the
+  substation and every edge's geometric length is proportional to its real cable
+  length (``net.line.length_km``), with a small deterministic angular jitter. This
+  reproduces the sprawling, real-network look of the archive's plots (whose true
+  coordinates exist only in the PNG pixels) while staying robust for every grid.
 * **tree** — a tidy left-to-right radial tree rooted at the slack (``x`` = depth,
   ``y`` = leaf order); best for tracing feeders.
 
 Both are normalised to ``[0, 1]``.
 """
 from __future__ import annotations
+
+import math
+from collections import deque
+from random import Random
 
 import networkx as nx
 
@@ -40,6 +46,87 @@ def _normalize(pos: dict[int, tuple[float, float]]) -> dict[int, list[float]]:
     }
 
 
+def _rooted_tree(g: nx.Graph, root: int, visited: set[int]):
+    """BFS spanning tree from ``root``; returns (order, children, leaf-weight)."""
+    parent = {root: None}
+    children: dict[int, list[int]] = {root: []}
+    order = [root]
+    visited.add(root)
+    dq = deque([root])
+    while dq:
+        u = dq.popleft()
+        for v in sorted(g.neighbors(u)):
+            if v not in visited:
+                visited.add(v)
+                parent[v] = u
+                children[u].append(v)
+                children.setdefault(v, [])
+                order.append(v)
+                dq.append(v)
+    weight: dict[int, int] = {}
+    for u in reversed(order):
+        kids = children.get(u, [])
+        weight[u] = 1 if not kids else sum(weight[c] for c in kids)
+    return order, children, weight
+
+
+# --------------------------------------------------------------------------- #
+# length-aware geographic layout
+# --------------------------------------------------------------------------- #
+def _edge_lengths(net) -> dict[frozenset, float]:
+    lengths: dict[frozenset, float] = {}
+    for _, r in net.line.iterrows():
+        lengths[frozenset((int(r["from_bus"]), int(r["to_bus"])))] = max(
+            float(r["length_km"]), 1.0e-4)
+    for _, r in net.trafo.iterrows():
+        # transformer = substation: HV slack and LV busbar are essentially co-located
+        lengths[frozenset((int(r["hv_bus"]), int(r["lv_bus"])))] = 1.0e-3
+    return lengths
+
+
+def _geographic_positions(net) -> dict[int, tuple[float, float]]:
+    g = _graph(net)
+    if g.number_of_nodes() == 0:
+        return {}
+    lengths = _edge_lengths(net)
+    pos: dict[int, tuple[float, float]] = {}
+    visited: set[int] = set()
+    component_origin = [0.0, 0.0]
+
+    def grow(root: int) -> None:
+        _, children, weight = _rooted_tree(g, root, visited)
+        pos[root] = (component_origin[0], component_origin[1])
+        # iterative DFS placing each child at its edge length along an angle within
+        # the angular sector allotted to its subtree (sectors ∝ subtree leaf count).
+        stack = [(root, math.pi / 2.0, 2.0 * math.pi)]
+        while stack:
+            node, facing, span = stack.pop()
+            kids = children.get(node, [])
+            if not kids:
+                continue
+            total = sum(weight[c] for c in kids) or 1
+            a = facing - span / 2.0
+            for c in sorted(kids):
+                cspan = span * weight[c] / total
+                jitter = (Random(c).random() - 0.5) * min(cspan, 0.5)
+                angle = a + cspan / 2.0 + jitter
+                length = lengths.get(frozenset((node, c)), 1.0e-3)
+                px, py = pos[node]
+                pos[c] = (px + length * math.cos(angle), py + length * math.sin(angle))
+                # child continues outward; its subtree fans within a (narrowed) cone
+                stack.append((c, angle, min(max(cspan, 0.35) * 0.85, math.pi)))
+                a += cspan
+
+    for r in (int(b) for b in net.ext_grid["bus"].tolist()):
+        if r not in visited:
+            grow(r)
+    for n in (int(b) for b in net.bus.index):  # any leftover components
+        if n not in visited:
+            component_origin[1] -= 1.0
+            grow(n)
+    return pos
+
+
 # --------------------------------------------------------------------------- #
 # tidy radial tree (rooted at the slack)
 # --------------------------------------------------------------------------- #
@@ -47,34 +134,23 @@ def _tree_positions(net) -> dict[int, tuple[float, float]]:
     g = _graph(net)
     pos: dict[int, tuple[float, float]] = {}
     visited: set[int] = set()
-    y_cursor = 0.0
+    y_cursor = [0.0]
 
     def grow(root: int) -> None:
-        nonlocal y_cursor
+        order, children, _ = _rooted_tree(g, root, visited)
         depth = {root: 0}
-        children: dict[int, list[int]] = {root: []}
-        preorder: list[int] = []
-        stack = [root]
-        visited.add(root)
-        while stack:
-            u = stack.pop()
-            preorder.append(u)
-            for v in sorted(g.neighbors(u), reverse=True):
-                if v not in visited:
-                    visited.add(v)
-                    depth[v] = depth[u] + 1
-                    children[u].append(v)
-                    children.setdefault(v, [])
-                    stack.append(v)
+        for u in order:
+            for c in children.get(u, []):
+                depth[c] = depth[u] + 1
         ypos: dict[int, float] = {}
-        for u in reversed(preorder):
+        for u in reversed(order):
             kids = children.get(u, [])
             if kids:
                 ypos[u] = sum(ypos[c] for c in kids) / len(kids)
             else:
-                ypos[u] = y_cursor
-                y_cursor += 1.0
-        for u in preorder:
+                ypos[u] = y_cursor[0]
+                y_cursor[0] += 1.0
+        for u in order:
             pos[u] = (float(depth[u]), ypos[u])
 
     for root in (int(b) for b in net.ext_grid["bus"].tolist()):
@@ -86,32 +162,8 @@ def _tree_positions(net) -> dict[int, tuple[float, float]]:
     return pos
 
 
-# --------------------------------------------------------------------------- #
-# force-directed (spring) embedding
-# --------------------------------------------------------------------------- #
-def _force_positions(net, init: dict[int, tuple[float, float]]) -> dict[int, tuple[float, float]]:
-    g = _graph(net)
-    n = g.number_of_nodes()
-    if n <= 2:
-        return init
-    init_arr = {node: [init[node][0], init[node][1]] for node in g.nodes if node in init}
-    # spring_layout (dense FR) is O(n^2) per iteration; with the tree as a warm
-    # start, fewer iterations still relax it into an organic shape. Hold the
-    # n^2 * iterations budget roughly constant so even ~1700-bus grids stay ~2 s.
-    iters = int(min(50, max(8, 4.0e7 / (n * n))))
-    try:
-        pos = nx.spring_layout(
-            g, pos=init_arr or None, seed=42, iterations=iters,
-            k=1.0 / max(n ** 0.5, 1.0),
-        )
-        return {int(node): (float(p[0]), float(p[1])) for node, p in pos.items()}
-    except Exception:
-        return init  # fall back to the tree positions
-
-
 def compute_layouts(net) -> tuple[dict[int, list[float]], dict[int, list[float]]]:
-    """Return ``(force, tree)`` coordinate maps, each ``bus_index -> [x, y]``."""
-    tree_raw = _tree_positions(net)
-    tree = _normalize(tree_raw)
-    force = _normalize(_force_positions(net, tree_raw))
-    return force, tree
+    """Return ``(geographic, tree)`` coordinate maps, each ``bus_index -> [x, y]``."""
+    geographic = _normalize(_geographic_positions(net))
+    tree = _normalize(_tree_positions(net))
+    return geographic, tree

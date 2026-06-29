@@ -157,18 +157,36 @@ class Simulator:
     # -- static topology for the API ------------------------------------ #
     def topology(self) -> dict[str, Any]:
         net = self.net
-        force, tree = self._bus_coordinates()
+        layout_geo, tree = self._bus_coordinates()
+        # Real WGS84 coords (ding0 grids): {bus_index: [lon, lat]}
+        real = {i: b.geo for i, b in enumerate(self.data.grid.buses) if b.geo}
+        has_geo = len(real) >= max(1, len(self.data.grid.buses)) * 0.5
+        if has_geo:
+            lons = [g[0] for g in real.values()]
+            lats = [g[1] for g in real.values()]
+            mnlon, mxlon, mnlat, mxlat = min(lons), max(lons), min(lats), max(lats)
+            dlon, dlat = (mxlon - mnlon) or 1.0, (mxlat - mnlat) or 1.0
+
         buses = net.bus.reset_index().rename(columns={"index": "id"}).to_dict(
             orient="records")
         for b in buses:
-            f = force.get(int(b["id"]), [0.0, 0.0])
-            t = tree.get(int(b["id"]), [0.0, 0.0])
-            b["x"], b["y"] = f[0], f[1]       # force-directed (default)
-            b["tx"], b["ty"] = t[0], t[1]     # tidy tree (toggle)
+            i = int(b["id"])
+            t = tree.get(i, [0.0, 0.0])
+            b["tx"], b["ty"] = t[0], t[1]      # tidy tree (toggle)
+            gg = real.get(i)
+            b["geo"] = [gg[0], gg[1]] if gg else None   # raw lon/lat for the map
+            if has_geo and gg:
+                # geographic layout = real positions (lat inverted: north is up)
+                b["x"] = round((gg[0] - mnlon) / dlon, 5)
+                b["y"] = round(1.0 - (gg[1] - mnlat) / dlat, 5)
+            else:
+                g = layout_geo.get(i, [0.0, 0.0])
+                b["x"], b["y"] = g[0], g[1]    # length-aware synthetic layout
         return {
             "name": net.name,
             "f_hz": float(net.f_hz),
             "steps_per_day": self.steps_per_day,
+            "has_geo": has_geo,
             "buses": buses,
             "lines": net.line.reset_index().rename(columns={"index": "id"})
                 [["id", "name", "from_bus", "to_bus", "length_km"]]
@@ -178,6 +196,9 @@ class Simulator:
                 .to_dict(orient="records"),
             "ext_grids": net.ext_grid.reset_index().rename(columns={"index": "id"})
                 [["id", "name", "bus"]].to_dict(orient="records"),
+            # bus indices hosting loads / PV — for the map underlay (houses, panels)
+            "load_buses": sorted({int(b) for b in net.load["bus"].tolist()}),
+            "sgen_buses": sorted({int(b) for b in net.sgen["bus"].tolist()}),
             "n_load": int(len(net.load)),
             "n_sgen": int(len(net.sgen)),
             "n_trafo": int(len(net.trafo)),

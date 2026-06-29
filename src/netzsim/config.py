@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # Grid catalog (archive of importable grid models, served by /grids)
     grid_archive: Path = Path("European Archetpye Distribution Grid Models.zip")
     grid_filter: str = "Low Voltage Network Models/03_LV"
+    # Pre-generated ding0 grids (eDisGo CSV export, with real lat/lon)
+    ding0_dir: Path = Path("./data/ding0_grids")
 
     # Cached LPG household load library (served by /loadgen)
     lpg_library_dir: Path = Path("./data/lpg_library")

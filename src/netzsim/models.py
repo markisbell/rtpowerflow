@@ -20,6 +20,9 @@ class BusSpec(BaseModel):
     type: str = "b"  # 'b' busbar, 'n' node
     zone: Optional[str] = None
     in_service: bool = True
+    # Real-world position [longitude, latitude] (WGS84) when known (e.g. ding0
+    # grids); enables rendering on an actual map. None for grids without GIS data.
+    geo: Optional[List[float]] = None
 
 
 class GridStructure(BaseModel):

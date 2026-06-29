@@ -89,7 +89,9 @@ button.ghost {
 /* ---- live view ---- */
 .live { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: 1fr auto; height: 100%; }
 .diagram-wrap { position: relative; overflow: hidden; background: #0b0d11; }
-.layout-toggle { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; gap: 2px; }
+.map-canvas { position: absolute; inset: 0; background: #0b0d11; }
+.map-canvas .leaflet-container { background: #0b0d11; font-family: inherit; }
+.layout-toggle { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 2px; }
 .layout-toggle button {
   background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
   padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.78rem;

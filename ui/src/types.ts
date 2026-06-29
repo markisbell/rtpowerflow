@@ -82,10 +82,11 @@ export interface TopoBus {
   name: string;
   vn_kv: number;
   zone?: string;
-  x: number;   // force-directed layout
+  x: number;   // geographic/synthetic layout (normalized 0..1)
   y: number;
   tx: number;  // tidy-tree layout
   ty: number;
+  geo: [number, number] | null; // real [lon, lat] (WGS84) for ding0 grids
 }
 export interface TopoLine {
   id: number;
@@ -106,10 +107,13 @@ export interface Topology {
   name: string;
   f_hz: number;
   steps_per_day: number;
+  has_geo: boolean;
   buses: TopoBus[];
   lines: TopoLine[];
   trafos: TopoTrafo[];
   ext_grids: { id: number; name: string; bus: number }[];
+  load_buses: number[];
+  sgen_buses: number[];
   n_load: number;
   n_sgen: number;
   n_trafo: number;
