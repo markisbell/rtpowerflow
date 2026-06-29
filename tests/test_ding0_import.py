@@ -34,3 +34,26 @@ def test_ding0_import_has_geo_and_solves():
     res = sim.run_step(48)
     assert res.converged
     assert res.summary["n_trafo"] >= 1
+
+
+@pytest.mark.skipif(not (GRID / "buses.csv").exists(), reason="ding0 grid not committed")
+def test_lv_scope_is_a_radial_tree_with_distinct_coords():
+    """LV buses get no coords from ding0; the importer must lay them out as a
+    radial tree (distinct positions), not collapse them into one jittered blob."""
+    import pandas as pd
+
+    b = pd.read_csv(GRID / "buses.csv").dropna(subset=["lv_grid_id"])
+    lv_id = b["lv_grid_id"].astype(str).str.split(".").str[0].value_counts().idxmax()
+
+    g = convert_ding0_csv(GRID, steps=96, scope="lv", lv_grid_id=lv_id)
+    buses = g.grid_structure["buses"]
+    assert all(bb["vn_kv"] <= 1.0 for bb in buses)            # standalone 0.4 kV grid
+    # radial layout → every bus at a distinct coordinate (no collapsed blob)
+    coords = {tuple(bb["geo"]) for bb in buses}
+    assert len(coords) == len(buses)
+    # a single LV grid is a tree: edges == nodes - 1
+    assert len(g.lines["lines"]) == len(buses) - 1
+
+    data = input_data_from_dicts(g.grid_structure, g.lines, g.load,
+                                 g.generation, g.substation)
+    assert Simulator(data).run_step(48).converged

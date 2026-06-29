@@ -226,7 +226,13 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
             "pfe_kw": 0.0, "i0_percent": 0.0,
         })
 
-    # --- propagate coords to buses without geo (LV buses sit at their station) #
+    # --- coordinates for buses ding0 leaves un-geo-referenced --------------- #
+    # ding0's eDisGo export gives WGS84 coords to MV buses / stations but NOT to
+    # LV buses (every LV bus inherits its station's single point). Scattering them
+    # randomly collapses the feeder into a ~40 m blob with crossing lines and no
+    # visible radial structure. Instead we lay the coordinate-less buses out as a
+    # RADIAL TREE that follows the actual line topology, fanning out from their
+    # geo-having anchor (the LV busbar / MV station) so the map shows real feeders.
     from collections import defaultdict, deque
     adj: dict[int, list[int]] = defaultdict(list)
     for ln in line_specs:
@@ -235,29 +241,53 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
     for tr in trafo_specs:
         adj[tr["hv_bus"]].append(tr["lv_bus"])
         adj[tr["lv_bus"]].append(tr["hv_bus"])
-    import random
-    src: dict[int, int] = {}
-    dq = deque()
-    for i, b in enumerate(bus_specs):
-        if b["geo"]:
-            src[i] = i
-            dq.append(i)
+
+    STEP_M = 12.0                              # metres of radius per tree level
+    anchors = {i for i, b in enumerate(bus_specs) if b["geo"]}
+    # rooted tree over the coordinate-less buses, grown from the geo anchors
+    children: dict[int, list[int]] = defaultdict(list)
+    depth: dict[int, int] = {a: 0 for a in anchors}
+    anchor_of: dict[int, int] = {a: a for a in anchors}
+    visited = set(anchors)
+    dq = deque(sorted(anchors))
     while dq:
         u = dq.popleft()
-        for v in adj[u]:
-            if v not in src:
-                src[v] = src[u]
+        for v in sorted(adj[u]):
+            if v not in visited:
+                visited.add(v)
+                children[u].append(v)
+                depth[v] = depth[u] + 1
+                anchor_of[v] = anchor_of[u]
                 dq.append(v)
+    # leaf-count per subtree (process deepest first), then split each node's
+    # angular sector among its children in proportion to their leaf counts
+    by_depth = sorted(visited, key=lambda x: depth[x])
+    leaves: dict[int, int] = {}
+    for u in reversed(by_depth):
+        leaves[u] = 1 if not children[u] else sum(leaves[c] for c in children[u])
+    sector: dict[int, tuple[float, float]] = {a: (0.0, 2.0 * math.pi) for a in anchors}
+    angle: dict[int, float] = {}
+    for u in by_depth:
+        lo, hi = sector[u]
+        angle[u] = (lo + hi) / 2.0
+        tot = sum(leaves[c] for c in children[u]) or 1
+        cur = lo
+        for c in children[u]:
+            w = (hi - lo) * leaves[c] / tot
+            sector[c] = (cur, cur + w)
+            cur += w
     filled = 0
-    for i, b in enumerate(bus_specs):
-        if not b["geo"] and i in src:
-            base = bus_specs[src[i]]["geo"]
-            rng = random.Random(i)  # small deterministic scatter (~30 m) at the station
-            b["geo"] = [round(base[0] + (rng.random() - 0.5) * 0.0006, 6),
-                        round(base[1] + (rng.random() - 0.5) * 0.0004, 6)]
-            filled += 1
+    for u in by_depth:
+        if u in anchors:
+            continue
+        ax, ay = bus_specs[anchor_of[u]]["geo"]
+        r = depth[u] * STEP_M
+        mlon = 111320.0 * max(math.cos(math.radians(ay)), 1e-6)
+        bus_specs[u]["geo"] = [round(ax + r * math.cos(angle[u]) / mlon, 6),
+                               round(ay + r * math.sin(angle[u]) / 110540.0, 6)]
+        filled += 1
     if filled:
-        notes.append(f"propagated coordinates to {filled} LV bus(es) from their station")
+        notes.append(f"laid out {filled} coordinate-less bus(es) as a radial tree from their station")
 
     lines_doc = {"lines": line_specs, "transformers": trafo_specs}
 
