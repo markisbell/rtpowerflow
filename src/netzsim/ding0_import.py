@@ -46,8 +46,112 @@ def _solarish(steps: int, peak: float, subtype: str) -> list[float]:
     return [round(peak * 0.3, 6)] * steps  # dispatchable: steady part-load
 
 
+def _lvg(v: Any) -> str:
+    """Normalize an lv_grid_id cell to a clean string ('' when absent)."""
+    if v is None:
+        return ""
+    s = str(v).strip()
+    if s == "" or s.lower() == "nan":
+        return ""
+    return s.split(".")[0]
+
+
+def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id):
+    """Reduce a full ding0 district to a single voltage level.
+
+    ``scope="mv"`` keeps the MV graph (v_nom > 1 kV, no ``lv_grid_id``) and folds
+    each downstream LV grid into one lumped load at its feeding MV bus.
+    ``scope="lv"`` extracts one standalone LV grid (``lv_grid_id``), fed at its
+    busbar (the LV side of its MV/LV transformer). Returns the filtered frames
+    plus a forced-slack bus name (or None) and notes.
+    """
+    notes: list[str] = []
+    lvof: dict[str, str] = {}
+    vnof: dict[str, float] = {}
+    for _, r in buses.iterrows():
+        nm = str(r["name"])
+        lvof[nm] = _lvg(r.get("lv_grid_id"))
+        vnof[nm] = _num(r.get("v_nom"), 0.4)
+    empty_tr = trafos.iloc[0:0]
+
+    if scope == "lv":
+        target = _lvg(lv_grid_id)
+        lvset = {nm for nm, g in lvof.items() if g == target}
+        if not lvset:
+            raise ValueError(f"LV grid '{target}' not found in district")
+        busbar = None
+        for _, r in trafos.iterrows():
+            a, b = _real(r["bus0"]), _real(r["bus1"])
+            if a in lvset and b not in lvset:
+                busbar = a
+            elif b in lvset and a not in lvset:
+                busbar = b
+            if busbar:
+                break
+        if busbar is None:
+            busbar = max(lvset, key=lambda n: vnof.get(n, 0.0))
+        buses_f = buses[buses["name"].astype(str).isin(lvset)]
+        lines_f = lines[lines["bus0"].map(_real).isin(lvset) & lines["bus1"].map(_real).isin(lvset)]
+        loads_f = loads[loads["bus"].map(_real).isin(lvset)] if not loads.empty else loads
+        gens_f = gens[gens["bus"].map(_real).isin(lvset)] if not gens.empty else gens
+        notes.append(f"extracted standalone LV grid {target}: {len(buses_f)} buses, slack at {busbar}")
+        return buses_f, lines_f, loads_f, empty_tr, empty_tr, gens_f, busbar, notes
+
+    if scope == "mv":
+        from collections import defaultdict
+
+        mvset = {nm for nm, g in lvof.items() if g == "" and vnof.get(nm, 0.0) > 1.0}
+        lvg_mvbus: dict[str, str] = {}  # lv grid id -> feeding MV bus
+        for _, r in trafos.iterrows():
+            a, b = _real(r["bus0"]), _real(r["bus1"])
+            if a in mvset and b not in mvset:
+                lvg_mvbus[lvof.get(b, "")] = a
+            elif b in mvset and a not in mvset:
+                lvg_mvbus[lvof.get(a, "")] = b
+        buses_f = buses[buses["name"].astype(str).isin(mvset)]
+        lines_f = lines[lines["bus0"].map(_real).isin(mvset) & lines["bus1"].map(_real).isin(mvset)]
+
+        agg: dict[str, float] = defaultdict(float)
+        kept = []
+        for _, r in loads.iterrows():
+            b = _real(r["bus"])
+            if b in mvset:
+                kept.append({"name": str(r["name"]), "bus": b, "peak_load": _num(r.get("peak_load"))})
+            else:
+                agg[lvof.get(b, "")] += _num(r.get("peak_load"))
+        for g, peak in agg.items():
+            mvb = lvg_mvbus.get(g)
+            if mvb and peak > 0:
+                kept.append({"name": f"lv_{g}", "bus": mvb, "peak_load": round(peak, 6)})
+        loads_f = pd.DataFrame(kept) if kept else loads.iloc[0:0]
+
+        gens_f = gens
+        if not gens.empty:
+            gagg: dict[str, float] = defaultdict(float)
+            keptg = []
+            for _, r in gens.iterrows():
+                b = _real(r["bus"])
+                if b in mvset:
+                    keptg.append({"name": str(r["name"]), "bus": b, "p_nom": _num(r.get("p_nom")),
+                                  "subtype": r.get("subtype"), "type": r.get("type")})
+                else:
+                    gagg[lvof.get(b, "")] += _num(r.get("p_nom"))
+            for g, p in gagg.items():
+                mvb = lvg_mvbus.get(g)
+                if mvb and p > 0:
+                    keptg.append({"name": f"lvgen_{g}", "bus": mvb, "p_nom": round(p, 6), "subtype": "", "type": ""})
+            gens_f = pd.DataFrame(keptg) if keptg else gens.iloc[0:0]
+
+        notes.append(f"MV-only graph: {len(buses_f)} MV buses, {len(lines_f)} MV lines, "
+                     f"{len(agg)} LV grids folded into lumped loads")
+        return buses_f, lines_f, loads_f, empty_tr, hvmv, gens_f, None, notes
+
+    return buses, lines, loads, trafos, hvmv, gens, None, notes
+
+
 def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
-                      steps: int = 1440, power_factor: float = 0.95) -> GridInputs:
+                      steps: int = 1440, power_factor: float = 0.95,
+                      scope: str = "full", lv_grid_id: str | int | None = None) -> GridInputs:
     d = Path(grid_dir)
     name = name or d.name
 
@@ -63,6 +167,11 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
     gens = _read("generators.csv")
 
     notes: list[str] = []
+    forced_slack: str | None = None
+    if scope in ("mv", "lv"):
+        buses, lines, loads, trafos, hvmv, gens, forced_slack, snotes = _apply_scope(
+            buses, lines, loads, trafos, hvmv, gens, scope, lv_grid_id)
+        notes.extend(snotes)
 
     # --- buses (skip 'virtual_' switch duplicates; index by row order) -------- #
     bus_index: dict[str, int] = {}
@@ -152,9 +261,11 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
 
     lines_doc = {"lines": line_specs, "transformers": trafo_specs}
 
-    # --- slack: feed at the MV station (LV side of the HV/MV transformer) ---- #
+    # --- slack: forced (LV busbar) > HV/MV station busbar > best guess ------- #
     slack = None
-    if not hvmv.empty:
+    if forced_slack and forced_slack in bus_index:
+        slack = forced_slack
+    if slack is None and not hvmv.empty:
         cand = _real(hvmv.iloc[0]["bus1"])
         slack = cand if cand in bus_index else None
     if slack is None:

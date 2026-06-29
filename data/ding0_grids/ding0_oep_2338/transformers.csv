@@ -1,0 +1,11 @@
+name,bus0,bus1,s_nom,r,x,type,type_info
+Transformer_lv_load_area_104152_1,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_load_area_104152_2,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_load_area_104152_3,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_load_area_104152_4,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_load_area_104152_5,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_load_area_104152_6,Busbar_mvgd_2338_MV,BusBar_lac_104152,1.0,0.0105,0.059074106002545645,,1.0 MVA 10/0.4 kV
+Transformer_lv_grid_460932_1,BusBar_mvgd_2338_lvgd_460932_MV,BusBar_mvgd_2338_lvgd_460932_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV
+Transformer_lv_grid_461980_1,BusBar_mvgd_2338_lvgd_461980_MV,BusBar_mvgd_2338_lvgd_461980_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV
+Transformer_lv_grid_461258_1,BusBar_mvgd_2338_lvgd_461258_MV,BusBar_mvgd_2338_lvgd_461258_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV
+Transformer_lv_grid_177066_1,BusBar_mvgd_2338_lvgd_177066_MV,BusBar_mvgd_2338_lvgd_177066_LV,0.1,0.0175,0.035968736424845396,,0.1 MVA 10/0.4 kV

@@ -1,0 +1,228 @@
+{
+  "grids": [
+    {
+      "id": "lv_rural_2915_121699",
+      "name": "Rural LV grid \u00b7 121699",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 31,
+      "source_dir": "ding0_oep_2915",
+      "scope": "lv",
+      "lv_grid_id": "121699"
+    },
+    {
+      "id": "lv_rural_3150_300266",
+      "name": "Rural LV grid \u00b7 300266",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 31,
+      "source_dir": "ding0_oep_3150",
+      "scope": "lv",
+      "lv_grid_id": "300266"
+    },
+    {
+      "id": "lv_rural_2915_121999",
+      "name": "Rural LV grid \u00b7 121999",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 97,
+      "source_dir": "ding0_oep_2915",
+      "scope": "lv",
+      "lv_grid_id": "121999"
+    },
+    {
+      "id": "lv_rural_3150_300668",
+      "name": "Rural LV grid \u00b7 300668",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 100,
+      "source_dir": "ding0_oep_3150",
+      "scope": "lv",
+      "lv_grid_id": "300668"
+    },
+    {
+      "id": "lv_rural_2915_120409",
+      "name": "Rural LV grid \u00b7 120409",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 250,
+      "source_dir": "ding0_oep_2915",
+      "scope": "lv",
+      "lv_grid_id": "120409"
+    },
+    {
+      "id": "lv_rural_3150_300575",
+      "name": "Rural LV grid \u00b7 300575",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 292,
+      "source_dir": "ding0_oep_3150",
+      "scope": "lv",
+      "lv_grid_id": "300575"
+    },
+    {
+      "id": "lv_suburban_2279_473888",
+      "name": "Suburban LV grid \u00b7 473888",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 28,
+      "source_dir": "ding0_oep_2279",
+      "scope": "lv",
+      "lv_grid_id": "473888"
+    },
+    {
+      "id": "lv_suburban_1864_249743",
+      "name": "Suburban LV grid \u00b7 249743",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 31,
+      "source_dir": "ding0_oep_1864",
+      "scope": "lv",
+      "lv_grid_id": "249743"
+    },
+    {
+      "id": "lv_suburban_2279_315183",
+      "name": "Suburban LV grid \u00b7 315183",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 100,
+      "source_dir": "ding0_oep_2279",
+      "scope": "lv",
+      "lv_grid_id": "315183"
+    },
+    {
+      "id": "lv_suburban_1864_265991",
+      "name": "Suburban LV grid \u00b7 265991",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 100,
+      "source_dir": "ding0_oep_1864",
+      "scope": "lv",
+      "lv_grid_id": "265991"
+    },
+    {
+      "id": "lv_suburban_2279_315184",
+      "name": "Suburban LV grid \u00b7 315184",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 268,
+      "source_dir": "ding0_oep_2279",
+      "scope": "lv",
+      "lv_grid_id": "315184"
+    },
+    {
+      "id": "lv_suburban_1864_273437",
+      "name": "Suburban LV grid \u00b7 273437",
+      "voltage": "LV",
+      "character": "suburban",
+      "nodes": 268,
+      "source_dir": "ding0_oep_1864",
+      "scope": "lv",
+      "lv_grid_id": "273437"
+    },
+    {
+      "id": "lv_urban_2338_177066",
+      "name": "Urban LV grid \u00b7 177066",
+      "voltage": "LV",
+      "character": "urban",
+      "nodes": 10,
+      "source_dir": "ding0_oep_2338",
+      "scope": "lv",
+      "lv_grid_id": "177066"
+    },
+    {
+      "id": "lv_urban_83_45769",
+      "name": "Urban LV grid \u00b7 45769",
+      "voltage": "LV",
+      "character": "urban",
+      "nodes": 40,
+      "source_dir": "ding0_oep_83",
+      "scope": "lv",
+      "lv_grid_id": "45769"
+    },
+    {
+      "id": "lv_urban_2338_461980",
+      "name": "Urban LV grid \u00b7 461980",
+      "voltage": "LV",
+      "character": "urban",
+      "nodes": 64,
+      "source_dir": "ding0_oep_2338",
+      "scope": "lv",
+      "lv_grid_id": "461980"
+    },
+    {
+      "id": "lv_urban_83_189499",
+      "name": "Urban LV grid \u00b7 189499",
+      "voltage": "LV",
+      "character": "urban",
+      "nodes": 94,
+      "source_dir": "ding0_oep_83",
+      "scope": "lv",
+      "lv_grid_id": "189499"
+    },
+    {
+      "id": "lv_urban_83_45770",
+      "name": "Urban LV grid \u00b7 45770",
+      "voltage": "LV",
+      "character": "urban",
+      "nodes": 295,
+      "source_dir": "ding0_oep_83",
+      "scope": "lv",
+      "lv_grid_id": "45770"
+    },
+    {
+      "id": "mv_rural_2915",
+      "name": "Rural MV grid \u00b7 district 2915",
+      "voltage": "MV",
+      "character": "rural",
+      "nodes": 177,
+      "source_dir": "ding0_oep_2915",
+      "scope": "mv"
+    },
+    {
+      "id": "mv_rural_3150",
+      "name": "Rural MV grid \u00b7 district 3150",
+      "voltage": "MV",
+      "character": "rural",
+      "nodes": 250,
+      "source_dir": "ding0_oep_3150",
+      "scope": "mv"
+    },
+    {
+      "id": "mv_suburban_2279",
+      "name": "Suburban MV grid \u00b7 district 2279",
+      "voltage": "MV",
+      "character": "suburban",
+      "nodes": 63,
+      "source_dir": "ding0_oep_2279",
+      "scope": "mv"
+    },
+    {
+      "id": "mv_suburban_1864",
+      "name": "Suburban MV grid \u00b7 district 1864",
+      "voltage": "MV",
+      "character": "suburban",
+      "nodes": 230,
+      "source_dir": "ding0_oep_1864",
+      "scope": "mv"
+    },
+    {
+      "id": "mv_urban_2338",
+      "name": "Urban MV grid \u00b7 district 2338",
+      "voltage": "MV",
+      "character": "urban",
+      "nodes": 6,
+      "source_dir": "ding0_oep_2338",
+      "scope": "mv"
+    },
+    {
+      "id": "mv_urban_83",
+      "name": "Urban MV grid \u00b7 district 83",
+      "voltage": "MV",
+      "character": "urban",
+      "nodes": 35,
+      "source_dir": "ding0_oep_83",
+      "scope": "mv"
+    }
+  ]
+}

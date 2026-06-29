@@ -1,0 +1,3 @@
+name,bus0,bus1,s_nom,r,x,type,type_info
+Transformer_mv_grid_1864_1,Busbar_mvgd_1864_HV,Busbar_mvgd_1864_MV,63.0,,,63 MVA 110/20 kV,63 MVA 110/20 kV
+Transformer_mv_grid_1864_2,Busbar_mvgd_1864_HV,Busbar_mvgd_1864_MV,63.0,,,63 MVA 110/20 kV,63 MVA 110/20 kV

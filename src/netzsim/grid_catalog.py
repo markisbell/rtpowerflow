@@ -10,6 +10,7 @@ empty and ``/grids`` returns ``available: false``.
 from __future__ import annotations
 
 import io
+import json
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,32 +28,59 @@ class GridEntry:
     id: str
     name: str
     category: str
-    member: str                    # workbook path in archive, or ding0 grid dir
-    thumbnail_member: str | None   # matching PNG path, if any
-    source: str = "archetype"      # "archetype" (xlsx) | "ding0" (CSV, geo-referenced)
+    member: str                       # ding0 grid dir (source CSVs), or workbook path
+    thumbnail_member: str | None = None
+    source: str = "library"           # "library" (curated ding0) | "ding0" (raw) | "archetype"
+    voltage: str | None = None        # "MV" | "LV"
+    character: str | None = None      # "rural" | "suburban" | "urban"
+    nodes: int | None = None          # node count for this scope
+    scope: str = "full"               # convert_ding0_csv scope: full | mv | lv
+    lv_grid_id: str | None = None
 
 
 class GridCatalog:
-    """Lists importable grids (xlsx archetypes + ding0 CSV grids) and converts on demand."""
+    """Lists importable grids and converts a chosen one to netzsim inputs on demand.
 
-    def __init__(self, archive: str | Path | None, filter_substring: str = "",
-                 ding0_dir: str | Path | None = None):
+    Prefers a curated **library manifest** (``grid_library.json``) of characterized
+    MV/LV ding0 grids (type · size · rural/suburban/urban). Without a manifest it
+    falls back to listing raw ding0 grid directories. The legacy LV-archetype
+    archive is no longer scanned.
+    """
+
+    def __init__(self, archive: str | Path | None = None, filter_substring: str = "",
+                 ding0_dir: str | Path | None = None,
+                 library_manifest: str | Path | None = None):
         self.archive = Path(archive) if archive else None
         self.filter = filter_substring
         self.ding0_dir = Path(ding0_dir) if ding0_dir else None
+        self.manifest = Path(library_manifest) if library_manifest else None
         self._entries: dict[str, GridEntry] = {}
         self._cache: dict[tuple[str, int], GridInputs] = {}
-        if self.archive and self.archive.exists():
-            self._scan()
-        if self.ding0_dir and self.ding0_dir.exists():
+        if self.manifest and self.manifest.exists():
+            self._load_manifest()
+        elif self.ding0_dir and self.ding0_dir.exists():
             self._scan_ding0()
+
+    def _load_manifest(self) -> None:
+        data = json.loads(self.manifest.read_text())
+        base = self.ding0_dir or (self.manifest.parent / "ding0_grids")
+        for g in data.get("grids", []):
+            src = base / g["source_dir"]
+            self._entries[g["id"]] = GridEntry(
+                id=g["id"], name=g.get("name", g["id"]),
+                category=f"{g.get('character', '')} · {g.get('voltage', '')}".strip(" ·"),
+                member=str(src), source="library",
+                voltage=g.get("voltage"), character=g.get("character"),
+                nodes=g.get("nodes"), scope=g.get("scope", "full"),
+                lv_grid_id=g.get("lv_grid_id"),
+            )
 
     def _scan_ding0(self) -> None:
         for sub in sorted(self.ding0_dir.iterdir()):
             if sub.is_dir() and (sub / "buses.csv").exists():
                 self._entries[sub.name] = GridEntry(
                     id=sub.name, name=sub.name, category="ding0 · geographic",
-                    member=str(sub), thumbnail_member=None, source="ding0",
+                    member=str(sub), source="ding0",
                 )
 
     @property
@@ -87,7 +115,10 @@ class GridCatalog:
                 "name": e.name,
                 "category": e.category,
                 "source": e.source,
-                "geo": e.source == "ding0",  # has real lat/lon → map-capable
+                "voltage": e.voltage,
+                "character": e.character,
+                "nodes": e.nodes,
+                "geo": e.source in ("library", "ding0"),  # real lat/lon → map-capable
                 "thumbnail": f"/grids/{e.id}/thumbnail" if e.thumbnail_member else None,
             }
             cached = next((g for (gid, _), g in self._cache.items() if gid == e.id), None)
@@ -102,9 +133,11 @@ class GridCatalog:
         key = (grid_id, steps)
         if key not in self._cache:
             e = self._entries[grid_id]
-            if e.source == "ding0":
+            if e.source in ("library", "ding0"):
                 from .ding0_import import convert_ding0_csv
-                self._cache[key] = convert_ding0_csv(e.member, name=e.name, steps=steps)
+                self._cache[key] = convert_ding0_csv(
+                    e.member, name=e.name, steps=steps,
+                    scope=e.scope, lv_grid_id=e.lv_grid_id)
             else:
                 with zipfile.ZipFile(self.archive) as zf:
                     raw = zf.read(e.member)

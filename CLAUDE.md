@@ -375,6 +375,20 @@ provisioned datasource + dashboard, all in compose.
   districts 1605 (14 buses) and 1003 (4395 buses) generate in seconds and solve.
   See `docs/DING0_GENERATION.md`. (Other Py-3.9 envs `C:\Users\bell\{python39,
   ding0env}` are leftover and unused.)
+- **Curated grid library & the generator UI**: the Grid page is a *generator
+  picker* — choose **voltage** (MV / LV), **area character** (rural / suburban /
+  urban) and **approximate node count** (10–500) — not a list of the old LV
+  archetypes (those are **no longer scanned**). It is backed by a committed
+  library: `scripts/build_grid_library.py` (ding0 conda env) selects districts by
+  OEP metadata (population density → character; load-area count → size), generates
+  them, and writes `data/grid_library.json` — a manifest of entries
+  `{id, name, voltage, character, nodes, source_dir, scope, lv_grid_id?}`.
+  `GridCatalog` is **manifest-driven** (`library_manifest`, config `grid_library`);
+  with no manifest it falls back to listing raw ding0 dirs. `convert_ding0_csv`
+  gained a `scope`: `"mv"` keeps the MV graph and folds each LV grid into one
+  lumped load at its feeding MV bus; `"lv"` extracts one standalone 0.4 kV grid fed
+  at its busbar; `"full"` is the whole district (default). One generated district
+  thus yields several library entries (1 MV + a few LV by size bucket).
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```

@@ -1,0 +1,2 @@
+name,bus,control,p_nom,type,weather_cell_id,subtype
+MV_2915_slack,Busbar_mvgd_2915_MV,Slack,0,station,,mv_station

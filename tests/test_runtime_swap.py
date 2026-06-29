@@ -13,7 +13,8 @@ from netzsim.simulator import Simulator
 from netzsim.state import StateStore
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCHIVE = ROOT / "European Archetpye Distribution Grid Models.zip"
+MANIFEST = ROOT / "data" / "grid_library.json"
+DING0_DIR = ROOT / "data" / "ding0_grids"
 
 
 def _grid(n_lv: int, steps: int = 8):
@@ -65,26 +66,30 @@ def test_reconfigure_resumes_when_running():
     asyncio.run(scenario())
 
 
-@pytest.mark.skipif(not ARCHIVE.exists(), reason="archive zip not present")
-def test_grid_catalog_lists_previews_and_converts():
-    cat = GridCatalog(str(ARCHIVE), "Low Voltage Network Models/03_LV")
+@pytest.mark.skipif(not MANIFEST.exists(), reason="grid library not built")
+def test_grid_library_catalog_lists_and_converts_scopes():
+    cat = GridCatalog(ding0_dir=str(DING0_DIR), library_manifest=str(MANIFEST))
     assert cat.available
     listing = cat.list()
-    assert len(listing) >= 20
+    assert len(listing) >= 1
     entry = listing[0]
-    assert {"id", "name", "category", "thumbnail"} <= entry.keys()
+    assert {"id", "name", "category", "voltage", "character", "nodes", "geo"} <= entry.keys()
+    assert entry["geo"] is True  # ding0 grids carry real lat/lon
 
-    g = cat.get_inputs(entry["id"], steps=96)
+    mv = next((it for it in listing if it["voltage"] == "MV"), None)
+    assert mv is not None, "library should contain at least one MV grid"
+    g = cat.get_inputs(mv["id"], steps=96)
     p = preview(g)
-    assert p["n_bus"] >= 1
-    assert len(p["buses"]) == p["n_bus"]
-    assert "trafos" in p and "notes" in p
+    assert p["n_bus"] >= 1 and len(p["buses"]) == p["n_bus"]
+    assert all(b["vn_kv"] > 1.0 for b in p["buses"])  # MV scope keeps only MV buses
+
+    lv = next((it for it in listing if it["voltage"] == "LV"), None)
+    if lv is not None:
+        pl = preview(cat.get_inputs(lv["id"], steps=96))
+        assert all(b["vn_kv"] <= 1.0 for b in pl["buses"])  # LV scope is a single 0.4 kV grid
 
     # once cached, the listing carries counts
     assert any("n_bus" in it for it in cat.list())
-
-    thumb = cat.thumbnail_bytes(entry["id"])
-    assert thumb is None or thumb[:4] == b"\x89PNG"
 
 
 def test_absent_archive_is_empty_not_an_error():

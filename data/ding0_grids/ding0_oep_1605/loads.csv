@@ -1,4 +1,0 @@
-name,bus,peak_load,annual_consumption,sector
-Load_mvgd_1605_lvgd_394025_1,BranchTee_mvgd_1605_lvgd_394025_2,0.0014370817242333465,6.724133091116164,residential
-Load_mvgd_1605_lvgd_105132_1,BranchTee_mvgd_1605_lvgd_105132_2,0.0010778112931750098,5.043099818337123,residential
-Load_mvgd_1605_lvgd_105132_2,BranchTee_mvgd_1605_lvgd_105132_4,0.0010778112931750098,5.043099818337123,residential

@@ -1,0 +1,6 @@
+name,bus0,bus1,s_nom,r,x,type,type_info
+Transformer_mv_grid_83_1,Busbar_mvgd_83_HV,Busbar_mvgd_83_MV,63.0,,,63 MVA 110/10 kV,63 MVA 110/10 kV
+Transformer_mv_grid_83_2,Busbar_mvgd_83_HV,Busbar_mvgd_83_MV,63.0,,,63 MVA 110/10 kV,63 MVA 110/10 kV
+Transformer_mv_grid_83_3,Busbar_mvgd_83_HV,Busbar_mvgd_83_MV,63.0,,,63 MVA 110/10 kV,63 MVA 110/10 kV
+Transformer_mv_grid_83_4,Busbar_mvgd_83_HV,Busbar_mvgd_83_MV,25.0,,,25 MVA 110/10 kV,25 MVA 110/10 kV
+Transformer_mv_grid_83_5,Busbar_mvgd_83_HV,Busbar_mvgd_83_MV,63.0,,,63 MVA 110/10 kV,63 MVA 110/10 kV

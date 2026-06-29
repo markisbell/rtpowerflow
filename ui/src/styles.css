@@ -68,6 +68,19 @@ button.ghost {
 .grid-card .meta .sub { font-size: 0.72rem; color: var(--muted); }
 .preview-pane { border-left: 1px solid var(--border); padding: 1rem; overflow: auto; background: var(--panel); }
 
+/* ---- grid generator controls ---- */
+.gen-controls { padding: 0.9rem 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.gen-row { display: flex; flex-direction: column; gap: 0.4rem; }
+.gen-row > label { font-size: 0.8rem; color: var(--muted); }
+.gen-row input[type="range"] { width: 100%; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: fit-content; }
+.seg button {
+  background: var(--panel-2); color: var(--muted); border: none; border-left: 1px solid var(--border);
+  padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.82rem;
+}
+.seg button:first-child { border-left: none; }
+.seg button.on { background: var(--accent-2); color: #fff; }
+
 /* ---- load studio ---- */
 .studio { display: grid; grid-template-columns: 340px 1fr; height: 100%; }
 .studio .controls { padding: 1rem; overflow: auto; border-right: 1px solid var(--border); }

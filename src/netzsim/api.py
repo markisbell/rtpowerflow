@@ -65,7 +65,8 @@ async def lifespan(app: FastAPI):
         simulator, runtime.store, settings.step_interval_seconds
     )
     runtime.catalog = GridCatalog(settings.grid_archive, settings.grid_filter,
-                                  ding0_dir=settings.ding0_dir)
+                                  ding0_dir=settings.ding0_dir,
+                                  library_manifest=settings.grid_library)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
     log.info("Grid catalog: %d grid(s); LPG library: %d archetype(s)",
@@ -118,26 +119,29 @@ def history(limit: int = Query(default=96, ge=1, le=10_000)):
     return runtime.store.history(limit=limit)
 
 
+# These run on the event loop (async def) — the engine schedules its loop task
+# via asyncio.create_task and toggles an asyncio.Event, neither of which is safe
+# from FastAPI's sync-endpoint threadpool ("no running event loop").
 @app.post("/control/start")
-def control_start():
+async def control_start():
     runtime.engine.start_loop()
     return runtime.engine.status
 
 
 @app.post("/control/pause")
-def control_pause():
+async def control_pause():
     runtime.engine.pause()
     return runtime.engine.status
 
 
 @app.post("/control/resume")
-def control_resume():
+async def control_resume():
     runtime.engine.resume()
     return runtime.engine.status
 
 
 @app.post("/control/seek")
-def control_seek(step: int = Query(..., ge=0)):
+async def control_seek(step: int = Query(..., ge=0)):
     runtime.engine.seek(step)
     return runtime.engine.status
 

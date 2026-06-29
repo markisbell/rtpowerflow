@@ -5,6 +5,9 @@ export interface GridListItem {
   name: string;
   category: string;
   thumbnail: string | null;
+  voltage?: "MV" | "LV" | null;
+  character?: "rural" | "suburban" | "urban" | null;
+  nodes?: number | null;
   n_bus?: number;
   n_line?: number;
   n_trafo?: number;
