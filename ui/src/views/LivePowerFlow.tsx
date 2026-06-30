@@ -14,6 +14,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [layout, setLayout] = useState<Layout>("geographic");
   const [showMap, setShowMap] = useState(true);
+  const [showValues, setShowValues] = useState(false);
   const layoutInit = useRef(false);
   const { latest, status: wsStatus } = useStepStream(true);
 
@@ -33,6 +34,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     if (topo && !layoutInit.current) {
       layoutInit.current = true;
       setLayout(topo.has_geo ? "map" : "geographic");
+      setShowValues(topo.buses.length <= 40);   // on by default for small grids; toggle for big ones
     }
   }, [topo]);
 
@@ -74,11 +76,22 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               Streets
             </button>
           )}
+          {layout !== "map" && (
+            <button
+              className={showValues ? "on" : ""}
+              style={{ marginLeft: 6 }}
+              onClick={() => setShowValues((v) => !v)}
+              title="Show live current on lines and voltage/power at nodes (SCADA-style readings)"
+            >
+              Values
+            </button>
+          )}
         </div>
         {layout === "map" ? (
           <MapDiagram topo={topo} latest={latest} />
         ) : (
-          <GridDiagram topo={topo} latest={latest} layout={layout === "tree" ? "tree" : "geographic"} showMap={showMap} />
+          <GridDiagram topo={topo} latest={latest} layout={layout === "tree" ? "tree" : "geographic"}
+                       showMap={showMap} showValues={showValues} />
         )}
       </div>
 

@@ -11,6 +11,7 @@ interface Props {
   latest: StepResult | null;
   layout?: "geographic" | "tree";
   showMap?: boolean;
+  showValues?: boolean;
 }
 
 interface Tip {
@@ -19,7 +20,7 @@ interface Tip {
   lines: string[];
 }
 
-export default function GridDiagram({ topo, latest, layout = "geographic", showMap = true }: Props) {
+export default function GridDiagram({ topo, latest, layout = "geographic", showMap = true, showValues = false }: Props) {
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
   const [tip, setTip] = useState<Tip | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -96,6 +97,11 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
   const liveBus = useMemo(() => {
     const m = new Map<number, number>();
     latest?.buses.forEach((b) => m.set(b.index, b.vm_pu));
+    return m;
+  }, [latest]);
+  const liveBusFull = useMemo(() => {
+    const m = new Map<number, StepResult["buses"][number]>();
+    latest?.buses.forEach((b) => m.set(b.index, b));
     return m;
   }, [latest]);
 
@@ -244,6 +250,30 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
             />
           );
         })}
+
+        {/* SCADA value indicators: current on lines, voltage + power at nodes */}
+        {showValues && latest && (
+          <g pointerEvents="none">
+            {topo.lines.map((ln) => {
+              const a = pos.get(ln.from_bus);
+              const b = pos.get(ln.to_bus);
+              const live = liveLine.get(ln.id);
+              if (!a || !b || !live) return null;
+              return (
+                <ValueBox key={`vl${ln.id}`} x={(a.x + b.x) / 2} y={(a.y + b.y) / 2}
+                  rows={[`${fmt(live.i_ka * 1000, 0)} A`]} />
+              );
+            })}
+            {topo.buses.map((bus) => {
+              const p = pos.get(bus.id);
+              const lb = liveBusFull.get(bus.id);
+              if (!p || !lb) return null;
+              const rows = [`${fmt(lb.vm_pu, 3)} pu`];
+              if (Math.abs(lb.p_mw) > 1e-4) rows.push(`${fmt(lb.p_mw * 1000, 0)} kW`);
+              return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} accent />;
+            })}
+          </g>
+        )}
       </svg>
 
       <button className="ghost" style={{ position: "absolute", top: 10, right: 10 }} onClick={reset}>
@@ -259,5 +289,24 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
         </div>
       )}
     </>
+  );
+}
+
+// A small SCADA-style value box (dark rectangle + monospace reading) drawn in SVG
+// user units, so it scales with zoom — like the indicators on a control-room board.
+function ValueBox({ x, y, rows, accent }: { x: number; y: number; rows: string[]; accent?: boolean }) {
+  const w = Math.max(...rows.map((r) => r.length)) * 5.4 + 6;
+  const h = rows.length * 10 + 3;
+  return (
+    <g transform={`translate(${x + 2},${y - h / 2})`}>
+      <rect width={w} height={h} rx={2} fill="#0b0d11" opacity={0.82} stroke="#33414f" strokeWidth={0.4} />
+      {rows.map((r, i) => (
+        <text key={i} x={3} y={9 + i * 10} fontSize={8.5}
+          style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+          fill={accent ? "#8fe3c8" : "#74c0fc"}>
+          {r}
+        </text>
+      ))}
+    </g>
   );
 }
