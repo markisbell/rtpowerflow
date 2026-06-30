@@ -190,6 +190,8 @@ class Simulator:
         for ln in lines_out:
             i = int(ln["id"])
             ln["geometry"] = specs[i].geometry if i < len(specs) else None
+            # normally-open ring ties are laid but out of service → drawn open on the map
+            ln["in_service"] = bool(net.line.at[i, "in_service"])
         return {
             "name": net.name,
             "f_hz": float(net.f_hz),

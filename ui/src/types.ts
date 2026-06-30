@@ -97,6 +97,7 @@ export interface TopoLine {
   to_bus: number;
   length_km: number;
   geometry?: [number, number][] | null; // [lon,lat] polyline (OSM-routed cables)
+  in_service?: boolean;                 // false = normally-open ring tie (drawn dashed)
 }
 export interface TopoTrafo {
   id: number;

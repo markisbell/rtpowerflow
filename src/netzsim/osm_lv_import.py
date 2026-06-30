@@ -34,6 +34,8 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
             "r_ohm_per_km": l["r_ohm_per_km"], "x_ohm_per_km": l["x_ohm_per_km"],
             "c_nf_per_km": l.get("c_nf_per_km", 0.0), "max_i_ka": l["max_i_ka"],
             "parallel": int(l.get("parallel", 1)), "geometry": l.get("geometry"),
+            # normally-open ring ties (closed=false) are laid but out of service
+            "in_service": bool(l.get("closed", True)),
         })
     lines_doc = {"lines": line_specs, "transformers": []}
 

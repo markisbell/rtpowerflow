@@ -63,8 +63,11 @@ export default function MapDiagram({ topo, latest }: Props) {
         if (!a || !c) continue;
         latlngs = [a, c];
       }
-      const pl = L.polyline(latlngs, { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
-      pl.bindTooltip(`Line ${ln.name ?? ln.id}`);
+      const open = ln.in_service === false; // normally-open ring tie (suburban)
+      const pl = L.polyline(latlngs, open
+        ? { color: "#888", weight: 2, opacity: 0.85, dashArray: "5 7" }
+        : { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
+      pl.bindTooltip(open ? `Line ${ln.name ?? ln.id} · normally open` : `Line ${ln.name ?? ln.id}`);
       lineRef.current.set(ln.id, pl);
     }
 
@@ -136,7 +139,9 @@ export default function MapDiagram({ topo, latest }: Props) {
     if (!latest || !mapRef.current) return;
     const maxIka = Math.max(1e-6, ...latest.lines.map((l) => l.i_ka));
     const lineLive = new Map(latest.lines.map((l) => [l.index, l]));
+    const openLines = new Set(topo.lines.filter((l) => l.in_service === false).map((l) => l.id));
     for (const [id, pl] of lineRef.current) {
+      if (openLines.has(id)) continue; // keep normally-open ties dashed grey
       const live = lineLive.get(id);
       pl.setStyle({ color: jetColor(live?.loading_percent), weight: live ? currentWidth(live.i_ka, maxIka) : 1.5 });
     }
