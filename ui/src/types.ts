@@ -16,7 +16,6 @@ export interface GridListItem {
 
 export interface GridsResponse {
   available: boolean;
-  archive: string;
   grids: GridListItem[];
 }
 

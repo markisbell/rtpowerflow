@@ -8,6 +8,8 @@ venv/
 dist/
 build/
 results/
+# osmnx overpass cache left by earlier in-repo generation runs
+cache/
 
 # Large input archives (hundreds of MB) — keep out of git. The LPG binaries
 # extract into the pylpg package; data/lpg_library/ holds the cached profiles.

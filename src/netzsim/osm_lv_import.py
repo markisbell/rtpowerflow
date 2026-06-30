@@ -13,7 +13,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from .grid_import.xlsx import GridInputs, _daily
+from .grid_inputs import GridInputs, _daily
 
 
 def convert_osm_lv(path: str | Path, *, name: str | None = None,

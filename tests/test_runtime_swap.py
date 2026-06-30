@@ -92,8 +92,8 @@ def test_grid_library_catalog_lists_and_converts_scopes():
     assert any("n_bus" in it for it in cat.list())
 
 
-def test_absent_archive_is_empty_not_an_error():
-    cat = GridCatalog(str(ROOT / "does-not-exist.zip"))
+def test_absent_source_is_empty_not_an_error():
+    cat = GridCatalog(ding0_dir=str(ROOT / "does-not-exist"))
     assert cat.available is False
     assert cat.list() == []
     assert cat.has("anything") is False

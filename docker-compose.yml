@@ -11,16 +11,14 @@ services:
       NETZSIM_AUTOSTART: "true"
       NETZSIM_WARM_START: "true"
       NETZSIM_LOG_LEVEL: info
-      # Grid catalog (served by /grids) + cached LPG load library (/loadgen)
-      NETZSIM_GRID_ARCHIVE: /app/grids.zip
+      # Grid catalog (served by /grids) + cached LPG load library (/loadgen).
+      # The grid dataset is a committed snapshot under ./data (see data/DATASET.md),
+      # produced by the separate `gridgen` project.
       NETZSIM_LPG_LIBRARY_DIR: /app/data/lpg_library
       NETZSIM_CORS_ORIGINS: "*"
     volumes:
       # Mount your own dataset to override the bundled sample data:
       - ./data:/app/data
-      # Importable grid models (large; kept out of the image). Optional —
-      # without it /grids is simply empty.
-      - "./European Archetpye Distribution Grid Models.zip:/app/grids.zip:ro"
     restart: unless-stopped
 
   # --- Interactive UI (React/Vite served by nginx) ---------------------- #

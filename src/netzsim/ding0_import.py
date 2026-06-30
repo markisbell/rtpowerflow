@@ -19,7 +19,7 @@ from typing import Any
 
 import pandas as pd
 
-from .grid_import.xlsx import GridInputs, _daily
+from .grid_inputs import GridInputs, _daily
 
 
 def _num(v, default=0.0):

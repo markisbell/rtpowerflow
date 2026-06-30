@@ -57,10 +57,9 @@ EchtzeitNetzSimulator/
 │   ├── generation.json
 │   └── substation.json
 ├── scripts/
-│   ├── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
-│   ├── import_grid.py            # CLI: European-Archetype xlsx -> 5 input JSON
-│   └── build_lpg_library.py      # CLI: run LPG -> data/lpg_library/ (needs pylpg)
-├── src/netzsim/              # the simulation package
+│   └── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
+│                                 # (grid GENERATION lives in the separate ../gridgen repo)
+├── src/netzsim/              # the simulation package (pure CONSUMER — no generation)
 │   ├── config.py             # pydantic-settings (env NETZSIM_*)
 │   ├── models.py             # pydantic schemas for the 5 input files
 │   ├── data_loader.py        # read + cross-validate inputs -> InputData
@@ -69,10 +68,10 @@ EchtzeitNetzSimulator/
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
 │   ├── state.py              # latest + history ring buffer + WS broadcast
 │   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + monitor
-│   ├── grid_import/          # xlsx grid-model -> netzsim inputs (European Archetype)
-│   │   └── xlsx.py           # convert_workbook / convert_from_zip / write_inputs
-│   ├── grid_catalog.py       # list/convert grids for /grids (xlsx archetypes + ding0)
+│   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
+│   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM)
 │   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
+│   ├── osm_lv_import.py      # street-routed LV grid JSON (gridformat) -> inputs
 │   ├── layout.py             # bus coords: length-aware geographic (x,y) + tidy tree (tx,ty)
 │   ├── loadgen/              # cached LPG library reader + assignment (runtime, no pylpg)
 │   │   ├── library.py        # LoadLibrary: read data/lpg_library/{index,*}.json
@@ -80,11 +79,12 @@ EchtzeitNetzSimulator/
 │   │   ├── pv.py             # assign_pv: synthetic clear-sky rooftop PV (sgen)
 │   │   └── ev.py             # assign_ev: synthetic additive EV home-charging loads
 │   └── main.py               # uvicorn entry point (console script: `netzsim`)
-├── data/lpg_library/         # committed LPG profiles (index.json + {CHRxx}.json)
-├── data/ding0_grids/         # committed pre-generated ding0 grids (eDisGo CSV, real lat/lon)
+├── data/                     # committed grid dataset (see data/DATASET.md) — from ../gridgen
+│   ├── lpg_library/          # committed LPG profiles (index.json + {CHRxx}.json)
+│   ├── ding0_grids/          # committed ding0 MV grids (eDisGo CSV, real lat/lon)
+│   └── lv_osm/               # committed street-routed LV grids (gridformat JSON)
 ├── tests/
 │   ├── test_simulator.py     # smoke tests (load/build/solve/day-wrap)
-│   ├── test_grid_import.py   # converter tests (+ real-archetype end-to-end)
 │   ├── test_runtime_swap.py  # grid catalog + engine.reconfigure (live grid swap)
 │   ├── test_loadgen.py       # LPG library reader + assignment
 │   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
@@ -183,9 +183,8 @@ default to zeros if omitted.
 | POST | `/control/pause` | Pause |
 | POST | `/control/resume` | Resume |
 | POST | `/control/seek?step=N` | Jump to a step |
-| GET | `/grids` | List importable grids from the archive (`available`, `grids[]`) |
+| GET | `/grids` | List importable grids from the committed dataset (`available`, `grids[]`) |
 | GET | `/grids/{id}` | Net-free topology preview of a catalog grid (+ converter `notes`) |
-| GET | `/grids/{id}/thumbnail` | PNG of the grid (from the archive), if present |
 | GET | `/loadgen/archetypes` | List cached LPG archetypes (`available`, `ev_available`, metadata) |
 | POST | `/loadgen/assign` | Body `{grid_id, policy}` → preview net curve (load + EV − PV) + assignment |
 | POST | `/config/apply` | Body `{grid_id, loadgen?}` → convert (+ LPG loads, EV, PV) + `engine.reconfigure` |
@@ -208,9 +207,9 @@ transformer).
 netzsim (prefix `NETZSIM_`, loaded via pydantic-settings, `.env` supported — see
 `.env.example`): `DATA_DIR`, `STEP_INTERVAL_SECONDS` (default 1.0),
 `STEPS_PER_DAY` (1440), `AUTOSTART` (true), `HISTORY_SIZE` (1440), `WARM_START`
-(true), `HOST`, `PORT` (8000), `LOG_LEVEL`, `GRID_ARCHIVE` (the importable-grid
-zip, default the European-Archetype archive), `GRID_FILTER` (path substring,
-default `Low Voltage Network Models/03_LV`), `CORS_ORIGINS` (default `*`),
+(true), `HOST`, `PORT` (8000), `LOG_LEVEL`, `DING0_DIR` (committed ding0 grids,
+default `./data/ding0_grids`), `GRID_LIBRARY` (manifest, default
+`./data/grid_library.json`), `CORS_ORIGINS` (default `*`),
 `LPG_LIBRARY_DIR` (cached household profiles, default `./data/lpg_library`).
 
 > Note: `STEPS_PER_DAY` exists in config but the simulator currently derives steps
@@ -269,8 +268,9 @@ cd ui && npm install && npm run dev          # http://localhost:5173 (proxies to
 docker compose up --build
 # ui :8080 · netzsim :8000 · influxdb :8086 (admin/netzsim-admin) · grafana :3000 (admin/admin)
 ```
-The `netzsim` service mounts the grid archive zip read-only at `/app/grids.zip`
-so `/grids` is populated; the LPG library is under the mounted `./data`.
+The `netzsim` service serves grids from the committed dataset under the mounted
+`./data` (ding0 MV grids, street-routed LV grids, the manifest, the LPG library —
+see `data/DATASET.md`); no external archive is needed.
 
 **Tests:**
 ```bash
@@ -342,12 +342,7 @@ provisioned datasource + dashboard, all in compose.
   `simulator._r`, which also maps **non-finite** floats (NaN/±Inf) to `null`.
   Without this, Python's `json` emits the literal `NaN`, which browsers'
   `JSON.parse` reject → the WS client silently drops every frame. Keep all result
-  floats going through `_r`. (The grid converter also reconnects isolated feeders
-  so buses don't go NaN in the first place — see below — but `_r` is the net.)
-- **Island repair**: `grid_import` reconnects slack-less feeder islands (a
-  workbook data gap) to the LV busbar via a synthetic tie line
-  (`reconnect_islands`, default on). Recorded in `GridInputs.notes`; only
-  `network_10` needed it across the 25 LV grids.
+  floats going through `_r`.
 - **Collector resilience**: it waits for both services' `/health`, retries on
   failure, and skips writes until the first step is solved (`/state` 404).
 - **ding0 geo grids & the map**: `data/ding0_grids/` holds pre-generated ding0
@@ -359,53 +354,33 @@ provisioned datasource + dashboard, all in compose.
   basemap by default (Light/Dark toggle), lines on a **jet** colormap by loading,
   buses on a **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
   colorbars — all animating from live results. Colormaps live in `scales.ts`
-  (`jetColor`, `voltageReds`, `JET_GRADIENT`, `REDS_GRADIENT`). Non-geo (xlsx)
-  grids fall back to the synthetic Geographic/Schematic SVG views (which keep the
-  discrete traffic-light scales).
-- **ding0 live generation WORKS over the OEP** (no local Postgres needed). Use
-  `scripts/generate_ding0_grid.py <district_id ...>` with the Python-3.9 ding0
-  conda env (`C:\Users\bell\ding0mamba\python.exe`) + a valid `~/.egoio`
-  `[oedb]` token. It writes `data/ding0_grids/ding0_oep_<id>/` (auto-discovered by
-  the catalog). The earlier "HTTP 400" was **not** a PostGIS-over-REST limit — it
-  was two ding0/OEP bugs the script works around without editing site-packages:
-  (1) ding0 passes `ST_Transform`'s SRID as a *string* (`'4326'`) which the OEP
-  parser rejects — coerce it to int in the request body; (2) the generator
-  materialized views `supply.ego_dp_*_powerplant_sq_mview` were dropped from the
-  OEP (404) — skip `import_generators` (netzsim layers its own PV/EV). Verified:
-  districts 1605 (14 buses) and 1003 (4395 buses) generate in seconds and solve.
-  See `docs/DING0_GENERATION.md`. (Other Py-3.9 envs `C:\Users\bell\{python39,
-  ding0env}` are leftover and unused.)
-- **Curated grid library & the generator UI**: the Grid page is a *generator
-  picker* — choose **voltage** (MV / LV), **area character** (rural / suburban /
-  urban) and **approximate node count** (10–500) — not a list of the old LV
-  archetypes (those are **no longer scanned**). It is backed by a committed
-  library: `scripts/build_grid_library.py` (ding0 conda env) selects districts by
-  OEP metadata (population density → character; load-area count → size), generates
-  them, and writes `data/grid_library.json` — a manifest of entries
-  `{id, name, voltage, character, nodes, source_dir, scope, lv_grid_id?}`.
-  `GridCatalog` is **manifest-driven** (`library_manifest`, config `grid_library`);
-  with no manifest it falls back to listing raw ding0 dirs. `convert_ding0_csv`
-  gained a `scope`: `"mv"` keeps the MV graph and folds each LV grid into one
-  lumped load at its feeding MV bus; `"lv"` extracts one standalone 0.4 kV grid fed
-  at its busbar; `"full"` is the whole district (default). One generated district
-  thus yields several library entries (1 MV + a few LV by size bucket).
-- **Street-routed LV grids (OSM)**: ding0 0.2.1 does **not** geo-reference LV grids
-  (its LV builder is a statistical cable-string model with no coordinates; `osmnx`
-  is never called, and there is no published street-routed dataset). So LV library
-  grids are **rebuilt geographically from OpenStreetMap** by
-  `scripts/build_lv_osm_grids.py` (ding0 conda env, needs internet): it takes the
-  LV station + load count from the committed ding0 grid, places loads at OSM
-  **building footprints**, routes a cable **backbone along the streets**
-  (shortest-path tree from the station, sized for downstream load via parallel
-  cables) and taps each building onto the nearest road point. Output is a small
-  JSON per grid under `data/lv_osm/<entry_id>.json`; each line carries a
-  `geometry` polyline. Manifest LV entries gain `osm_grid` (path) which
-  `GridCatalog.get_inputs` dispatches to `netzsim.osm_lv_import.convert_osm_lv`
-  (overrides `scope`). **Line geometry** flows `LineSpec.geometry` →
-  `simulator.topology()` (attached by line index) → `/network` → `MapDiagram`,
-  which draws each cable as a Leaflet polyline along the road (else a straight
-  segment). MV grids are unaffected (ding0 already geo-references them). See
-  `[[lv-grid-geo-next-step]]` for the decision history.
+  (`jetColor`, `voltageReds`, `JET_GRADIENT`, `REDS_GRADIENT`). The default 5-bus
+  sample (no geo) falls back to the synthetic Geographic/Schematic SVG views
+  (which keep the discrete traffic-light scales).
+- **Grids come from the separate `gridgen` project** (`../gridgen`), NOT from
+  netzsim. netzsim is a pure consumer: it never runs ding0/OSM/OEP. The committed
+  dataset under `data/` (see `data/DATASET.md`) is a snapshot — ding0 MV grids
+  (eDisGo CSV, real lon/lat), street-routed LV grids (gridformat JSON), and the
+  `grid_library.json` manifest. The OEP work-arounds, the OSM cable routing +
+  cable-cabinet logic, and curated-library selection all live in `gridgen` now (see
+  `gridgen/docs/`). To refresh the dataset, regenerate with `gridgen` and re-commit
+  the snapshot + bump the pin in `data/DATASET.md`. See `docs/GRIDGEN_EXTRACTION.md`.
+- **The Grid page is a generator *picker*** driven by the manifest — choose
+  **voltage** (MV / LV), **area character** (rural / suburban / urban) and
+  **approximate node count**. `GridCatalog` is **manifest-driven**
+  (`library_manifest`, config `grid_library`); with no manifest it falls back to
+  listing raw ding0 dirs under `ding0_dir`. (The old European-Archetype xlsx
+  archetypes are gone — that converter moved out with the rest of generation.)
+- **netzsim's importers** translate the dataset to `GridInputs`:
+  `ding0_import.convert_ding0_csv` has a `scope` — `"mv"` keeps the MV graph and
+  folds each LV grid into one lumped load at its feeding MV bus; `"lv"` extracts a
+  standalone 0.4 kV grid fed at its busbar; `"full"` is the whole district. Manifest
+  LV entries carry an `osm_grid` path, which `GridCatalog.get_inputs` dispatches to
+  `osm_lv_import.convert_osm_lv` (overrides `scope`). **Line geometry** flows
+  `LineSpec.geometry` → `simulator.topology()` (attached by line index) →
+  `/network` → `MapDiagram`, which draws each cable as a Leaflet polyline along the
+  road (else a straight segment); cable **cabinets** (`BusSpec.kind="cabinet"`) →
+  topology `cabinet_buses` → green circles on the map. See `[[lv-grid-geo-next-step]]`.
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```

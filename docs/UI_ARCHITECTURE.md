@@ -5,6 +5,15 @@
 > simulation**, and **visualize power flow** (branch current + transformer loading).
 > Companion to [`../CLAUDE.md`](../CLAUDE.md). Status: **plan, not yet implemented.**
 
+> ⚠️ **Partly superseded (historical).** This captures iteration-2's *plan*. Grid
+> **generation** has since been extracted to the separate `gridgen` project (see
+> [`GRIDGEN_EXTRACTION.md`](GRIDGEN_EXTRACTION.md)) and netzsim is now a pure
+> consumer: the European-Archetype xlsx converter (`grid_import/`, §4), its
+> `import_grid.py` CLI, the `/grids/{id}/thumbnail` endpoint and the `*.zip` archive
+> (§1a) are **gone**, and `build_lpg_library.py` (§5) now lives in `gridgen`. The
+> grid file format the UI consumes is frozen in `gridgen/docs/FORMAT.md`. Read this
+> doc for the UI design history; read [`../CLAUDE.md`](../CLAUDE.md) for current state.
+
 ## 0. Locked decisions
 
 | Topic | Decision |

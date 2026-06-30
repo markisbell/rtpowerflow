@@ -5,14 +5,17 @@
 > applications (other simulators, GIS, planning studies, a generation service)
 > independent of the realtime UI.
 >
-> **Status:** **Phases 0 & 1 done** — the format contract *and* the generator now
-> live in their own repo at `../gridgen` (separate `.git`). Phase 0: the
-> `gridformat` package (spec, JSON Schemas, read/write/validate). Phase 1: the
-> `gridgen` package + CLI (`mv` / `library` / `lv-osm` / `lpg`) writing the
-> contract, with its conda env spec — verified end-to-end (`gridgen lv-osm` builds
-> a street-routed grid that validates against the schema). Decision #1 settled:
-> **separate repo**. **netzsim still has its own copies** of the generation scripts
-> + data snapshot — removing those is **Phase 2** (below).
+> **Status:** **Phases 0, 1 & 2 done.** The format contract *and* the generator
+> live in their own repo at `../gridgen` (separate `.git`); **netzsim is now a pure
+> consumer**. Phase 0: the `gridformat` package. Phase 1: the `gridgen` package +
+> CLI (`mv` / `library` / `lv-osm` / `lpg`). Phase 2: removed all generation from
+> netzsim (the four scripts, the legacy `import_grid.py` + `grid_import/` xlsx
+> converter, the `*.zip` archive + `/grids/{id}/thumbnail` endpoint) and pinned the
+> committed dataset (`data/DATASET.md`). Decisions settled: **#1 separate repo**,
+> **#3 files are the contract** (netzsim keeps its own `GridInputs` model in
+> `grid_inputs.py`), **#4 committed snapshot**. Remaining: **Phase 3** (distribute
+> `gridgen` + release the library as a versioned data artifact; `gridformat`
+> converters).
 
 ---
 
@@ -125,12 +128,17 @@ Read by `grid_catalog.GridCatalog` (manifest-driven).
 - Still TODO here in **netzsim** (Phase 2): the legacy `scripts/import_grid.py`
   coupling and the now-duplicated generation scripts are removed below.
 
-### Phase 2 — netzsim becomes a pure consumer  *(~½ day)*
-- Keep `ding0_import`, `osm_lv_import`, and the manifest-driven `grid_catalog` in
-  netzsim as the **loader** (they already only touch `GridInputs`).
-- Remove the generation scripts from netzsim's `scripts/`.
-- netzsim reads a **dataset** pinned by version (committed snapshot, or fetched —
-  Phase 3), with no knowledge of how it was produced.
+### Phase 2 — netzsim becomes a pure consumer  ✅ DONE
+- Kept `ding0_import`, `osm_lv_import`, and the manifest-driven `grid_catalog` as
+  the **loader**; extracted the neutral `GridInputs` model + `_daily` into
+  `src/netzsim/grid_inputs.py` (was buried in the now-deleted xlsx converter).
+- Removed all generation from netzsim: the four scripts, `scripts/import_grid.py`,
+  the `src/netzsim/grid_import/` xlsx converter, the dead European-Archetype archive
+  path in `grid_catalog` (`GRID_ARCHIVE`/`GRID_FILTER` config, the `grids.zip`
+  compose mount, the `/grids/{id}/thumbnail` endpoint) and `tests/test_grid_import.py`.
+- netzsim reads a **committed snapshot** pinned in `data/DATASET.md` (producer +
+  `gridformat` version), with no knowledge of how it was produced. 23 tests pass;
+  the catalog loads 23 grids and both MV + LV conversion paths still solve.
 
 ### Phase 3 — Distribute for reuse  *(ongoing)*
 - Publish `gridgen` (pip-installable in its env) and release the grid library as a

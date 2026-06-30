@@ -17,9 +17,7 @@ class Settings(BaseSettings):
     # Data
     data_dir: Path = Path("./data")
 
-    # Grid catalog (archive of importable grid models, served by /grids)
-    grid_archive: Path = Path("European Archetpye Distribution Grid Models.zip")
-    grid_filter: str = "Low Voltage Network Models/03_LV"
+    # Grid catalog: a committed dataset produced by the separate `gridgen` project.
     # Pre-generated ding0 grids (eDisGo CSV export, with real lat/lon)
     ding0_dir: Path = Path("./data/ding0_grids")
     # Curated grid library manifest (MV/LV · size · rural/suburban/urban)

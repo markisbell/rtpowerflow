@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from .config import settings
@@ -64,8 +64,7 @@ async def lifespan(app: FastAPI):
     runtime.engine = RealtimeEngine(
         simulator, runtime.store, settings.step_interval_seconds
     )
-    runtime.catalog = GridCatalog(settings.grid_archive, settings.grid_filter,
-                                  ding0_dir=settings.ding0_dir,
+    runtime.catalog = GridCatalog(ding0_dir=settings.ding0_dir,
                                   library_manifest=settings.grid_library)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
@@ -153,7 +152,6 @@ async def control_seek(step: int = Query(..., ge=0)):
 def grids():
     return {
         "available": runtime.catalog.available,
-        "archive": str(settings.grid_archive),
         "grids": runtime.catalog.list(),
     }
 
@@ -164,14 +162,6 @@ def grid_preview(grid_id: str):
         raise HTTPException(404, f"unknown grid '{grid_id}'")
     g = runtime.catalog.get_inputs(grid_id, steps=settings.steps_per_day)
     return preview(g)
-
-
-@app.get("/grids/{grid_id}/thumbnail")
-def grid_thumbnail(grid_id: str):
-    png = runtime.catalog.thumbnail_bytes(grid_id)
-    if png is None:
-        raise HTTPException(404, "no thumbnail for this grid")
-    return Response(content=png, media_type="image/png")
 
 
 # --------------------------------------------------------------------------- #
