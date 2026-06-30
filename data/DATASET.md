@@ -8,21 +8,23 @@ ding0/OSM/OEP dependency and never regenerates them at runtime.
 | Artifact | What it is | Read by |
 |----------|-----------|---------|
 | `ding0_grids/<id>/` | MV grid districts, eDisGo CSV (real lon/lat) — 7 districts | `netzsim.ding0_import.convert_ding0_csv` |
-| `lv_osm/<id>.json` | Street-routed LV grids, `gridformat` JSON (cables along roads, cable cabinets) — 17 grids | `netzsim.osm_lv_import.convert_osm_lv` |
-| `grid_library.json` | Manifest the `/grids` picker is driven by — 23 entries (MV/LV · size · rural/suburban/urban) | `netzsim.grid_catalog.GridCatalog` |
+| `lv_osm/<id>.json` | Street-routed LV grids, `gridformat` JSON (cables along roads, cable cabinets) — 14 grids | `netzsim.osm_lv_import.convert_osm_lv` |
+| `grid_library.json` | Manifest the `/grids` picker is driven by — 20 entries (MV/LV · size · rural/suburban/urban) | `netzsim.grid_catalog.GridCatalog` |
 | `lpg_library/` | Cached LPG household load profiles (index + per-archetype variants) | `netzsim.loadgen.library.LoadLibrary` |
 | `grid_structure.json`, `lines.json`, `load.json`, `generation.json`, `substation.json` | The default 5-bus sample the simulator boots with (from `scripts/generate_sample_data.py`) | `netzsim.data_loader` |
 
 ## Pinned version
 
-- **Producer:** `gridgen` @ `2968377` — see `../gridgen` (`gridgen --lib … {mv|library|lv-osm|lpg}`).
+- **Producer:** `gridgen` @ `dc6fada` — see `../gridgen` (`gridgen --lib … {mv|library|lv-osm|lpg}`).
 - **Format:** `gridformat` v0.1 (`../gridgen/docs/FORMAT.md`).
 
 The LV grids carry realistic NAYY cable types (sized by cross-section + a feeder
-voltage-drop budget). Main lines are a few **non-branching trunk feeders** that
-follow the streets out from the LV busbar; consumers connect to cable cabinets by
-laterals. Character: **rural** radial, **suburban** with normally-open ring ties
-(`closed:false`), **urban** meshed. Every grid passes `gridgen check` (structural
+voltage-drop budget). Main cables follow the streets out from the LV busbar,
+**branching only at cable cabinets** (junction boxes); consumers connect to the
+nearest cabinet by short laterals (≤ ~40 m). Character: **rural** radial,
+**suburban** with normally-open ring ties (`closed:false`), **urban** meshed.
+`gridgen` **drops** grids whose OSM streets are too coarse to keep laterals short
+(3 were dropped here, leaving 14). Every grid passes `gridgen check` (structural
 E-Check); `tests/test_echeck.py` re-checks them electrically (solves within
 EN 50160-style ±10 % / no overload).
 
