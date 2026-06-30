@@ -5,12 +5,14 @@
 > applications (other simulators, GIS, planning studies, a generation service)
 > independent of the realtime UI.
 >
-> **Status:** **Phase 0 done** — the format contract now lives in its own repo at
-> `../gridgen` (sibling to this one, separate `.git`), as the `gridformat` package:
-> spec (`gridgen/docs/FORMAT.md`), JSON Schemas, a stdlib-only read/write/validate
-> library, and passing round-trip + schema tests. Decision #1 settled: **separate
-> repo**. Next: **Phase 1** (move the generation scripts into `gridgen`). No
-> generation code has moved yet; netzsim is unchanged.
+> **Status:** **Phases 0 & 1 done** — the format contract *and* the generator now
+> live in their own repo at `../gridgen` (separate `.git`). Phase 0: the
+> `gridformat` package (spec, JSON Schemas, read/write/validate). Phase 1: the
+> `gridgen` package + CLI (`mv` / `library` / `lv-osm` / `lpg`) writing the
+> contract, with its conda env spec — verified end-to-end (`gridgen lv-osm` builds
+> a street-routed grid that validates against the schema). Decision #1 settled:
+> **separate repo**. **netzsim still has its own copies** of the generation scripts
+> + data snapshot — removing those is **Phase 2** (below).
 
 ---
 
@@ -110,14 +112,18 @@ Read by `grid_catalog.GridCatalog` (manifest-driven).
 - Producer and consumer can now evolve independently. netzsim's existing
   `tests/test_osm_lv.py` / `test_ding0_import.py` still cover `import → solve`.
 
-### Phase 1 — Carve out `gridgen`  *(~1–2 days)*
-- New package/repo with `pyproject.toml` + the `ding0_env.yml` conda spec.
-- Move the four generation scripts in as a package with a CLI:
-  `gridgen mv <id...>`, `gridgen library`, `gridgen lv-osm`, `gridgen lpg`.
-- Cut the one real coupling: drop or rewrite `scripts/import_grid.py` (legacy
-  archetype converter that imports netzsim).
-- Carry over `docs/DING0_GENERATION.md` (OEP work-arounds) and the
-  `[[lv-grid-geo-next-step]]` knowledge (LV is rebuilt from OSM).
+### Phase 1 — Carve out `gridgen`  ✅ DONE (in `../gridgen`)
+- `gridgen` package with `pyproject.toml` (one distribution: `gridformat` +
+  `gridgen`), a `gridgen` console script, and `ding0_env.yml`.
+- The four generators moved in as modules + a unified CLI
+  (`gridgen --lib DIR {mv|library|lv-osm|lpg}`): `oep` (shared OEP work-arounds),
+  `mv`, `library`, `lv_osm` (writes via `gridformat.dump_grid`), `lpg`. Backends
+  load lazily, so the package imports and the CLI help work without ding0.
+- All paths are now relative to a `--lib` directory (no hardcoded netzsim paths).
+- Verified: `gridgen lv-osm` in the conda env builds a street-routed grid that
+  validates against the gridformat schema; 7 repo tests pass.
+- Still TODO here in **netzsim** (Phase 2): the legacy `scripts/import_grid.py`
+  coupling and the now-duplicated generation scripts are removed below.
 
 ### Phase 2 — netzsim becomes a pure consumer  *(~½ day)*
 - Keep `ding0_import`, `osm_lv_import`, and the manifest-driven `grid_catalog` in
