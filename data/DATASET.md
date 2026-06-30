@@ -15,12 +15,15 @@ ding0/OSM/OEP dependency and never regenerates them at runtime.
 
 ## Pinned version
 
-- **Producer:** `gridgen` @ `8f49b1a` — see `../gridgen` (`gridgen --lib … {mv|library|lv-osm|lpg}`).
+- **Producer:** `gridgen` @ `2d7467c` — see `../gridgen` (`gridgen --lib … {mv|library|lv-osm|lpg}`).
 - **Format:** `gridformat` v0.1 (`../gridgen/docs/FORMAT.md`).
 
-The LV grids carry realistic NAYY cable types (sized by cross-section) and a
-character-dependent topology: **rural** radial, **suburban** with normally-open
-ring ties (`closed:false`), **urban** meshed.
+The LV grids carry realistic NAYY cable types (sized by cross-section + a feeder
+voltage-drop budget) and a character-dependent topology: main lines are
+**non-branching feeder strings** from a central transformer — **rural** radial,
+**suburban** with normally-open ring ties (`closed:false`), **urban** meshed.
+Every grid passes `gridgen check` (structural E-Check); `tests/test_echeck.py`
+re-checks them electrically (solves within EN 50160-style ±10 % / no overload).
 
 To refresh the dataset, regenerate it with `gridgen` into a library directory and
 copy `ding0_grids/`, `lv_osm/`, `grid_library.json` (and `lpg_library/`) here, then
