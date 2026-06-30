@@ -5,9 +5,12 @@
 > applications (other simulators, GIS, planning studies, a generation service)
 > independent of the realtime UI.
 >
-> **Status:** planning. Nothing has been moved yet. This document is the roadmap;
-> execute it phase by phase. Start with **Phase 0** (freeze the format), which is
-> safe and reversible.
+> **Status:** **Phase 0 done** — the format contract now lives in its own repo at
+> `../gridgen` (sibling to this one, separate `.git`), as the `gridformat` package:
+> spec (`gridgen/docs/FORMAT.md`), JSON Schemas, a stdlib-only read/write/validate
+> library, and passing round-trip + schema tests. Decision #1 settled: **separate
+> repo**. Next: **Phase 1** (move the generation scripts into `gridgen`). No
+> generation code has moved yet; netzsim is unchanged.
 
 ---
 
@@ -96,14 +99,16 @@ Read by `grid_catalog.GridCatalog` (manifest-driven).
 
 ## 4. The phased path
 
-### Phase 0 — Freeze the contract  *(do this first; ~½ day, no code moves)*
-- Write the schema for the three artifacts (§2) as a versioned spec + a JSON
-  Schema for the OSM-LV JSON and the manifest.
-- Add a **round-trip test**: `write → read → identical` for the OSM-LV JSON, and
-  an `import → solve` smoke test for one of each artifact (already partly covered
-  by `tests/test_osm_lv.py`, `tests/test_ding0_import.py`).
-- Outcome: producer and consumer can now evolve independently against a stable
-  interface. Reversible — nothing has been restructured.
+### Phase 0 — Freeze the contract  ✅ DONE (in `../gridgen`)
+- Created the standalone repo `../gridgen` with the `gridformat` package
+  (`pyproject.toml`, stdlib-only, `jsonschema` optional).
+- Spec: `gridgen/docs/FORMAT.md` (the three artifacts of §2); JSON Schemas for the
+  grid JSON and the manifest under `gridgen/src/gridformat/schemas/`.
+- `Grid/Bus/Line/Load` model + `load_grid`/`dump_grid`/`load_manifest`/`validate_*`.
+- Tests: round-trip (`write → read → identical`), tree+geometry+cabinet structure,
+  manifest load, and schema validation — all passing against a real example grid.
+- Producer and consumer can now evolve independently. netzsim's existing
+  `tests/test_osm_lv.py` / `test_ding0_import.py` still cover `import → solve`.
 
 ### Phase 1 — Carve out `gridgen`  *(~1–2 days)*
 - New package/repo with `pyproject.toml` + the `ding0_env.yml` conda spec.
