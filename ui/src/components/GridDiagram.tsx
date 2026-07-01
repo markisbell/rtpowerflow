@@ -9,11 +9,11 @@ const M = 36;
 interface Props {
   topo: Topology;
   latest: StepResult | null;
-  layout?: "geographic" | "tree";
-  showMap?: boolean;
   showValues?: boolean;
   onSelectBus?: (bus: number) => void;
   selectedBus?: number | null;
+  onSelectLine?: (line: number) => void;
+  selectedLine?: number | null;
 }
 
 interface Tip {
@@ -22,68 +22,20 @@ interface Tip {
   lines: string[];
 }
 
-export default function GridDiagram({ topo, latest, layout = "geographic", showMap = true, showValues = false, onSelectBus, selectedBus = null }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBus = null, onSelectLine, selectedLine = null }: Props) {
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
   const [tip, setTip] = useState<Tip | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
 
-  // static pixel positions per bus id (geographic or tidy-tree coordinates)
+  // static pixel positions per bus id (tidy-tree schematic coordinates)
   const pos = useMemo(() => {
     const m = new Map<number, { x: number; y: number }>();
     for (const b of topo.buses) {
-      const nx = layout === "tree" ? b.tx : b.x;
-      const ny = layout === "tree" ? b.ty : b.y;
-      m.set(b.id, { x: M + nx * (W - 2 * M), y: M + ny * (H - 2 * M) });
+      m.set(b.id, { x: M + b.tx * (W - 2 * M), y: M + b.ty * (H - 2 * M) });
     }
     return m;
-  }, [topo, layout]);
-
-  // ---- map underlay (streets + houses + substation) — static, memoized ----
-  const map = useMemo(() => {
-    if (layout !== "geographic" || !showMap) return null;
-    const streetW = topo.lines.length < 300 ? 8 : 4;
-    const streets = topo.lines.map((ln) => {
-      const a = pos.get(ln.from_bus);
-      const b = pos.get(ln.to_bus);
-      if (!a || !b) return null;
-      return (
-        <line key={`st${ln.id}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-          stroke="#2b3340" strokeWidth={streetW} strokeLinecap="round" strokeLinejoin="round" />
-      );
-    });
-    const houses = topo.load_buses.map((bid) => {
-      const p = pos.get(bid);
-      if (!p) return null;
-      const ang = bid * 2.39996; // golden angle → scatter beside the street
-      const s = 6.5;
-      return (
-        <rect key={`h${bid}`} x={p.x + Math.cos(ang) * 9 - s / 2} y={p.y + Math.sin(ang) * 9 - s / 2}
-          width={s} height={s} rx={1} fill="#39424f" stroke="#4d5868" strokeWidth={0.5} />
-      );
-    });
-    const pv = topo.sgen_buses.map((bid) => {
-      const p = pos.get(bid);
-      if (!p) return null;
-      return <rect key={`pv${bid}`} x={p.x - 3} y={p.y - 8} width={6} height={4} rx={0.5}
-        fill="#1f6feb" stroke="#7fb0ff" strokeWidth={0.4} />;
-    });
-    const subs = topo.ext_grids.map((eg) => {
-      const p = pos.get(eg.bus);
-      if (!p) return null;
-      return <rect key={`sub${eg.id}`} x={p.x - 8} y={p.y - 8} width={16} height={16} rx={2}
-        fill="#2d2a3a" stroke="#7fd1ff" strokeWidth={1} />;
-    });
-    return (
-      <g>
-        <rect x={2} y={2} width={W - 4} height={H - 4} rx={14} fill="#0d1117" />
-        {streets}
-        {houses}
-        {pv}
-        {subs}
-      </g>
-    );
-  }, [topo, pos, layout, showMap]);
+  }, [topo]);
 
   // live lookups
   const liveLine = useMemo(() => {
@@ -164,8 +116,6 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
         }}
         style={{ cursor: drag.current ? "grabbing" : "grab" }}
       >
-        {map}
-
         {/* lines (electrical overlay) */}
         {topo.lines.map((ln) => {
           const a = pos.get(ln.from_bus);
@@ -175,26 +125,40 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
           const color = loadingColor(live?.loading_percent);
           const wdt = live ? currentWidth(live.i_ka, maxIka) : 1.5;
           const rev = (live?.p_from_mw ?? 0) < 0;
+          const sel = ln.id === selectedLine;
           return (
-            <line
+            <g
               key={`l${ln.id}`}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={color}
-              strokeWidth={wdt}
-              strokeLinecap="round"
-              className={animate && live && Math.abs(live.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
+              data-line={ln.id}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelectLine?.(ln.id)}
               onMouseEnter={(e) =>
                 showTip(e, [
                   `Line ${ln.name ?? ln.id}`,
                   `loading ${fmt(live?.loading_percent, 1)} %`,
                   `I ${fmt(live?.i_ka != null ? live.i_ka * 1000 : null, 1)} A`,
                   `P ${fmt(live?.p_from_mw != null ? live.p_from_mw * 1000 : null, 1)} kW`,
+                  "click → current graph",
                 ])
               }
-            />
+            >
+              {sel && (
+                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#ffd166"
+                  strokeWidth={wdt + 5} strokeLinecap="round" opacity={0.5} />
+              )}
+              {/* wide transparent hit area so thin lines are easy to click */}
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={Math.max(wdt, 10)} />
+              <line
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke={color}
+                strokeWidth={wdt}
+                strokeLinecap="round"
+                className={animate && live && Math.abs(live.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
+              />
+            </g>
           );
         })}
 

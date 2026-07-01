@@ -159,6 +159,17 @@ export interface NodeProfiles {
   name: string;
   steps_per_day: number;
   series: { kind: NodeSeriesKind; p_mw: (number | null)[] }[];
+  voltage: (number | null)[];
+}
+export interface LineProfiles {
+  line: number;
+  name: string;
+  from_bus: number;
+  to_bus: number;
+  steps_per_day: number;
+  rated_i_ka: number | null;
+  current: (number | null)[];
+  loading: (number | null)[];
 }
 
 export interface EngineStatus {

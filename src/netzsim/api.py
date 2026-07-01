@@ -107,11 +107,20 @@ def network():
 
 @app.get("/node/{bus}/profiles")
 def node_profiles(bus: int):
-    """Daily load/generation curves at one bus (residential / EV / PV)."""
+    """Daily load/generation + voltage curves at one bus (residential / EV / PV)."""
     sim = runtime.engine.sim
     if bus < 0 or bus not in sim.net.bus.index:
         raise HTTPException(404, f"unknown bus {bus}")
     return sim.node_profiles(bus)
+
+
+@app.get("/line/{line}/profiles")
+def line_profiles(line: int):
+    """Daily current + loading curve for one line, with its rated current."""
+    sim = runtime.engine.sim
+    if line < 0 or line not in sim.net.line.index:
+        raise HTTPException(404, f"unknown line {line}")
+    return sim.line_profiles(line)
 
 
 @app.get("/state")

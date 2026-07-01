@@ -5,6 +5,7 @@ import type {
   EngineStatus,
   GridPreview,
   GridsResponse,
+  LineProfiles,
   LoadgenPolicy,
   NodeProfiles,
   StepResult,
@@ -50,6 +51,7 @@ export const api = {
   status: () => get<EngineStatus>("/status"),
   state: () => get<StepResult>("/state"),
   nodeProfiles: (bus: number) => get<NodeProfiles>(`/node/${bus}/profiles`),
+  lineProfiles: (line: number) => get<LineProfiles>(`/line/${line}/profiles`),
 
   start: () => post<EngineStatus>("/control/start"),
   pause: () => post<EngineStatus>("/control/pause"),

@@ -221,10 +221,49 @@ class Simulator:
             self._coords = compute_layouts(self.net)
         return self._coords
 
+    def daily_curves(self, samples: int = 97) -> dict:
+        """Sweep the whole day once (on an ISOLATED net, so the live engine is not
+        disturbed) and cache per-bus voltage + per-line current/loading, sampled
+        ~evenly across the day. The result is deterministic for a grid, so it is
+        computed lazily and cached for the lifetime of this Simulator."""
+        cached = getattr(self, "_daily", None)
+        if cached is not None:
+            return cached
+        net, prof = build_network(self.data)          # isolated from self.net
+        spd = self.steps_per_day
+        n = max(2, min(samples, spd))
+        steps = [round(i * (spd - 1) / (n - 1)) for i in range(n)]
+        vm = {int(b): [] for b in net.bus.index}
+        i_ka = {int(l): [] for l in net.line.index}
+        loading = {int(l): [] for l in net.line.index}
+        init = "flat"
+        for t in steps:
+            net.load.loc[prof.load_idx, "p_mw"] = prof.load_p[:, t]
+            net.load.loc[prof.load_idx, "q_mvar"] = prof.load_q[:, t]
+            net.sgen.loc[prof.sgen_idx, "p_mw"] = prof.sgen_p[:, t]
+            net.sgen.loc[prof.sgen_idx, "q_mvar"] = prof.sgen_q[:, t]
+            net.ext_grid.loc[prof.ext_idx, "vm_pu"] = prof.ext_vm[:, t]
+            net.ext_grid.loc[prof.ext_idx, "va_degree"] = prof.ext_va[:, t]
+            try:
+                pp.runpp(net, init=init, calculate_voltage_angles=True)
+                init = "results"
+                for b in net.bus.index:
+                    vm[int(b)].append(_r(net.res_bus.at[b, "vm_pu"]))
+                for l in net.line.index:
+                    i_ka[int(l)].append(_r(net.res_line.at[l, "i_ka"]))
+                    loading[int(l)].append(_r(net.res_line.at[l, "loading_percent"]))
+            except Exception:  # noqa: BLE001 — non-convergence at this step → gaps
+                init = "flat"
+                for b in net.bus.index:
+                    vm[int(b)].append(None)
+                for l in net.line.index:
+                    i_ka[int(l)].append(None); loading[int(l)].append(None)
+        self._daily = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading}
+        return self._daily
+
     def node_profiles(self, bus: int) -> dict:
-        """The daily p_mw profiles feeding one bus, split into residential / EV
-        loads and PV generation (EV loads are named ``EV_*``, PV sgen ``PV_*``).
-        Each series is the sum over that category's elements at the bus."""
+        """A bus's daily curves: input p_mw split into residential / EV loads and PV
+        generation (``EV_*`` loads, ``PV_*`` sgen), plus its voltage over the day."""
         p, net = self.prof, self.net
         cats: dict[str, "np.ndarray | None"] = {}
         def add(key, row):
@@ -242,7 +281,21 @@ class Simulator:
         series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
                   for k in order if cats.get(k) is not None]
         name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)
-        return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day, "series": series}
+        return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day,
+                "series": series, "voltage": self.daily_curves()["bus_vm"].get(bus, [])}
+
+    def line_profiles(self, line: int) -> dict:
+        """A line's daily current + loading curves, with its rated current (the
+        ampacity limit = ``max_i_ka × parallel``)."""
+        net = self.net
+        d = self.daily_curves()
+        rated = float(net.line.at[line, "max_i_ka"]) * int(net.line.at[line, "parallel"])
+        return {
+            "line": line, "name": str(net.line.at[line, "name"] or line),
+            "from_bus": int(net.line.at[line, "from_bus"]), "to_bus": int(net.line.at[line, "to_bus"]),
+            "steps_per_day": self.steps_per_day, "rated_i_ka": _r(rated),
+            "current": d["line_i_ka"].get(line, []), "loading": d["line_loading"].get(line, []),
+        }
 
 
 def _r(value, ndigits: int = 6):

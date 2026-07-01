@@ -6,18 +6,23 @@ import { fmt, loadingColor, voltageColor } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
 import NodeProfile from "../components/NodeProfile";
+import LineProfile from "../components/LineProfile";
 
-type Layout = "map" | "geographic" | "tree";
+type Layout = "map" | "tree";
 
 export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [topo, setTopo] = useState<Topology | null>(null);
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [layout, setLayout] = useState<Layout>("geographic");
-  const [showMap, setShowMap] = useState(true);
+  const [layout, setLayout] = useState<Layout>("tree");
   const [showValues, setShowValues] = useState(false);
   const [selectedBus, setSelectedBus] = useState<number | null>(null);
+  const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const layoutInit = useRef(false);
+
+  // node & line selections are mutually exclusive — one graph panel at a time
+  const selectBus = (b: number) => { setSelectedLine(null); setSelectedBus(b); };
+  const selectLine = (l: number) => { setSelectedBus(null); setSelectedLine(l); };
   const { latest, status: wsStatus } = useStepStream(true);
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
@@ -31,17 +36,17 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     return () => clearInterval(t);
   }, []);
 
-  // default to the real OSM map for grids that carry geo-coordinates
+  // default to the real OSM map for grids that carry geo-coordinates, else schematic
   useEffect(() => {
     if (topo && !layoutInit.current) {
       layoutInit.current = true;
-      setLayout(topo.has_geo ? "map" : "geographic");
+      setLayout(topo.has_geo ? "map" : "tree");
       setShowValues(topo.buses.length <= 40);   // on by default for small grids; toggle for big ones
     }
   }, [topo]);
 
-  // drop a stale node selection when the grid changes
-  useEffect(() => setSelectedBus(null), [topo?.name]);
+  // drop a stale node/line selection when the grid changes
+  useEffect(() => { setSelectedBus(null); setSelectedLine(null); }, [topo?.name]);
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -65,23 +70,10 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               🗺 Map
             </button>
           )}
-          <button className={layout === "geographic" ? "on" : ""} onClick={() => setLayout("geographic")}>
-            Geographic
-          </button>
           <button className={layout === "tree" ? "on" : ""} onClick={() => setLayout("tree")}>
             Schematic
           </button>
-          {layout === "geographic" && (
-            <button
-              className={showMap ? "on" : ""}
-              style={{ marginLeft: 6, borderRadius: 6, borderLeft: "1px solid var(--border)" }}
-              onClick={() => setShowMap((m) => !m)}
-              title="Toggle the street/house underlay"
-            >
-              Streets
-            </button>
-          )}
-          {layout !== "map" && (
+          {layout === "tree" && (
             <button
               className={showValues ? "on" : ""}
               style={{ marginLeft: 6 }}
@@ -93,11 +85,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           )}
         </div>
         {layout === "map" ? (
-          <MapDiagram topo={topo} latest={latest} onSelectBus={setSelectedBus} />
+          <MapDiagram topo={topo} latest={latest} onSelectBus={selectBus} onSelectLine={selectLine} />
         ) : (
-          <GridDiagram topo={topo} latest={latest} layout={layout === "tree" ? "tree" : "geographic"}
-                       showMap={showMap} showValues={showValues}
-                       onSelectBus={setSelectedBus} selectedBus={selectedBus} />
+          <GridDiagram topo={topo} latest={latest} showValues={showValues}
+                       onSelectBus={selectBus} selectedBus={selectedBus}
+                       onSelectLine={selectLine} selectedLine={selectedLine} />
         )}
       </div>
 
@@ -134,13 +126,20 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             onClose={() => setSelectedBus(null)}
           />
         )}
-        {selectedBus == null && (
+        {selectedLine != null && (
+          <LineProfile
+            line={selectedLine}
+            name={topo.lines.find((l) => l.id === selectedLine)?.name ?? String(selectedLine)}
+            onClose={() => setSelectedLine(null)}
+          />
+        )}
+        {selectedBus == null && selectedLine == null && (
           <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
-            Click a node for its daily load / generation graph.
+            Click a node for its daily load / generation / voltage graph, or a line for its current.
           </p>
         )}
 
-        {layout !== "map" && (
+        {layout === "tree" && (
           <>
             <div className="legend">
               <span>
