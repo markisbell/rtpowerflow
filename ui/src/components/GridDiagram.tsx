@@ -15,12 +15,12 @@ interface Props {
   topo: Topology;
   latest: StepResult | null;
   showValues?: boolean;
-  onSelectBus?: (bus: number) => void;
-  selectedBus?: number | null;
-  onSelectLine?: (line: number) => void;
-  selectedLine?: number | null;
-  onSelectTrafo?: (trafo: number) => void;
-  selectedTrafo?: number | null;
+  onSelectBus?: (bus: number, additive: boolean) => void;
+  selectedBuses?: number[];
+  onSelectLine?: (line: number, additive: boolean) => void;
+  selectedLines?: number[];
+  onSelectTrafo?: (trafo: number, additive: boolean) => void;
+  selectedTrafos?: number[];
 }
 
 interface Tip {
@@ -31,7 +31,7 @@ interface Tip {
 
 type XY = { x: number; y: number };
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBus = null, onSelectLine, selectedLine = null, onSelectTrafo, selectedTrafo = null }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [] }: Props) {
   // ---- stacked horizontal feeder layout ------------------------------------
   // x = depth from the slack (feeders run straight left→right, using the width);
   // the largest child continues its parent's track, other feeders drop to a new
@@ -241,14 +241,14 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           const color = loadingColor(live?.loading_percent);
           const wdt = live ? currentWidth(live.i_ka, maxIka) : 1.5;
           const rev = (live?.p_from_mw ?? 0) < 0;
-          const sel = ln.id === selectedLine;
+          const sel = selectedLines.includes(ln.id);
           const open = ln.in_service === false;
           return (
             <g
               key={`l${ln.id}`}
               data-line={ln.id}
               style={{ cursor: "pointer" }}
-              onClick={() => onSelectLine?.(ln.id)}
+              onClick={(e) => onSelectLine?.(ln.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
                 showTip(ev, [
                   `Line ${ln.name ?? ln.id}`,
@@ -284,13 +284,13 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           const mx = (e.p.x + e.c.x) / 2;
           const my = e.c.y;
           const color = loadingColor(live?.loading_percent);
-          const sel = tr.id === selectedTrafo;
+          const sel = selectedTrafos.includes(tr.id);
           return (
             <g
               key={`t${tr.id}`}
               data-trafo={tr.id}
               style={{ cursor: "pointer" }}
-              onClick={() => onSelectTrafo?.(tr.id)}
+              onClick={(e) => onSelectTrafo?.(tr.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
                 showTip(ev, [
                   `Trafo ${tr.name ?? tr.id}`,
@@ -316,18 +316,19 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           if (!p) return null;
           const isExt = extBuses.has(bus.id);
           const vm = liveBus.get(bus.id);
+          const busSel = selectedBuses.includes(bus.id);
           return (
             <circle
               key={`b${bus.id}`}
               data-bus={bus.id}
               cx={p.x}
               cy={p.y}
-              r={bus.id === selectedBus ? (isExt ? 7 : 5) : isExt ? 6 : 3}
+              r={busSel ? (isExt ? 7 : 5) : isExt ? 6 : 3}
               fill={isExt ? "#e6e6e6" : voltageColor(vm)}
-              stroke={bus.id === selectedBus ? "#ffd166" : isExt ? "#7fd1ff" : "none"}
-              strokeWidth={bus.id === selectedBus ? 2.5 : isExt ? 2 : 0}
+              stroke={busSel ? "#ffd166" : isExt ? "#7fd1ff" : "none"}
+              strokeWidth={busSel ? 2.5 : isExt ? 2 : 0}
               style={{ cursor: "pointer" }}
-              onClick={() => onSelectBus?.(bus.id)}
+              onClick={(e) => onSelectBus?.(bus.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(e) =>
                 showTip(e, [
                   `${isExt ? "Slack " : "Bus "}${bus.name}`,

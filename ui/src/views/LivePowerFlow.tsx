@@ -10,6 +10,9 @@ import LineProfile from "../components/LineProfile";
 import TrafoProfile from "../components/TrafoProfile";
 
 type Layout = "map" | "tree";
+type SelKind = "bus" | "line" | "trafo";
+interface Sel { kind: SelKind; id: number; }
+const MAX_SEL = 4;
 
 export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [topo, setTopo] = useState<Topology | null>(null);
@@ -17,18 +20,30 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [layout, setLayout] = useState<Layout>("tree");
   const [showValues, setShowValues] = useState(false);
-  const [selectedBus, setSelectedBus] = useState<number | null>(null);
-  const [selectedLine, setSelectedLine] = useState<number | null>(null);
-  const [selectedTrafo, setSelectedTrafo] = useState<number | null>(null);
+  const [selection, setSelection] = useState<Sel[]>([]);   // up to MAX_SEL marked elements
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
+  const [sideW, setSideW] = useState(340);             // resizable overview width (px)
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
-  // node / line / trafo selections are mutually exclusive — one graph panel at a time
-  const selectBus = (b: number) => { setSelectedLine(null); setSelectedTrafo(null); setSelectedBus(b); };
-  const selectLine = (l: number) => { setSelectedBus(null); setSelectedTrafo(null); setSelectedLine(l); };
-  const selectTrafo = (t: number) => { setSelectedBus(null); setSelectedLine(null); setSelectedTrafo(t); };
+  // ctrl/⌘-click marks several elements (stacked on the right, up to MAX_SEL); a
+  // plain click selects one; clicking a marked element again removes it.
+  const toggleSelect = (kind: SelKind, id: number, additive: boolean) =>
+    setSelection((prev) => {
+      const i = prev.findIndex((x) => x.kind === kind && x.id === id);
+      if (additive) {
+        if (i >= 0) return prev.filter((_, j) => j !== i);
+        return [...prev, { kind, id }].slice(-MAX_SEL);
+      }
+      if (i >= 0 && prev.length === 1) return [];
+      return [{ kind, id }];
+    });
+  const selectBus = (id: number, add: boolean) => toggleSelect("bus", id, add);
+  const selectLine = (id: number, add: boolean) => toggleSelect("line", id, add);
+  const selectTrafo = (id: number, add: boolean) => toggleSelect("trafo", id, add);
+  const unselect = (kind: SelKind, id: number) =>
+    setSelection((prev) => prev.filter((x) => !(x.kind === kind && x.id === id)));
   const { latest, status: wsStatus } = useStepStream(true);
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
@@ -52,8 +67,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     }
   }, [topo]);
 
-  // drop a stale node/line/trafo selection when the grid changes
-  useEffect(() => { setSelectedBus(null); setSelectedLine(null); setSelectedTrafo(null); }, [topo?.name]);
+  // drop a stale selection when the grid changes
+  useEffect(() => { setSelection([]); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -80,8 +95,21 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const curDay = (latest && status?.running) ? latest.day : (status?.day ?? latest?.day ?? 0);
   const dayIdx = nDays > 0 ? ((curDay % nDays) + nDays) % nDays : 0;
 
+  const selBuses = selection.filter((x) => x.kind === "bus").map((x) => x.id);
+  const selLines = selection.filter((x) => x.kind === "line").map((x) => x.id);
+  const selTrafos = selection.filter((x) => x.kind === "trafo").map((x) => x.id);
+
+  // drag the panel's left edge to widen it (and the graphs, which are width:100%)
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const move = (ev: MouseEvent) => setSideW(Math.min(760, Math.max(260, window.innerWidth - ev.clientX)));
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
   return (
-    <div className="live">
+    <div className="live" style={{ gridTemplateColumns: `1fr ${sideW}px` }}>
       <div className="diagram-wrap">
         <div className="layout-toggle">
           {topo.has_geo && (
@@ -109,13 +137,14 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo} />
         ) : (
           <GridDiagram topo={topo} latest={latest} showValues={showValues}
-                       onSelectBus={selectBus} selectedBus={selectedBus}
-                       onSelectLine={selectLine} selectedLine={selectedLine}
-                       onSelectTrafo={selectTrafo} selectedTrafo={selectedTrafo} />
+                       onSelectBus={selectBus} selectedBuses={selBuses}
+                       onSelectLine={selectLine} selectedLines={selLines}
+                       onSelectTrafo={selectTrafo} selectedTrafos={selTrafos} />
         )}
       </div>
 
       <aside className="side">
+        <div className="side-resizer" onMouseDown={startResize} title="Drag to resize" />
         <div className="clock">
           {latest ? `day ${latest.day} · ${latest.time_of_day}` : "—"}
           {latest && !latest.converged && <span className="note"> · not converged</span>}
@@ -141,37 +170,24 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <Stat label="losses" value={s ? `${fmt(s.total_losses_mw * 1000, 2)} kW` : "—"} />
         <Stat label="solve time" value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
 
-        {selectedBus != null && (
-          <NodeProfile
-            bus={selectedBus}
-            name={topo.buses.find((b) => b.id === selectedBus)?.name ?? String(selectedBus)}
-            now={nowFrac}
-            day={curDay}
-            onClose={() => setSelectedBus(null)}
-          />
-        )}
-        {selectedLine != null && (
-          <LineProfile
-            line={selectedLine}
-            name={topo.lines.find((l) => l.id === selectedLine)?.name ?? String(selectedLine)}
-            now={nowFrac}
-            day={curDay}
-            onClose={() => setSelectedLine(null)}
-          />
-        )}
-        {selectedTrafo != null && (
-          <TrafoProfile
-            trafo={selectedTrafo}
-            name={topo.trafos.find((t) => t.id === selectedTrafo)?.name ?? String(selectedTrafo)}
-            now={nowFrac}
-            day={curDay}
-            onClose={() => setSelectedTrafo(null)}
-          />
-        )}
-        {selectedBus == null && selectedLine == null && selectedTrafo == null && (
+        {selection.map((sel) => {
+          const key = `${sel.kind}${sel.id}`;
+          if (sel.kind === "bus")
+            return <NodeProfile key={key} bus={sel.id}
+                     name={topo.buses.find((b) => b.id === sel.id)?.name ?? String(sel.id)}
+                     now={nowFrac} day={curDay} onClose={() => unselect("bus", sel.id)} />;
+          if (sel.kind === "line")
+            return <LineProfile key={key} line={sel.id}
+                     name={topo.lines.find((l) => l.id === sel.id)?.name ?? String(sel.id)}
+                     now={nowFrac} day={curDay} onClose={() => unselect("line", sel.id)} />;
+          return <TrafoProfile key={key} trafo={sel.id}
+                   name={topo.trafos.find((t) => t.id === sel.id)?.name ?? String(sel.id)}
+                   now={nowFrac} day={curDay} onClose={() => unselect("trafo", sel.id)} />;
+        })}
+        {selection.length === 0 && (
           <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
-            Click a node for its load / generation / voltage, a line for its current, or the
-            transformer for its power exchange — each over the day.
+            Click a node (load / generation / voltage), a line (current) or the transformer
+            (power) for its daily graph. Strg/⌘+Klick marks several (up to {MAX_SEL}).
           </p>
         )}
 

@@ -7,10 +7,13 @@ import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT } from
 interface Props {
   topo: Topology;
   latest: StepResult | null;
-  onSelectBus?: (bus: number) => void;
-  onSelectLine?: (line: number) => void;
-  onSelectTrafo?: (trafo: number) => void;
+  onSelectBus?: (bus: number, additive: boolean) => void;
+  onSelectLine?: (line: number, additive: boolean) => void;
+  onSelectTrafo?: (trafo: number, additive: boolean) => void;
 }
+
+const isAdditive = (e: L.LeafletMouseEvent) =>
+  !!(e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey));
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
 
@@ -51,6 +54,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     if (!elRef.current) return;
     const map = L.map(elRef.current, { preferCanvas: true, zoomSnap: 0.25, attributionControl: false });
     mapRef.current = map;
+    map.zoomControl.setPosition("bottomleft");   // move +/- to the lower left
     L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution(
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     ).addTo(map);
@@ -77,7 +81,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         ? { color: "#888", weight: 2, opacity: 0.85, dashArray: "5 7" }
         : { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(open ? `Line ${ln.name ?? ln.id} · normally open` : `Line ${ln.name ?? ln.id} · click for graph`);
-      pl.on("click", () => onSelectLineRef.current?.(ln.id));
+      pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e)));
       lineRef.current.set(ln.id, pl);
     }
 
@@ -97,7 +101,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillOpacity: isExt ? 1 : isCab ? 1 : 0.9,
       }).addTo(map);
       cm.bindTooltip(`${isExt ? "MV station " : isCab ? "Cable cabinet " : "Bus "}${bus.name} · ${bus.vn_kv} kV · click for graph`);
-      cm.on("click", () => onSelectRef.current?.(bus.id));
+      cm.on("click", (e) => onSelectRef.current?.(bus.id, isAdditive(e)));
       busRef.current.set(bus.id, cm);
     }
 
@@ -113,7 +117,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillOpacity: 0.95,
       }).addTo(map);
       cm.bindTooltip(`Trafo ${tr.name ?? tr.id} · ${(tr.sn_mva * 1000).toFixed(0)} kVA · click for graph`);
-      cm.on("click", () => onSelectTrafoRef.current?.(tr.id));
+      cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e)));
       trafoRef.current.set(tr.id, cm);
     }
 
