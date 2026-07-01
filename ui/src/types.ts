@@ -153,6 +153,14 @@ export interface StepResult {
   error: string | null;
 }
 
+export type NodeSeriesKind = "residential" | "ev" | "pv";
+export interface NodeProfiles {
+  bus: number;
+  name: string;
+  steps_per_day: number;
+  series: { kind: NodeSeriesKind; p_mw: (number | null)[] }[];
+}
+
 export interface EngineStatus {
   running: boolean;
   step: number;

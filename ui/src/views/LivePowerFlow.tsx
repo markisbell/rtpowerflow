@@ -5,6 +5,7 @@ import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
+import NodeProfile from "../components/NodeProfile";
 
 type Layout = "map" | "geographic" | "tree";
 
@@ -15,6 +16,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [layout, setLayout] = useState<Layout>("geographic");
   const [showMap, setShowMap] = useState(true);
   const [showValues, setShowValues] = useState(false);
+  const [selectedBus, setSelectedBus] = useState<number | null>(null);
   const layoutInit = useRef(false);
   const { latest, status: wsStatus } = useStepStream(true);
 
@@ -37,6 +39,9 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
       setShowValues(topo.buses.length <= 40);   // on by default for small grids; toggle for big ones
     }
   }, [topo]);
+
+  // drop a stale node selection when the grid changes
+  useEffect(() => setSelectedBus(null), [topo?.name]);
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -88,10 +93,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           )}
         </div>
         {layout === "map" ? (
-          <MapDiagram topo={topo} latest={latest} />
+          <MapDiagram topo={topo} latest={latest} onSelectBus={setSelectedBus} />
         ) : (
           <GridDiagram topo={topo} latest={latest} layout={layout === "tree" ? "tree" : "geographic"}
-                       showMap={showMap} showValues={showValues} />
+                       showMap={showMap} showValues={showValues}
+                       onSelectBus={setSelectedBus} selectedBus={selectedBus} />
         )}
       </div>
 
@@ -120,6 +126,19 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <Stat label="slack (import)" value={s ? `${fmt(s.total_ext_grid_mw * 1000, 1)} kW` : "—"} />
         <Stat label="losses" value={s ? `${fmt(s.total_losses_mw * 1000, 2)} kW` : "—"} />
         <Stat label="solve time" value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
+
+        {selectedBus != null && (
+          <NodeProfile
+            bus={selectedBus}
+            name={topo.buses.find((b) => b.id === selectedBus)?.name ?? String(selectedBus)}
+            onClose={() => setSelectedBus(null)}
+          />
+        )}
+        {selectedBus == null && (
+          <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
+            Click a node for its daily load / generation graph.
+          </p>
+        )}
 
         {layout !== "map" && (
           <>

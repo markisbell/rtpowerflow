@@ -105,6 +105,15 @@ def network():
     return runtime.engine.sim.topology()
 
 
+@app.get("/node/{bus}/profiles")
+def node_profiles(bus: int):
+    """Daily load/generation curves at one bus (residential / EV / PV)."""
+    sim = runtime.engine.sim
+    if bus < 0 or bus not in sim.net.bus.index:
+        raise HTTPException(404, f"unknown bus {bus}")
+    return sim.node_profiles(bus)
+
+
 @app.get("/state")
 def state():
     latest = runtime.store.latest

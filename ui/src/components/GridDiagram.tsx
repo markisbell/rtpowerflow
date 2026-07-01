@@ -12,6 +12,8 @@ interface Props {
   layout?: "geographic" | "tree";
   showMap?: boolean;
   showValues?: boolean;
+  onSelectBus?: (bus: number) => void;
+  selectedBus?: number | null;
 }
 
 interface Tip {
@@ -20,7 +22,7 @@ interface Tip {
   lines: string[];
 }
 
-export default function GridDiagram({ topo, latest, layout = "geographic", showMap = true, showValues = false }: Props) {
+export default function GridDiagram({ topo, latest, layout = "geographic", showMap = true, showValues = false, onSelectBus, selectedBus = null }: Props) {
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
   const [tip, setTip] = useState<Tip | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -234,17 +236,21 @@ export default function GridDiagram({ topo, latest, layout = "geographic", showM
           return (
             <circle
               key={`b${bus.id}`}
+              data-bus={bus.id}
               cx={p.x}
               cy={p.y}
-              r={isExt ? 6 : 3}
+              r={bus.id === selectedBus ? (isExt ? 7 : 5) : isExt ? 6 : 3}
               fill={isExt ? "#e6e6e6" : voltageColor(vm)}
-              stroke={isExt ? "#7fd1ff" : "none"}
-              strokeWidth={isExt ? 2 : 0}
+              stroke={bus.id === selectedBus ? "#ffd166" : isExt ? "#7fd1ff" : "none"}
+              strokeWidth={bus.id === selectedBus ? 2.5 : isExt ? 2 : 0}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelectBus?.(bus.id)}
               onMouseEnter={(e) =>
                 showTip(e, [
                   `${isExt ? "Slack " : "Bus "}${bus.name}`,
                   `${bus.vn_kv} kV`,
                   `Vm ${fmt(vm, 4)} pu`,
+                  "click → load/gen graph",
                 ])
               }
             />

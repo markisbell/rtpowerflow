@@ -6,6 +6,7 @@ import type {
   GridPreview,
   GridsResponse,
   LoadgenPolicy,
+  NodeProfiles,
   StepResult,
   Topology,
 } from "./types";
@@ -48,6 +49,7 @@ export const api = {
   network: () => get<Topology>("/network"),
   status: () => get<EngineStatus>("/status"),
   state: () => get<StepResult>("/state"),
+  nodeProfiles: (bus: number) => get<NodeProfiles>(`/node/${bus}/profiles`),
 
   start: () => post<EngineStatus>("/control/start"),
   pause: () => post<EngineStatus>("/control/pause"),

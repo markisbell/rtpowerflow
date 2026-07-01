@@ -7,6 +7,7 @@ import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT } from
 interface Props {
   topo: Topology;
   latest: StepResult | null;
+  onSelectBus?: (bus: number) => void;
 }
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
@@ -28,7 +29,9 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus }: Props) {
+  const onSelectRef = useRef(onSelectBus);
+  onSelectRef.current = onSelectBus;
   const elRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
@@ -86,7 +89,8 @@ export default function MapDiagram({ topo, latest }: Props) {
         fillColor: isExt ? STATION_COLOR : isCab ? "#eafbe7" : "rgb(200,200,200)",
         fillOpacity: isExt ? 1 : isCab ? 1 : 0.9,
       }).addTo(map);
-      cm.bindTooltip(`${isExt ? "MV station " : isCab ? "Cable cabinet " : "Bus "}${bus.name} · ${bus.vn_kv} kV`);
+      cm.bindTooltip(`${isExt ? "MV station " : isCab ? "Cable cabinet " : "Bus "}${bus.name} · ${bus.vn_kv} kV · click for graph`);
+      cm.on("click", () => onSelectRef.current?.(bus.id));
       busRef.current.set(bus.id, cm);
     }
 

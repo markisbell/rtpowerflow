@@ -221,6 +221,29 @@ class Simulator:
             self._coords = compute_layouts(self.net)
         return self._coords
 
+    def node_profiles(self, bus: int) -> dict:
+        """The daily p_mw profiles feeding one bus, split into residential / EV
+        loads and PV generation (EV loads are named ``EV_*``, PV sgen ``PV_*``).
+        Each series is the sum over that category's elements at the bus."""
+        p, net = self.prof, self.net
+        cats: dict[str, "np.ndarray | None"] = {}
+        def add(key, row):
+            cats[key] = row.copy() if cats.get(key) is None else cats[key] + row
+        for i, li in enumerate(p.load_idx):
+            if int(net.load.at[li, "bus"]) != bus:
+                continue
+            name = str(net.load.at[li, "name"] or "")
+            add("ev" if name.startswith("EV_") else "residential", p.load_p[i])
+        for i, si in enumerate(p.sgen_idx):
+            if int(net.sgen.at[si, "bus"]) != bus:
+                continue
+            add("pv", p.sgen_p[i])
+        order = ["residential", "ev", "pv"]
+        series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
+                  for k in order if cats.get(k) is not None]
+        name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)
+        return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day, "series": series}
+
 
 def _r(value, ndigits: int = 6):
     """Round to JSON-safe floats. Non-finite (NaN/±Inf — e.g. isolated buses)
