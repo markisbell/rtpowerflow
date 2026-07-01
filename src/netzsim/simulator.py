@@ -357,7 +357,22 @@ class Simulator:
         sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
         spd = self.steps_per_day
         n = max(2, min(samples, spd))
-        steps = [round(i * (spd - 1) / (n - 1)) for i in range(n)]
+        sample_at = {round(i * (spd - 1) / (n - 1)) for i in range(n)}
+        dt_h = 24.0 / spd
+        # Recreate the batteries on the isolated net (fresh SOC = 50 %) so the swept
+        # curves reflect their charge/discharge; SOC is integrated at full 1-min
+        # resolution while the power flow is solved only at the samples.
+        bs = [Battery(bus=b.bus, capacity_mwh=b.capacity_mwh, power_mw=b.power_mw, mode=b.mode,
+                      eff=b.eff, soc_min=b.soc_min, soc_max=b.soc_max, soc_mwh=0.5 * b.capacity_mwh,
+                      name=b.name,
+                      storage_idx=int(pp.create_storage(net, bus=b.bus, p_mw=0.0,
+                                                        max_e_mwh=b.capacity_mwh, soc_percent=50.0, name=b.name)))
+              for b in self.batteries]
+
+        def sgen_col_at(t):
+            return (sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
+                    if self.pv_days is not None else prof.sgen_p[:, t])
+
         vm = {int(b): [] for b in net.bus.index}
         i_ka = {int(l): [] for l in net.line.index}
         loading = {int(l): [] for l in net.line.index}
@@ -366,12 +381,16 @@ class Simulator:
         # "auto" (not "flat") so multi-voltage-level grids with a transformer
         # converge on the first solve, matching the live engine; then warm-start.
         init = "auto"
-        for t in steps:
+        for t in range(spd):
+            sgen_col = sgen_col_at(t) if (bs or t in sample_at) else None
+            if bs:  # advance SOC every minute + set storage setpoints on the net
+                self._apply_batteries(net, bs, prof, sgen_col, d, t, dt_h,
+                                      self._loads_at, self._sgens_at, do_integrate=True)
+            if t not in sample_at:
+                continue
             net.load.loc[prof.load_idx, "p_mw"] = prof.load_p[:, t]
             net.load.loc[prof.load_idx, "q_mvar"] = prof.load_q[:, t]
-            sgen_p = (sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
-                      if self.pv_days is not None else prof.sgen_p[:, t])
-            net.sgen.loc[prof.sgen_idx, "p_mw"] = sgen_p
+            net.sgen.loc[prof.sgen_idx, "p_mw"] = sgen_col
             net.sgen.loc[prof.sgen_idx, "q_mvar"] = prof.sgen_q[:, t]
             net.ext_grid.loc[prof.ext_idx, "vm_pu"] = prof.ext_vm[:, t]
             net.ext_grid.loc[prof.ext_idx, "va_degree"] = prof.ext_va[:, t]
@@ -449,6 +468,55 @@ class Simulator:
             "hv_bus": int(net.trafo.at[trafo, "hv_bus"]), "lv_bus": int(net.trafo.at[trafo, "lv_bus"]),
             "steps_per_day": self.steps_per_day, "sn_mva": _r(rated),
             "power": d["trafo_p_hv"].get(trafo, []), "loading": d["trafo_loading"].get(trafo, []),
+        }
+
+    def battery_profiles(self, storage_idx: int, samples: int = 97) -> dict | None:
+        """A battery's daily SOC + charge/discharge curve for the current day. The
+        controllers read profiles/price only (no power flow), so this integrates
+        SOC over the full day cheaply — on throwaway battery copies starting at
+        50 %, so the live SOC is untouched. Includes the price curve for context."""
+        target = next((b for b in self.batteries if b.storage_idx == storage_idx), None)
+        if target is None:
+            return None
+        day, spd = self.day, self.steps_per_day
+        dt_h = 24.0 / spd
+        n = max(2, min(samples, spd))
+        sample_at = {round(i * (spd - 1) / (n - 1)) for i in range(n)}
+        bs = [Battery(bus=b.bus, capacity_mwh=b.capacity_mwh, power_mw=b.power_mw, mode=b.mode,
+                      eff=b.eff, soc_min=b.soc_min, soc_max=b.soc_max,
+                      soc_mwh=0.5 * b.capacity_mwh, name=b.name, storage_idx=b.storage_idx)
+              for b in self.batteries]
+        tgt = next(b for b in bs if b.storage_idx == storage_idx)
+        soc: list = []; power: list = []; price: list = []
+        price_lo = price_hi = None
+        for t in range(spd):
+            sgen_col = self._sgen_p_col(day, t) if self.prof.sgen_idx else None
+            total_load = float(self.prof.load_p[:, t].sum()) if self.prof.load_p.size else 0.0
+            total_gen = float(sgen_col.sum()) if sgen_col is not None and sgen_col.size else 0.0
+            pctx = self._price_ctx(day, t)
+            base = {"through_mw": total_load - total_gen,
+                    "peak_hi_mw": self._peak_ref_mw * 0.6, "peak_lo_mw": self._peak_ref_mw * 0.3, **pctx}
+            p_tgt = 0.0
+            for b in bs:
+                ctx = dict(base)
+                if b.mode == "self":
+                    ctx["load_mw"] = sum(float(self.prof.load_p[i, t]) for i in self._loads_at.get(b.bus, []))
+                    ctx["pv_mw"] = (sum(float(sgen_col[i]) for i in self._sgens_at.get(b.bus, []))
+                                    if sgen_col is not None and sgen_col.size else 0.0)
+                p = bat.setpoint(b, ctx, dt_h)
+                bat.integrate(b, p, dt_h)
+                if b is tgt:
+                    p_tgt = p
+            if t in sample_at:
+                soc.append(_r(tgt.soc_frac() * 100.0)); power.append(_r(p_tgt))
+                price.append(_r(pctx["price"]) if "price" in pctx else None)
+                price_lo, price_hi = pctx.get("price_lo", price_lo), pctx.get("price_hi", price_hi)
+        return {
+            "index": storage_idx, "bus": target.bus, "name": target.name, "mode": target.mode,
+            "steps_per_day": spd, "capacity_kwh": _r(target.capacity_mwh * 1000.0),
+            "power_kw": _r(target.power_mw * 1000.0), "soc": soc, "power": power,
+            "price": price, "price_lo": _r(price_lo) if price_lo is not None else None,
+            "price_hi": _r(price_hi) if price_hi is not None else None,
         }
 
 

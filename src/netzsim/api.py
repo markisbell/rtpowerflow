@@ -252,6 +252,15 @@ async def remove_battery(idx: int):
     return {"removed": idx}
 
 
+@app.get("/battery/{idx}/profiles")
+def battery_profiles(idx: int):
+    """Daily SOC + charge/discharge curve (+ price) for one battery, current day."""
+    prof = runtime.engine.sim.battery_profiles(idx)
+    if prof is None:
+        raise HTTPException(404, f"no battery with index {idx}")
+    return prof
+
+
 # --------------------------------------------------------------------------- #
 # Grid catalog + runtime grid swap
 # --------------------------------------------------------------------------- #

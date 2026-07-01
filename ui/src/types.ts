@@ -169,6 +169,20 @@ export interface BatteriesResponse {
   has_prices: boolean;
   batteries: Battery[];
 }
+export interface BatteryProfiles {
+  index: number;
+  bus: number;
+  name: string;
+  mode: BatteryMode;
+  steps_per_day: number;
+  capacity_kwh: number;
+  power_kw: number;
+  soc: (number | null)[];
+  power: (number | null)[];
+  price: (number | null)[];
+  price_lo: number | null;
+  price_hi: number | null;
+}
 
 export type NodeSeriesKind = "residential" | "ev" | "pv";
 export interface NodeProfiles {

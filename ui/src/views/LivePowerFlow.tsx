@@ -9,6 +9,7 @@ import NodeProfile from "../components/NodeProfile";
 import LineProfile from "../components/LineProfile";
 import TrafoProfile from "../components/TrafoProfile";
 import BatteryPanel from "../components/BatteryPanel";
+import BatteryProfile from "../components/BatteryProfile";
 
 type Layout = "map" | "tree";
 type SelKind = "bus" | "line" | "trafo";
@@ -28,6 +29,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
+  const [selBattery, setSelBattery] = useState<number | null>(null);
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
@@ -76,7 +78,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   }, [topo]);
 
   // drop a stale selection when the grid changes; batteries reset with the grid
-  useEffect(() => { setSelection([]); reloadBatteries(); }, [topo?.name]);
+  useEffect(() => { setSelection([]); setSelBattery(null); reloadBatteries(); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -93,6 +95,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     try { await api.addBattery({ bus, capacity_kwh, power_kw, mode }); } finally { reloadBatteries(); }
   };
   const removeBattery = async (idx: number) => {
+    if (idx === selBattery) setSelBattery(null);
     try { await api.removeBattery(idx); } finally { reloadBatteries(); }
   };
 
@@ -223,7 +226,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <BatteryPanel
           batteries={batteries} live={batLive} modes={batModes} hasPrices={batHasPrices}
           addBus={addBus} addIsTrafo={addIsTrafo} onAdd={addBattery} onRemove={removeBattery}
+          onSelect={setSelBattery} selectedIdx={selBattery}
         />
+        {selBattery != null && batteries.some((b) => b.index === selBattery) && (
+          <BatteryProfile idx={selBattery} now={nowFrac} day={curDay} onClose={() => setSelBattery(null)} />
+        )}
 
         {layout === "tree" && (
           <>

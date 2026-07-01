@@ -11,7 +11,7 @@ interface LiveState { soc_percent: number; p_mw: number }
 // Manage local batteries: add one at the selected node/transformer, list them
 // with live SOC + charge/discharge power, and remove.
 export default function BatteryPanel({
-  batteries, live, modes, hasPrices, addBus, addIsTrafo, onAdd, onRemove,
+  batteries, live, modes, hasPrices, addBus, addIsTrafo, onAdd, onRemove, onSelect, selectedIdx = null,
 }: {
   batteries: Battery[];
   live: Record<number, LiveState>;
@@ -21,6 +21,8 @@ export default function BatteryPanel({
   addIsTrafo: boolean;
   onAdd: (bus: number, capacity_kwh: number, power_kw: number, mode: BatteryMode) => void;
   onRemove: (idx: number) => void;
+  onSelect?: (idx: number) => void;
+  selectedIdx?: number | null;
 }) {
   const usable = modes.filter((m) => m !== "price" || hasPrices);
   const [mode, setMode] = useState<BatteryMode>(addIsTrafo ? "peak" : "self");
@@ -36,7 +38,10 @@ export default function BatteryPanel({
         const soc = st?.soc_percent ?? b.soc_percent;
         const p = (st?.p_mw ?? 0) * 1000;
         return (
-          <div key={b.index} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.72rem", margin: "3px 0" }}>
+          <div key={b.index} onClick={() => onSelect?.(b.index)} title="Show daily SOC / power"
+               style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.72rem", margin: "2px 0",
+                        cursor: "pointer", borderRadius: 4, padding: "1px 3px",
+                        background: b.index === selectedIdx ? "#1b2430" : "transparent" }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: MODE_COLOR[b.mode], flex: "0 0 auto" }} />
             <span style={{ flex: "0 0 auto" }}>bus {b.bus}</span>
             <span className="muted" style={{ flex: "0 0 auto" }}>{LABEL[b.mode]}</span>
@@ -47,7 +52,8 @@ export default function BatteryPanel({
             <span style={{ flex: "0 0 46px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: p > 0.05 ? "#3fb950" : p < -0.05 ? "#f2ae00" : "var(--muted)" }}>
               {p >= 0 ? "+" : ""}{p.toFixed(1)}kW
             </span>
-            <button className="ghost" style={{ padding: "0 5px", fontSize: "0.7rem" }} onClick={() => onRemove(b.index)}>✕</button>
+            <button className="ghost" style={{ padding: "0 5px", fontSize: "0.7rem" }}
+                    onClick={(e) => { e.stopPropagation(); onRemove(b.index); }}>✕</button>
           </div>
         );
       })}

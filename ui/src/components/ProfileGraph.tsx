@@ -39,37 +39,41 @@ export default function ProfileGraph({
   const px = (frac: number) => L + frac * (W - L - R);
   const py = (v: number) => H - B - ((v - yMin) / (yMax - yMin)) * (H - T - B);
   const fracOf = (s: GSeries, i: number) => (s.data.length <= 1 ? 0 : i / (s.data.length - 1));
-  const line = (s: GSeries) => {
-    let d = "";
-    s.data.forEach((v, i) => {
-      if (v == null) return;
-      d += (d ? "L" : "M") + px(fracOf(s, i)).toFixed(1) + " " + py(v).toFixed(1) + " ";
-    });
+  // step-after staircase (each sample's value held until the next) — no linear
+  // interpolation between samples.
+  const stepPath = (pts: [number, number][]) => {
+    if (!pts.length) return "";
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let k = 1; k < pts.length; k++) d += ` H ${pts[k][0].toFixed(1)} V ${pts[k][1].toFixed(1)}`;
     return d;
   };
-  // the "past" curve (frac <= now) as a single path (uncolored series)
-  const pastPath = (s: GSeries, nf: number) => {
-    let d = "";
+  const pointsUpTo = (s: GSeries, upto: number): [number, number][] => {
+    const out: [number, number][] = [];
     s.data.forEach((v, i) => {
-      if (v == null || fracOf(s, i) > nf) return;
-      d += (d ? "L" : "M") + px(fracOf(s, i)).toFixed(1) + " " + py(v).toFixed(1) + " ";
+      if (v != null && fracOf(s, i) <= upto + 1e-9) out.push([px(fracOf(s, i)), py(v)]);
     });
-    return d;
+    return out;
   };
-  // the "past" curve as per-segment colored lines (severity colorset)
+  const line = (s: GSeries) => stepPath(pointsUpTo(s, 1));
+  // the "past" curve (frac <= now) as a single step path (uncolored series)
+  const pastPath = (s: GSeries, nf: number) => stepPath(pointsUpTo(s, nf));
+  // the "past" curve as per-segment colored step paths (severity colorset)
   const pastSegs = (s: GSeries, nf: number) => {
-    const segs: { x1: number; y1: number; x2: number; y2: number; col: string }[] = [];
+    const segs: { d: string; col: string }[] = [];
     for (let i = 0; i < s.data.length - 1; i++) {
       const a = s.data[i], b = s.data[i + 1];
       if (a == null || b == null) continue;
       const f1 = fracOf(s, i), f2 = fracOf(s, i + 1);
       if ((f1 + f2) / 2 > nf) continue;
+      const x1 = px(f1), y1 = py(a), x2 = px(f2), y2 = py(b);
       const col = s.colorFn ? s.colorFn(s.colorData ? s.colorData[i] : a) : s.color;
-      segs.push({ x1: px(f1), y1: py(a), x2: px(f2), y2: py(b), col });
+      segs.push({ d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} H ${x2.toFixed(1)} V ${y2.toFixed(1)}`, col });
     }
     return segs;
   };
-  const valAt = (s: GSeries, frac: number) => s.data[Math.round(frac * (s.data.length - 1))] ?? null;
+  // step-after: the value shown at a position is the sample whose plateau it's on
+  const valAt = (s: GSeries, frac: number) =>
+    s.data[Math.min(s.data.length - 1, Math.floor(frac * (s.data.length - 1)))] ?? null;
 
   const onMove = (e: React.MouseEvent) => {
     const r = ref.current!.getBoundingClientRect();
@@ -99,6 +103,13 @@ export default function ProfileGraph({
           );
         })}
         <line x1={L} y1={H - B} x2={W - R} y2={H - B} stroke="#2b3340" strokeWidth={0.8} />
+        {/* zero reference line for curves that cross 0 (e.g. battery charge/discharge) */}
+        {yMin < 0 && yMax > 0 && (
+          <>
+            <line x1={L} y1={py(0)} x2={W - R} y2={py(0)} stroke="#4a5568" strokeWidth={0.8} />
+            <text x={2} y={py(0) + 2.5} fontSize={7} fill="#6b7480">0</text>
+          </>
+        )}
         <text x={2} y={T + 5} fontSize={7} fill="#6b7480">{(yMax * scale).toFixed(dec)}</text>
         <text x={2} y={H - B} fontSize={7} fill="#6b7480">{(yMin * scale).toFixed(dec)}</text>
 
@@ -128,7 +139,7 @@ export default function ProfileGraph({
               {/* opaque past overlay up to the current time, severity-colored if provided */}
               {nowF != null && (s.colorFn
                 ? pastSegs(s, nowF).map((sg, k) => (
-                    <line key={k} x1={sg.x1} y1={sg.y1} x2={sg.x2} y2={sg.y2} stroke={sg.col} strokeWidth={2} strokeLinecap="round" />
+                    <path key={k} d={sg.d} fill="none" stroke={sg.col} strokeWidth={2} strokeLinejoin="round" />
                   ))
                 : <path d={pastPath(s, nowF)} fill="none" stroke={s.color} strokeWidth={2} />)}
             </g>

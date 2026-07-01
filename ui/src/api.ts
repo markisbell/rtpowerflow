@@ -5,6 +5,7 @@ import type {
   BatteriesResponse,
   Battery,
   BatteryMode,
+  BatteryProfiles,
   EngineStatus,
   GridPreview,
   GridsResponse,
@@ -76,6 +77,7 @@ export const api = {
   addBattery: (body: { bus: number; capacity_kwh: number; power_kw: number; mode: BatteryMode }) =>
     post<Battery>("/battery", body),
   removeBattery: (idx: number) => del<{ removed: number }>(`/battery/${idx}`),
+  batteryProfiles: (idx: number) => get<BatteryProfiles>(`/battery/${idx}/profiles`),
 };
 
 export function wsUrl(): string {
