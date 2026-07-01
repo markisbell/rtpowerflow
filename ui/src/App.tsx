@@ -20,12 +20,9 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          netzsim <span className="muted">realtime power flow</span>
-        </div>
         <nav className="tabs">
           <button className={tab === "grids" ? "on" : ""} onClick={() => setTab("grids")}>
-            1 · Grid
+            Grid
           </button>
           <button
             className={tab === "loads" ? "on" : ""}
@@ -33,10 +30,10 @@ export default function App() {
             disabled={!selectedGrid}
             title={selectedGrid ? "" : "Pick a grid first"}
           >
-            2 · Loads
+            Loads
           </button>
           <button className={tab === "live" ? "on" : ""} onClick={() => setTab("live")}>
-            3 · Live
+            Live
           </button>
         </nav>
         <div className="active-chip">

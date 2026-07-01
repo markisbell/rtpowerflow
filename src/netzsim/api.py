@@ -123,6 +123,15 @@ def line_profiles(line: int):
     return sim.line_profiles(line)
 
 
+@app.get("/trafo/{trafo}/profiles")
+def trafo_profiles(trafo: int):
+    """Daily power exchange + loading curve for one transformer, with its rating."""
+    sim = runtime.engine.sim
+    if trafo < 0 or trafo not in sim.net.trafo.index:
+        raise HTTPException(404, f"unknown trafo {trafo}")
+    return sim.trafo_profiles(trafo)
+
+
 @app.get("/state")
 def state():
     latest = runtime.store.latest

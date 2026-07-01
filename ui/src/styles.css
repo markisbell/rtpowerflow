@@ -25,14 +25,16 @@ body { background: var(--bg); color: var(--text); }
   padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
-.brand { font-weight: 700; font-size: 1.05rem; }
 .muted { color: var(--muted); font-weight: 400; }
-.tabs { display: flex; gap: 0.3rem; }
+.tabs { display: flex; gap: 0.4rem; }
 .tabs button {
-  background: transparent; color: var(--text); border: 1px solid transparent;
-  padding: 0.35rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  background: transparent; color: var(--muted); border: 1px solid transparent;
+  padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer;
+  font-size: 1.02rem; font-weight: 600; letter-spacing: 0.01em;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.tabs button.on { background: var(--panel-2); border-color: var(--border); color: var(--accent); }
+.tabs button:hover:not(:disabled):not(.on) { background: var(--panel-2); color: var(--text); }
+.tabs button.on { background: var(--accent-2); border-color: transparent; color: #fff; }
 .tabs button:disabled { color: #555; cursor: not-allowed; }
 .active-chip { margin-left: auto; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }

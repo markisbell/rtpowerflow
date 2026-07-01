@@ -86,7 +86,9 @@ def test_grid_library_catalog_lists_and_converts_scopes():
     lv = next((it for it in listing if it["voltage"] == "LV"), None)
     if lv is not None:
         pl = preview(cat.get_inputs(lv["id"], steps=96))
-        assert all(b["vn_kv"] <= 1.0 for b in pl["buses"])  # LV scope is a single 0.4 kV grid
+        # LV grid: 0.4 kV feeders fed from one 20 kV MV busbar via the substation trafo
+        assert sum(b["vn_kv"] > 1.0 for b in pl["buses"]) == 1
+        assert any(b["vn_kv"] <= 1.0 for b in pl["buses"])
 
     # once cached, the listing carries counts
     assert any("n_bus" in it for it in cat.list())

@@ -171,6 +171,16 @@ export interface LineProfiles {
   current: (number | null)[];
   loading: (number | null)[];
 }
+export interface TrafoProfiles {
+  trafo: number;
+  name: string;
+  hv_bus: number;
+  lv_bus: number;
+  steps_per_day: number;
+  sn_mva: number | null;
+  power: (number | null)[];
+  loading: (number | null)[];
+}
 
 export interface EngineStatus {
   running: boolean;

@@ -7,6 +7,7 @@ import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
 import NodeProfile from "../components/NodeProfile";
 import LineProfile from "../components/LineProfile";
+import TrafoProfile from "../components/TrafoProfile";
 
 type Layout = "map" | "tree";
 
@@ -18,11 +19,13 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [showValues, setShowValues] = useState(false);
   const [selectedBus, setSelectedBus] = useState<number | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [selectedTrafo, setSelectedTrafo] = useState<number | null>(null);
   const layoutInit = useRef(false);
 
-  // node & line selections are mutually exclusive — one graph panel at a time
-  const selectBus = (b: number) => { setSelectedLine(null); setSelectedBus(b); };
-  const selectLine = (l: number) => { setSelectedBus(null); setSelectedLine(l); };
+  // node / line / trafo selections are mutually exclusive — one graph panel at a time
+  const selectBus = (b: number) => { setSelectedLine(null); setSelectedTrafo(null); setSelectedBus(b); };
+  const selectLine = (l: number) => { setSelectedBus(null); setSelectedTrafo(null); setSelectedLine(l); };
+  const selectTrafo = (t: number) => { setSelectedBus(null); setSelectedLine(null); setSelectedTrafo(t); };
   const { latest, status: wsStatus } = useStepStream(true);
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
@@ -45,8 +48,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     }
   }, [topo]);
 
-  // drop a stale node/line selection when the grid changes
-  useEffect(() => { setSelectedBus(null); setSelectedLine(null); }, [topo?.name]);
+  // drop a stale node/line/trafo selection when the grid changes
+  useEffect(() => { setSelectedBus(null); setSelectedLine(null); setSelectedTrafo(null); }, [topo?.name]);
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -85,11 +88,13 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           )}
         </div>
         {layout === "map" ? (
-          <MapDiagram topo={topo} latest={latest} onSelectBus={selectBus} onSelectLine={selectLine} />
+          <MapDiagram topo={topo} latest={latest} onSelectBus={selectBus}
+                      onSelectLine={selectLine} onSelectTrafo={selectTrafo} />
         ) : (
           <GridDiagram topo={topo} latest={latest} showValues={showValues}
                        onSelectBus={selectBus} selectedBus={selectedBus}
-                       onSelectLine={selectLine} selectedLine={selectedLine} />
+                       onSelectLine={selectLine} selectedLine={selectedLine}
+                       onSelectTrafo={selectTrafo} selectedTrafo={selectedTrafo} />
         )}
       </div>
 
@@ -133,9 +138,17 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             onClose={() => setSelectedLine(null)}
           />
         )}
-        {selectedBus == null && selectedLine == null && (
+        {selectedTrafo != null && (
+          <TrafoProfile
+            trafo={selectedTrafo}
+            name={topo.trafos.find((t) => t.id === selectedTrafo)?.name ?? String(selectedTrafo)}
+            onClose={() => setSelectedTrafo(null)}
+          />
+        )}
+        {selectedBus == null && selectedLine == null && selectedTrafo == null && (
           <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
-            Click a node for its daily load / generation / voltage graph, or a line for its current.
+            Click a node for its load / generation / voltage, a line for its current, or the
+            transformer for its power exchange — each over the day.
           </p>
         )}
 

@@ -17,8 +17,14 @@ GRID = ROOT / "data" / "lv_osm" / "lv_urban_83_189499.json"
 def test_osm_lv_grid_has_line_geometry_and_solves():
     g = convert_osm_lv(GRID, steps=96)
     buses = g.grid_structure["buses"]
-    assert all(b["vn_kv"] <= 0.4 for b in buses)        # a 0.4 kV grid
+    # a 0.4 kV grid fed from a single 20 kV MV busbar via the MV/LV substation
+    lv_buses = [b for b in buses if b["vn_kv"] <= 0.4]
+    mv_buses = [b for b in buses if b["vn_kv"] > 1.0]
+    assert lv_buses and len(mv_buses) == 1 and mv_buses[0]["vn_kv"] == 20.0
     assert all(b.get("geo") for b in buses)             # every node geo-located
+    # the substation transformer is modelled explicitly (auto-sized)
+    trafos = g.lines["transformers"]
+    assert len(trafos) == 1 and trafos[0]["std_type"].endswith("20/0.4 kV")
     # every line carries a [lon,lat] polyline of >= 2 points (cable along streets)
     specs = g.lines["lines"]
     assert specs and all(s.get("geometry") and len(s["geometry"]) >= 2 for s in specs)
@@ -28,6 +34,7 @@ def test_osm_lv_grid_has_line_geometry_and_solves():
     sim = Simulator(data)
     topo = sim.topology()
     assert topo["has_geo"] is True
+    assert topo["n_trafo"] == 1                          # substation transformer in topology
     # geometry survives all the way to the /network topology, mapped by line id
     assert all(ln.get("geometry") for ln in topo["lines"])
     # cable cabinets (green circles) are exposed for the map to draw

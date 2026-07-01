@@ -1,10 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StepResult, Topology } from "../types";
 import { currentWidth, loadingColor, voltageColor, fmt } from "../scales";
 
-const W = 1000;
-const H = 640;
-const M = 36;
+// stacked-feeder layout spacing (user units): horizontal per depth level, and the
+// vertical room for a feeder track + each leaf-load stub fanned below its node.
+const COL = 96;
+const LEAF_STEP = 28;
+const TRACK_BASE = 34;
+const TRACK_GAP = 16;
+const PADX = 48;
+const PADY = 36;
 
 interface Props {
   topo: Topology;
@@ -14,6 +19,8 @@ interface Props {
   selectedBus?: number | null;
   onSelectLine?: (line: number) => void;
   selectedLine?: number | null;
+  onSelectTrafo?: (trafo: number) => void;
+  selectedTrafo?: number | null;
 }
 
 interface Tip {
@@ -22,20 +29,102 @@ interface Tip {
   lines: string[];
 }
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBus = null, onSelectLine, selectedLine = null }: Props) {
+type XY = { x: number; y: number };
+
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBus = null, onSelectLine, selectedLine = null, onSelectTrafo, selectedTrafo = null }: Props) {
+  // ---- stacked horizontal feeder layout ------------------------------------
+  // x = depth from the slack (feeders run straight left→right, using the width);
+  // the largest child continues its parent's track, other feeders drop to a new
+  // track, and leaf loads fan as short vertical stubs off their trunk node.
+  const { pos, parent, depthOf, W, H } = useMemo(() => {
+    const ids = new Set(topo.buses.map((b) => b.id));
+    const adj = new Map<number, number[]>();
+    const ensure = (n: number) => { let a = adj.get(n); if (!a) { a = []; adj.set(n, a); } return a; };
+    topo.buses.forEach((b) => ensure(b.id));
+    topo.lines.forEach((l) => {
+      if (l.in_service === false) return; // normally-open ties are not tree edges
+      if (ids.has(l.from_bus) && ids.has(l.to_bus)) { ensure(l.from_bus).push(l.to_bus); ensure(l.to_bus).push(l.from_bus); }
+    });
+    topo.trafos.forEach((t) => {
+      if (ids.has(t.hv_bus) && ids.has(t.lv_bus)) { ensure(t.hv_bus).push(t.lv_bus); ensure(t.lv_bus).push(t.hv_bus); }
+    });
+
+    const depth = new Map<number, number>();
+    const parent = new Map<number, number>();
+    const kids = new Map<number, number[]>();
+    const seen = new Set<number>();
+    const roots: number[] = [];
+    const bfs = (r: number) => {
+      roots.push(r); seen.add(r); depth.set(r, 0); kids.set(r, []);
+      const q = [r];
+      while (q.length) {
+        const u = q.shift()!;
+        for (const v of [...(adj.get(u) ?? [])].sort((a, b) => a - b)) {
+          if (!seen.has(v)) { seen.add(v); parent.set(v, u); depth.set(v, (depth.get(u) ?? 0) + 1); kids.set(v, []); kids.get(u)!.push(v); q.push(v); }
+        }
+      }
+    };
+    topo.ext_grids.map((e) => e.bus).filter((b) => ids.has(b)).forEach((r) => { if (!seen.has(r)) bfs(r); });
+    topo.buses.forEach((b) => { if (!seen.has(b.id)) bfs(b.id); }); // leftover components
+
+    // subtree sizes → the largest child stays on the trunk (a straight feeder)
+    const size = new Map<number, number>();
+    const computeSize = (n: number): number => { let s = 1; for (const c of kids.get(n) ?? []) s += computeSize(c); size.set(n, s); return s; };
+    roots.forEach((r) => computeSize(r));
+    const isLeaf = (n: number) => (kids.get(n) ?? []).length === 0;
+
+    const track = new Map<number, number>();
+    const leafKids = new Map<number, number[]>();
+    const trackFan = new Map<number, number>(); // busiest leaf-fan on each track
+    let cursor = 0;
+    const place = (n: number, t: number) => {
+      track.set(n, t);
+      const ch = kids.get(n) ?? [];
+      const internal = ch.filter((c) => !isLeaf(c)).sort((a, b) => (size.get(b)! - size.get(a)!) || (a - b));
+      const leaves = ch.filter(isLeaf).sort((a, b) => a - b);
+      leafKids.set(n, leaves);
+      if (leaves.length) trackFan.set(t, Math.max(trackFan.get(t) ?? 0, leaves.length));
+      internal.forEach((c, i) => { if (i === 0) place(c, t); else { cursor += 1; place(c, cursor); } });
+    };
+    roots.forEach((r) => { if (!track.has(r)) { place(r, cursor); cursor += 1; } });
+
+    const nTracks = Math.max(1, Math.max(0, ...track.values()) + 1);
+    const trackY: number[] = [];
+    let acc = PADY;
+    for (let t = 0; t < nTracks; t++) { trackY[t] = acc; acc += TRACK_BASE + (trackFan.get(t) ?? 0) * LEAF_STEP + TRACK_GAP; }
+    const H = acc + PADY;
+    const maxDepth = Math.max(1, ...depth.values());
+    const W = PADX * 2 + maxDepth * COL;
+
+    const pos = new Map<number, XY>();
+    for (const [n, t] of track) pos.set(n, { x: PADX + (depth.get(n) ?? 0) * COL, y: trackY[t] });
+    for (const [p, ls] of leafKids) {
+      const pp = pos.get(p); if (!pp) continue;
+      const lx = PADX + ((depth.get(p) ?? 0) + 1) * COL;
+      ls.forEach((c, j) => pos.set(c, { x: lx, y: pp.y + (j + 1) * LEAF_STEP }));
+    }
+    return { pos, parent, depthOf: depth, W, H };
+  }, [topo]);
+
+  // orthogonal edge: vertical riser at the parent's x, then a horizontal tap to
+  // the child (a straight horizontal line when they share a track).
+  const edge = (aId: number, bId: number): { p: XY; c: XY; d: string } | null => {
+    const A = pos.get(aId); const B = pos.get(bId);
+    if (!A || !B) return null;
+    let p = A; let c = B;
+    if (parent.get(aId) === bId) { p = B; c = A; }
+    else if (parent.get(bId) === aId) { p = A; c = B; }
+    else if ((depthOf.get(bId) ?? 0) < (depthOf.get(aId) ?? 0)) { p = B; c = A; }
+    return { p, c, d: `M ${p.x} ${p.y} V ${c.y} H ${c.x}` };
+  };
+
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
   const [tip, setTip] = useState<Tip | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
 
-  // static pixel positions per bus id (tidy-tree schematic coordinates)
-  const pos = useMemo(() => {
-    const m = new Map<number, { x: number; y: number }>();
-    for (const b of topo.buses) {
-      m.set(b.id, { x: M + b.tx * (W - 2 * M), y: M + b.ty * (H - 2 * M) });
-    }
-    return m;
-  }, [topo]);
+  // re-frame to the whole diagram when the canvas size changes (grid swap)
+  useEffect(() => setVb({ x: 0, y: 0, w: W, h: H }), [W, H]);
 
   // live lookups
   const liveLine = useMemo(() => {
@@ -116,24 +205,24 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
         }}
         style={{ cursor: drag.current ? "grabbing" : "grab" }}
       >
-        {/* lines (electrical overlay) */}
+        {/* lines (electrical overlay, orthogonal feeder routing) */}
         {topo.lines.map((ln) => {
-          const a = pos.get(ln.from_bus);
-          const b = pos.get(ln.to_bus);
-          if (!a || !b) return null;
+          const e = edge(ln.from_bus, ln.to_bus);
+          if (!e) return null;
           const live = liveLine.get(ln.id);
           const color = loadingColor(live?.loading_percent);
           const wdt = live ? currentWidth(live.i_ka, maxIka) : 1.5;
           const rev = (live?.p_from_mw ?? 0) < 0;
           const sel = ln.id === selectedLine;
+          const open = ln.in_service === false;
           return (
             <g
               key={`l${ln.id}`}
               data-line={ln.id}
               style={{ cursor: "pointer" }}
               onClick={() => onSelectLine?.(ln.id)}
-              onMouseEnter={(e) =>
-                showTip(e, [
+              onMouseEnter={(ev) =>
+                showTip(ev, [
                   `Line ${ln.name ?? ln.id}`,
                   `loading ${fmt(live?.loading_percent, 1)} %`,
                   `I ${fmt(live?.i_ka != null ? live.i_ka * 1000 : null, 1)} A`,
@@ -142,21 +231,18 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
                 ])
               }
             >
-              {sel && (
-                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#ffd166"
-                  strokeWidth={wdt + 5} strokeLinecap="round" opacity={0.5} />
-              )}
-              {/* wide transparent hit area so thin lines are easy to click */}
-              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={Math.max(wdt, 10)} />
-              <line
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                stroke={color}
-                strokeWidth={wdt}
+              {sel && <path d={e.d} fill="none" stroke="#ffd166" strokeWidth={wdt + 5} strokeLinejoin="round" strokeLinecap="round" opacity={0.5} />}
+              {/* wide transparent hit area so thin feeders are easy to click */}
+              <path d={e.d} fill="none" stroke="transparent" strokeWidth={Math.max(wdt, 10)} />
+              <path
+                d={e.d}
+                fill="none"
+                stroke={open ? "#888" : color}
+                strokeWidth={open ? 1.5 : wdt}
+                strokeLinejoin="round"
                 strokeLinecap="round"
-                className={animate && live && Math.abs(live.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
+                strokeDasharray={open ? "5 7" : undefined}
+                className={!open && animate && live && Math.abs(live.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
               />
             </g>
           );
@@ -164,26 +250,31 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
 
         {/* transformers */}
         {topo.trafos.map((tr) => {
-          const a = pos.get(tr.hv_bus);
-          const b = pos.get(tr.lv_bus);
-          if (!a || !b) return null;
+          const e = edge(tr.hv_bus, tr.lv_bus);
+          if (!e) return null;
           const live = liveTrafo.get(tr.id);
-          const mx = (a.x + b.x) / 2;
-          const my = (a.y + b.y) / 2;
+          const mx = (e.p.x + e.c.x) / 2;
+          const my = e.c.y;
           const color = loadingColor(live?.loading_percent);
+          const sel = tr.id === selectedTrafo;
           return (
             <g
               key={`t${tr.id}`}
-              onMouseEnter={(e) =>
-                showTip(e, [
+              data-trafo={tr.id}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelectTrafo?.(tr.id)}
+              onMouseEnter={(ev) =>
+                showTip(ev, [
                   `Trafo ${tr.name ?? tr.id}`,
                   `${fmt(tr.sn_mva * 1000, 0)} kVA`,
                   `loading ${fmt(live?.loading_percent, 1)} %`,
+                  "click → power graph",
                 ])
               }
             >
-              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={6} strokeLinecap="round" />
-              <circle cx={mx} cy={my} r={11} fill="#0b0d11" stroke={color} strokeWidth={3} />
+              <path d={e.d} fill="none" stroke={color} strokeWidth={6} strokeLinejoin="round" strokeLinecap="round" />
+              <circle cx={mx} cy={my} r={sel ? 13 : 11} fill="#0b0d11"
+                stroke={sel ? "#ffd166" : color} strokeWidth={sel ? 4 : 3} />
               <text x={mx} y={my + 3} textAnchor="middle" fontSize="9" fill="#e6e6e6">
                 {live ? Math.round(live.loading_percent) : "T"}
               </text>
@@ -225,12 +316,11 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
         {showValues && latest && (
           <g pointerEvents="none">
             {topo.lines.map((ln) => {
-              const a = pos.get(ln.from_bus);
-              const b = pos.get(ln.to_bus);
+              const e = edge(ln.from_bus, ln.to_bus);
               const live = liveLine.get(ln.id);
-              if (!a || !b || !live) return null;
+              if (!e || !live) return null;
               return (
-                <ValueBox key={`vl${ln.id}`} x={(a.x + b.x) / 2} y={(a.y + b.y) / 2}
+                <ValueBox key={`vl${ln.id}`} x={(e.p.x + e.c.x) / 2} y={e.c.y}
                   rows={[`${fmt(live.i_ka * 1000, 0)} A`]} />
               );
             })}

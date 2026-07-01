@@ -9,6 +9,7 @@ interface Props {
   latest: StepResult | null;
   onSelectBus?: (bus: number) => void;
   onSelectLine?: (line: number) => void;
+  onSelectTrafo?: (trafo: number) => void;
 }
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
@@ -30,11 +31,13 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo }: Props) {
   const onSelectRef = useRef(onSelectBus);
   onSelectRef.current = onSelectBus;
   const onSelectLineRef = useRef(onSelectLine);
   onSelectLineRef.current = onSelectLine;
+  const onSelectTrafoRef = useRef(onSelectTrafo);
+  onSelectTrafoRef.current = onSelectTrafo;
   const elRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
@@ -109,7 +112,8 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine }: 
         fillColor: STATION_COLOR,
         fillOpacity: 0.95,
       }).addTo(map);
-      cm.bindTooltip(`Trafo ${tr.name ?? tr.id} · ${(tr.sn_mva * 1000).toFixed(0)} kVA`);
+      cm.bindTooltip(`Trafo ${tr.name ?? tr.id} · ${(tr.sn_mva * 1000).toFixed(0)} kVA · click for graph`);
+      cm.on("click", () => onSelectTrafoRef.current?.(tr.id));
       trafoRef.current.set(tr.id, cm);
     }
 

@@ -10,6 +10,7 @@ import type {
   NodeProfiles,
   StepResult,
   Topology,
+  TrafoProfiles,
 } from "./types";
 
 // All backend calls go through "/api" (Vite dev proxy / nginx in prod).
@@ -52,6 +53,7 @@ export const api = {
   state: () => get<StepResult>("/state"),
   nodeProfiles: (bus: number) => get<NodeProfiles>(`/node/${bus}/profiles`),
   lineProfiles: (line: number) => get<LineProfiles>(`/line/${line}/profiles`),
+  trafoProfiles: (trafo: number) => get<TrafoProfiles>(`/trafo/${trafo}/profiles`),
 
   start: () => post<EngineStatus>("/control/start"),
   pause: () => post<EngineStatus>("/control/pause"),

@@ -236,7 +236,11 @@ class Simulator:
         vm = {int(b): [] for b in net.bus.index}
         i_ka = {int(l): [] for l in net.line.index}
         loading = {int(l): [] for l in net.line.index}
-        init = "flat"
+        tr_p_hv = {int(t): [] for t in net.trafo.index}
+        tr_loading = {int(t): [] for t in net.trafo.index}
+        # "auto" (not "flat") so multi-voltage-level grids with a transformer
+        # converge on the first solve, matching the live engine; then warm-start.
+        init = "auto"
         for t in steps:
             net.load.loc[prof.load_idx, "p_mw"] = prof.load_p[:, t]
             net.load.loc[prof.load_idx, "q_mvar"] = prof.load_q[:, t]
@@ -252,13 +256,19 @@ class Simulator:
                 for l in net.line.index:
                     i_ka[int(l)].append(_r(net.res_line.at[l, "i_ka"]))
                     loading[int(l)].append(_r(net.res_line.at[l, "loading_percent"]))
+                for tr in net.trafo.index:
+                    tr_p_hv[int(tr)].append(_r(net.res_trafo.at[tr, "p_hv_mw"]))
+                    tr_loading[int(tr)].append(_r(net.res_trafo.at[tr, "loading_percent"]))
             except Exception:  # noqa: BLE001 — non-convergence at this step → gaps
-                init = "flat"
+                init = "auto"
                 for b in net.bus.index:
                     vm[int(b)].append(None)
                 for l in net.line.index:
                     i_ka[int(l)].append(None); loading[int(l)].append(None)
-        self._daily = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading}
+                for tr in net.trafo.index:
+                    tr_p_hv[int(tr)].append(None); tr_loading[int(tr)].append(None)
+        self._daily = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading,
+                       "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading}
         return self._daily
 
     def node_profiles(self, bus: int) -> dict:
@@ -295,6 +305,19 @@ class Simulator:
             "from_bus": int(net.line.at[line, "from_bus"]), "to_bus": int(net.line.at[line, "to_bus"]),
             "steps_per_day": self.steps_per_day, "rated_i_ka": _r(rated),
             "current": d["line_i_ka"].get(line, []), "loading": d["line_loading"].get(line, []),
+        }
+
+    def trafo_profiles(self, trafo: int) -> dict:
+        """A transformer's daily power exchange (HV-side P) + loading curves, with
+        its rated apparent power (``sn_mva × parallel``) as the capacity limit."""
+        net = self.net
+        d = self.daily_curves()
+        rated = float(net.trafo.at[trafo, "sn_mva"]) * int(net.trafo.at[trafo, "parallel"])
+        return {
+            "trafo": trafo, "name": str(net.trafo.at[trafo, "name"] or trafo),
+            "hv_bus": int(net.trafo.at[trafo, "hv_bus"]), "lv_bus": int(net.trafo.at[trafo, "lv_bus"]),
+            "steps_per_day": self.steps_per_day, "sn_mva": _r(rated),
+            "power": d["trafo_p_hv"].get(trafo, []), "loading": d["trafo_loading"].get(trafo, []),
         }
 
 
