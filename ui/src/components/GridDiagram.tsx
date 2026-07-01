@@ -75,33 +75,61 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
 
     const track = new Map<number, number>();
     const leafKids = new Map<number, number[]>();
-    const trackFan = new Map<number, number>(); // busiest leaf-fan on each track
-    let cursor = 0;
-    const place = (n: number, t: number) => {
+    // leaf loads fan both above and below their trunk node, so a track needs room
+    // on each side: fanUp/fanDown = busiest half-fan above/below any node on it.
+    const fanUp = new Map<number, number>();
+    const fanDown = new Map<number, number>();
+    // Track 0 is the main line. Its feeders alternate below (+) / above (−) so
+    // cabinet connections use both sides; once a branch is off the spine it keeps
+    // growing outward (never crossing back over the main line).
+    let below = 0;
+    let above = 0;
+    const place = (n: number, t: number, dir: number) => {
       track.set(n, t);
       const ch = kids.get(n) ?? [];
       const internal = ch.filter((c) => !isLeaf(c)).sort((a, b) => (size.get(b)! - size.get(a)!) || (a - b));
       const leaves = ch.filter(isLeaf).sort((a, b) => a - b);
       leafKids.set(n, leaves);
-      if (leaves.length) trackFan.set(t, Math.max(trackFan.get(t) ?? 0, leaves.length));
-      internal.forEach((c, i) => { if (i === 0) place(c, t); else { cursor += 1; place(c, cursor); } });
+      if (leaves.length) {
+        fanDown.set(t, Math.max(fanDown.get(t) ?? 0, Math.ceil(leaves.length / 2)));
+        fanUp.set(t, Math.max(fanUp.get(t) ?? 0, Math.floor(leaves.length / 2)));
+      }
+      internal.forEach((c, i) => {
+        if (i === 0) { place(c, t, dir); return; } // trunk continues along this line
+        if (dir > 0 || (dir === 0 && i % 2 === 1)) { below += 1; place(c, below, 1); }
+        else { above -= 1; place(c, above, -1); }
+      });
     };
-    roots.forEach((r) => { if (!track.has(r)) { place(r, cursor); cursor += 1; } });
+    roots.forEach((r, idx) => {
+      if (track.has(r)) return;
+      if (idx === 0) place(r, 0, 0);
+      else { below += 1; place(r, below, 1); } // extra components stack below
+    });
 
-    const nTracks = Math.max(1, Math.max(0, ...track.values()) + 1);
-    const trackY: number[] = [];
+    const used = [...track.values()];
+    const minT = used.length ? Math.min(...used) : 0;
+    const maxT = used.length ? Math.max(...used) : 0;
+    const trackY = new Map<number, number>();
     let acc = PADY;
-    for (let t = 0; t < nTracks; t++) { trackY[t] = acc; acc += TRACK_BASE + (trackFan.get(t) ?? 0) * LEAF_STEP + TRACK_GAP; }
+    for (let t = minT; t <= maxT; t++) {
+      acc += (fanUp.get(t) ?? 0) * LEAF_STEP;                                     // room for the upward fan
+      trackY.set(t, acc);
+      acc += Math.max(TRACK_BASE, (fanDown.get(t) ?? 0) * LEAF_STEP) + TRACK_GAP; // downward fan + gap
+    }
     const H = acc + PADY;
     const maxDepth = Math.max(1, ...depth.values());
     const W = PADX * 2 + maxDepth * COL;
 
     const pos = new Map<number, XY>();
-    for (const [n, t] of track) pos.set(n, { x: PADX + (depth.get(n) ?? 0) * COL, y: trackY[t] });
+    for (const [n, t] of track) pos.set(n, { x: PADX + (depth.get(n) ?? 0) * COL, y: trackY.get(t) ?? PADY });
     for (const [p, ls] of leafKids) {
-      const pp = pos.get(p); if (!pp) continue;
+      const pp = pos.get(p); if (!pp || !Number.isFinite(pp.y)) continue;
       const lx = PADX + ((depth.get(p) ?? 0) + 1) * COL;
-      ls.forEach((c, j) => pos.set(c, { x: lx, y: pp.y + (j + 1) * LEAF_STEP }));
+      // fan below/above alternately: +1, -1, +2, -2, … (uses the space on both sides)
+      ls.forEach((c, j) => {
+        const off = (j % 2 === 0 ? 1 : -1) * (Math.floor(j / 2) + 1);
+        pos.set(c, { x: lx, y: pp.y + off * LEAF_STEP });
+      });
     }
     return { pos, parent, depthOf: depth, W, H };
   }, [topo]);

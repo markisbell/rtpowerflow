@@ -86,6 +86,11 @@ class RealtimeEngine:
     def seek(self, step: int) -> None:
         self.step = step % self.steps_per_day
 
+    def set_interval(self, seconds: float) -> None:
+        """Change the accelerated-tick interval (real seconds per step). The
+        running loop picks up the new value on its next sleep."""
+        self.interval = max(0.01, float(seconds))
+
     @property
     def status(self) -> dict:
         return {

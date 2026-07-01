@@ -59,6 +59,7 @@ export const api = {
   pause: () => post<EngineStatus>("/control/pause"),
   resume: () => post<EngineStatus>("/control/resume"),
   seek: (step: number) => post<EngineStatus>(`/control/seek?step=${step}`),
+  stepInterval: (seconds: number) => post<EngineStatus>(`/control/interval?seconds=${seconds}`),
 };
 
 export function wsUrl(): string {

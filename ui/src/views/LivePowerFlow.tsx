@@ -20,7 +20,9 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [selectedBus, setSelectedBus] = useState<number | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [selectedTrafo, setSelectedTrafo] = useState<number | null>(null);
+  const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const layoutInit = useRef(false);
+  const intervalInit = useRef(false);
 
   // node / line / trafo selections are mutually exclusive — one graph panel at a time
   const selectBus = (b: number) => { setSelectedLine(null); setSelectedTrafo(null); setSelectedBus(b); };
@@ -51,10 +53,16 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   // drop a stale node/line/trafo selection when the grid changes
   useEffect(() => { setSelectedBus(null); setSelectedLine(null); setSelectedTrafo(null); }, [topo?.name]);
 
+  // adopt the engine's current tick interval once, then it's user-driven
+  useEffect(() => {
+    if (status && !intervalInit.current) { intervalInit.current = true; setStepSeconds(status.interval_seconds); }
+  }, [status]);
+
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
   };
   const seek = async (step: number) => setStatus(await api.seek(step));
+  const changeInterval = async (s: number) => { setStepSeconds(s); setStatus(await api.stepInterval(s)); };
 
   if (error) return <div className="empty">Failed to load network:<br />{error}</div>;
   if (!topo) return <div className="spinner">Loading network…</div>;
@@ -192,8 +200,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <button className="primary" onClick={toggleRun}>
           {status?.running ? "⏸ Pause" : "▶ Play"}
         </button>
-        <span className="clock" style={{ minWidth: 64 }}>
-          {latest?.time_of_day ?? "00:00"}
+        <span className="clock" style={{ minWidth: 180 }}>
+          Zeitpunkt: {latest?.time_of_day ?? "00:00"} Uhr
         </span>
         <input
           type="range"
@@ -202,9 +210,22 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           value={step}
           onChange={(e) => seek(+e.target.value)}
         />
-        <span className="muted" style={{ minWidth: 90, textAlign: "right" }}>
-          step {step}/{spd}
-        </span>
+        <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}
+               title="Realzeit pro Simulationsschritt">
+          Schrittdauer
+          <input
+            type="range"
+            min={0.1}
+            max={1}
+            step={0.1}
+            value={stepSeconds}
+            onChange={(e) => changeInterval(+e.target.value)}
+            style={{ flex: "0 0 90px", width: 90 }}
+          />
+          <span style={{ minWidth: 34, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            {stepSeconds.toFixed(1).replace(".", ",")} s
+          </span>
+        </label>
       </div>
     </div>
   );

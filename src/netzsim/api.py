@@ -172,6 +172,13 @@ async def control_seek(step: int = Query(..., ge=0)):
     return runtime.engine.status
 
 
+@app.post("/control/interval")
+async def control_interval(seconds: float = Query(..., ge=0.1, le=1.0)):
+    """Set the accelerated-tick interval (real seconds per simulated step)."""
+    runtime.engine.set_interval(seconds)
+    return runtime.engine.status
+
+
 # --------------------------------------------------------------------------- #
 # Grid catalog + runtime grid swap
 # --------------------------------------------------------------------------- #
