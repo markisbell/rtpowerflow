@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { GridListItem, GridPreview, GridsResponse } from "../types";
 import { fmt } from "../scales";
@@ -12,13 +13,10 @@ interface Props {
 type Voltage = "MV" | "LV";
 type Character = "rural" | "suburban" | "urban";
 
-const CHARACTERS: { id: Character; label: string; hint: string }[] = [
-  { id: "rural", label: "Rural", hint: "low density, long feeders" },
-  { id: "suburban", label: "Suburban", hint: "medium density" },
-  { id: "urban", label: "Urban", hint: "high density, compact" },
-];
+const CHARACTER_IDS: Character[] = ["rural", "suburban", "urban"];
 
 export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
+  const { t } = useTranslation();
   const [data, setData] = useState<GridsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<GridPreview | null>(null);
@@ -66,54 +64,51 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
       .finally(() => { if (reqRef.current === myReq) setLoadingPreview(false); });
   }, [selected]);
 
-  if (error) return <div className="empty">Failed to load grids:<br />{error}</div>;
-  if (!data) return <div className="spinner">Loading grid library…</div>;
+  if (error) return <div className="empty">{t("grid.failed")}<br />{error}</div>;
+  if (!data) return <div className="spinner">{t("grid.loadingLib")}</div>;
   if (!data.available)
     return (
       <div className="empty">
-        No grid library found on the server.
+        {t("grid.noLibrary")}
         <br />
-        <span className="muted">
-          Run <code>scripts/build_grid_library.py</code> to generate one from the OEP.
-        </span>
+        <span className="muted">{t("grid.runScript")}</span>
       </div>
     );
 
   return (
     <div className="browser">
       <div className="grid-gallery">
-        <h2 style={{ marginTop: 0 }}>Generate a grid</h2>
+        <h2 style={{ marginTop: 0 }}>{t("grid.title")}</h2>
         <p className="muted" style={{ marginTop: "-0.4rem", fontSize: "0.85rem" }}>
-          Synthetic German distribution grids (ding0) on real geography — pick a type,
-          size and area character.
+          {t("grid.subtitle")}
         </p>
 
         <div className="gen-controls card">
           <div className="gen-row">
-            <label>Voltage level</label>
+            <label>{t("grid.voltageLevel")}</label>
             <div className="seg">
               {(["MV", "LV"] as Voltage[]).map((v) => (
                 <button key={v} className={voltage === v ? "on" : ""} onClick={() => setVoltage(v)}>
-                  {v === "MV" ? "Medium (20 kV)" : "Low (0.4 kV)"}
+                  {v === "MV" ? t("grid.mv") : t("grid.lv")}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="gen-row">
-            <label>Area character</label>
+            <label>{t("grid.areaCharacter")}</label>
             <div className="seg">
-              {CHARACTERS.map((c) => (
-                <button key={c.id} className={character === c.id ? "on" : ""}
-                        title={c.hint} onClick={() => setCharacter(c.id)}>
-                  {c.label}
+              {CHARACTER_IDS.map((c) => (
+                <button key={c} className={character === c ? "on" : ""}
+                        title={t(`grid.${c}Hint`)} onClick={() => setCharacter(c)}>
+                  {t(`grid.${c}`)}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="gen-row">
-            <label>Approx. nodes <span className="muted">({target})</span></label>
+            <label>{t("grid.approxNodes")} <span className="muted">({target})</span></label>
             <input type="range" min={10} max={500} step={5} value={target}
                    onChange={(e) => setTarget(+e.target.value)} />
           </div>
@@ -121,7 +116,7 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
 
         {matches.length === 0 ? (
           <div className="empty" style={{ height: "auto", padding: "2rem 0" }}>
-            No {voltage} {character} grid in the library yet — try another combination.
+            {t("grid.noMatch", { voltage, character: t(`grid.${character}`) })}
           </div>
         ) : (
           <div className="gallery-grid">
@@ -134,25 +129,25 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
       </div>
 
       <div className="preview-pane">
-        {!selected && <div className="muted">Adjust the controls to pick a grid.</div>}
-        {loadingPreview && <div className="spinner">Building grid…</div>}
+        {!selected && <div className="muted">{t("grid.adjust")}</div>}
+        {loadingPreview && <div className="spinner">{t("grid.building")}</div>}
         {preview && (
           <>
             <h3 style={{ marginTop: 0 }}>{preview.name}</h3>
             <div className="kpis">
-              <Kpi k="buses" v={preview.n_bus} />
-              <Kpi k="lines" v={preview.n_line} />
-              <Kpi k="trafos" v={preview.n_trafo} />
-              <Kpi k="loads" v={preview.n_load} />
+              <Kpi k={t("grid.kBuses")} v={preview.n_bus} />
+              <Kpi k={t("grid.kLines")} v={preview.n_line} />
+              <Kpi k={t("grid.kTrafos")} v={preview.n_trafo} />
+              <Kpi k={t("grid.kLoads")} v={preview.n_load} />
             </div>
             {preview.trafos[0] && (
               <p className="muted" style={{ fontSize: "0.82rem" }}>
-                Transformer: {fmt(preview.trafos[0].sn_mva * 1000, 0)} kVA
+                {t("grid.transformer", { kva: fmt(preview.trafos[0].sn_mva * 1000, 0) })}
               </p>
             )}
             {preview.notes.length > 0 && (
               <details>
-                <summary className="note">{preview.notes.length} import note(s)</summary>
+                <summary className="note">{t("grid.notes", { count: preview.notes.length })}</summary>
                 <ul style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
                   {preview.notes.map((n, i) => (
                     <li key={i}>{n}</li>
@@ -161,7 +156,7 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
               </details>
             )}
             <button className="primary" style={{ marginTop: "1rem" }} onClick={onContinue}>
-              Configure loads →
+              {t("grid.configure")}
             </button>
           </>
         )}
@@ -171,14 +166,15 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
 }
 
 function GridCard({ g, selected, onClick }: { g: GridListItem; selected: boolean; onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className={`card grid-card${selected ? " sel" : ""}`} onClick={onClick}>
       <div className="meta">
         <div className="title">{g.name}</div>
         <div className="sub">
           <span className="tag">{g.voltage}</span>
-          <span className="tag">{g.character}</span>
-          {g.nodes != null && <> {g.nodes} nodes</>}
+          <span className="tag">{g.character ? t(`grid.${g.character}`) : ""}</span>
+          {g.nodes != null && <> {t("grid.nodes", { count: g.nodes })}</>}
         </div>
       </div>
     </div>

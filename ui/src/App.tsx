@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "./api";
 import type { ActiveGrid } from "./types";
 import GridBrowser from "./views/GridBrowser";
@@ -8,6 +9,7 @@ import LivePowerFlow from "./views/LivePowerFlow";
 type Tab = "grids" | "loads" | "live";
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<Tab>("grids");
   const [selectedGrid, setSelectedGrid] = useState<string | null>(null);
   const [active, setActive] = useState<ActiveGrid | null>(null);
@@ -22,18 +24,17 @@ export default function App() {
       <header className="topbar">
         <nav className="tabs">
           <button className={tab === "grids" ? "on" : ""} onClick={() => setTab("grids")}>
-            Grid
+            {t("nav.grid")}
           </button>
           <button
             className={tab === "loads" ? "on" : ""}
             onClick={() => setTab("loads")}
             disabled={!selectedGrid}
-            title={selectedGrid ? "" : "Pick a grid first"}
           >
-            Loads
+            {t("nav.loads")}
           </button>
           <button className={tab === "live" ? "on" : ""} onClick={() => setTab("live")}>
-            Live
+            {t("nav.live")}
           </button>
         </nav>
         <div className="active-chip">
@@ -42,14 +43,22 @@ export default function App() {
               <span className="dot" /> {active.name}
               <span className="muted">
                 {" "}
-                · {active.n_bus} bus · {active.load_source ?? "—"} loads
+                · {active.n_bus} {t("app.busShort")} · {active.load_source ?? "—"} {t("app.loadsShort")}
                 {!!active.n_ev && ` · 🔌 ${active.n_ev}`}
                 {!!active.n_pv && ` · ☀️ ${active.n_pv}`}
               </span>
             </>
           ) : (
-            <span className="muted">{active?.name ?? "no grid"} (default)</span>
+            <span className="muted">{t("app.defaultGrid", { name: active?.name ?? t("app.noGrid") })}</span>
           )}
+          <div className="lang-switch">
+            {(["de", "en"] as const).map((lng) => (
+              <button key={lng} className={i18n.language === lng ? "on" : ""}
+                      onClick={() => i18n.changeLanguage(lng)}>
+                {lng.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 

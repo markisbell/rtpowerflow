@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { StepResult, Topology } from "../types";
 import { currentWidth, loadingColor, voltageColor, fmt } from "../scales";
 
@@ -33,6 +34,7 @@ interface Tip {
 type XY = { x: number; y: number };
 
 export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [] }: Props) {
+  const { t } = useTranslation();
   // ---- stacked horizontal feeder layout ------------------------------------
   // x = depth from the slack (feeders run straight left→right, using the width);
   // the largest child continues its parent's track, other feeders drop to a new
@@ -252,11 +254,11 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               onClick={(e) => onSelectLine?.(ln.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
                 showTip(ev, [
-                  `Line ${ln.name ?? ln.id}`,
-                  `loading ${fmt(live?.loading_percent, 1)} %`,
-                  `I ${fmt(live?.i_ka != null ? live.i_ka * 1000 : null, 1)} A`,
-                  `P ${fmt(live?.p_from_mw != null ? live.p_from_mw * 1000 : null, 1)} kW`,
-                  "click → current graph",
+                  t("tip.line", { name: ln.name ?? ln.id }),
+                  t("tip.loadingPct", { v: fmt(live?.loading_percent, 1) }),
+                  t("tip.currentA", { v: fmt(live?.i_ka != null ? live.i_ka * 1000 : null, 1) }),
+                  t("tip.powerKw", { v: fmt(live?.p_from_mw != null ? live.p_from_mw * 1000 : null, 1) }),
+                  t("tip.clickCurrent"),
                 ])
               }
             >
@@ -294,10 +296,10 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               onClick={(e) => onSelectTrafo?.(tr.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
                 showTip(ev, [
-                  `Trafo ${tr.name ?? tr.id}`,
-                  `${fmt(tr.sn_mva * 1000, 0)} kVA`,
-                  `loading ${fmt(live?.loading_percent, 1)} %`,
-                  "click → power graph",
+                  t("tip.trafo", { name: tr.name ?? tr.id }),
+                  t("tip.kva", { v: fmt(tr.sn_mva * 1000, 0) }),
+                  t("tip.loadingPct", { v: fmt(live?.loading_percent, 1) }),
+                  t("tip.clickPower"),
                 ])
               }
             >
@@ -332,10 +334,10 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               onClick={(e) => onSelectBus?.(bus.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(e) =>
                 showTip(e, [
-                  `${isExt ? "Slack " : "Bus "}${bus.name}`,
-                  `${bus.vn_kv} kV`,
-                  `Vm ${fmt(vm, 4)} pu`,
-                  "click → load/gen graph",
+                  isExt ? t("tip.slack", { name: bus.name }) : t("tip.bus", { name: bus.name }),
+                  t("tip.kv", { v: bus.vn_kv }),
+                  t("tip.vmPu", { v: fmt(vm, 4) }),
+                  t("tip.clickNode"),
                 ])
               }
             />
@@ -379,7 +381,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
       </svg>
 
       <button className="ghost" style={{ position: "absolute", top: 10, right: 10 }} onClick={reset}>
-        Reset view
+        {t("live.reset")}
       </button>
       {tip && (
         <div className="tooltip" style={{ left: tip.x, top: tip.y }}>
