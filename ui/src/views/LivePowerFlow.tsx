@@ -70,6 +70,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const s = latest?.summary;
   const step = latest?.step ?? status?.step ?? 0;
   const spd = topo.steps_per_day || status?.steps_per_day || 1440;
+  // current time of day as a 0..1 fraction, for the "now" marker on the graphs
+  const nowFrac = latest && spd > 1 ? latest.step / (spd - 1) : null;
 
   return (
     <div className="live">
@@ -136,6 +138,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           <NodeProfile
             bus={selectedBus}
             name={topo.buses.find((b) => b.id === selectedBus)?.name ?? String(selectedBus)}
+            now={nowFrac}
             onClose={() => setSelectedBus(null)}
           />
         )}
@@ -143,6 +146,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           <LineProfile
             line={selectedLine}
             name={topo.lines.find((l) => l.id === selectedLine)?.name ?? String(selectedLine)}
+            now={nowFrac}
             onClose={() => setSelectedLine(null)}
           />
         )}
@@ -150,6 +154,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           <TrafoProfile
             trafo={selectedTrafo}
             name={topo.trafos.find((t) => t.id === selectedTrafo)?.name ?? String(selectedTrafo)}
+            now={nowFrac}
             onClose={() => setSelectedTrafo(null)}
           />
         )}

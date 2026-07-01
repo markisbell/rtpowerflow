@@ -27,6 +27,12 @@ def _clearsky(steps: int, peak_hour: float, width_hours: float) -> np.ndarray:
     width = width_hours / 24.0 * steps
     day_start, day_end = 6.0 / 24.0 * steps, 18.0 / 24.0 * steps
     bell = np.exp(-((t - peak) ** 2) / (2.0 * width ** 2))
+    # The raw Gaussian is still well above zero at sunrise/sunset, which made PV
+    # jump from 0 to ~20 % at 06:00. Subtract the daylight-boundary value and
+    # renormalise so the curve ramps from exactly 0 at sunrise to 1 at noon.
+    edge = max(math.exp(-((day_start - peak) ** 2) / (2.0 * width ** 2)),
+               math.exp(-((day_end - peak) ** 2) / (2.0 * width ** 2)))
+    bell = np.clip((bell - edge) / (1.0 - edge), 0.0, 1.0)
     bell[(t < day_start) | (t > day_end)] = 0.0
     return bell
 

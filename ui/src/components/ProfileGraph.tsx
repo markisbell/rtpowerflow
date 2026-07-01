@@ -1,19 +1,30 @@
 import { useRef, useState } from "react";
 
-export interface GSeries { label: string; color: string; data: (number | null)[]; fill?: boolean; }
+export interface GSeries {
+  label: string;
+  color: string;
+  data: (number | null)[];
+  fill?: boolean;
+  // optional severity coloring for the "past" part of the curve (up to now), so
+  // it matches the map/schematic colorset: colorFn maps colorData[i] → a color.
+  colorData?: (number | null)[];
+  colorFn?: (v: number | null | undefined) => string;
+}
 export interface GLimit { value: number; label: string; color: string; }
 
 const W = 300, H = 128, L = 30, R = 8, T = 10, B = 18;
 
-// A daily time-series graph (x = 0..24 h) with overlaid semi-transparent series,
-// dashed limit lines, and a cursor that follows the mouse and reads out each
-// series' value at that time. `scale`/`unit`/`dec` format the readouts; series of
-// different lengths are supported (each mapped across the day by its index).
+// A daily time-series graph (x = 0..24 h) with overlaid series, dashed limit
+// lines, and a cursor that reads out each series at the hovered time. If `now`
+// (fraction of the day) is given, the curve up to the current simulation time is
+// drawn opaque — colored by the severity colorset when provided — and the rest
+// faded, so the reading ties back to the live line/node color on the map.
 export default function ProfileGraph({
-  series, limits = [], scale, unit, dec, baseZero = true,
-}: { series: GSeries[]; limits?: GLimit[]; scale: number; unit: string; dec: number; baseZero?: boolean }) {
+  series, limits = [], scale, unit, dec, baseZero = true, now = null,
+}: { series: GSeries[]; limits?: GLimit[]; scale: number; unit: string; dec: number; baseZero?: boolean; now?: number | null }) {
   const [hover, setHover] = useState<number | null>(null); // fraction of the day 0..1
   const ref = useRef<SVGSVGElement | null>(null);
+  const nowF = now == null ? null : Math.min(1, Math.max(0, now));
 
   const vals: number[] = [];
   series.forEach((s) => s.data.forEach((v) => v != null && vals.push(v)));
@@ -27,13 +38,36 @@ export default function ProfileGraph({
 
   const px = (frac: number) => L + frac * (W - L - R);
   const py = (v: number) => H - B - ((v - yMin) / (yMax - yMin)) * (H - T - B);
+  const fracOf = (s: GSeries, i: number) => (s.data.length <= 1 ? 0 : i / (s.data.length - 1));
   const line = (s: GSeries) => {
     let d = "";
     s.data.forEach((v, i) => {
       if (v == null) return;
-      d += (d ? "L" : "M") + px(s.data.length <= 1 ? 0 : i / (s.data.length - 1)).toFixed(1) + " " + py(v).toFixed(1) + " ";
+      d += (d ? "L" : "M") + px(fracOf(s, i)).toFixed(1) + " " + py(v).toFixed(1) + " ";
     });
     return d;
+  };
+  // the "past" curve (frac <= now) as a single path (uncolored series)
+  const pastPath = (s: GSeries, nf: number) => {
+    let d = "";
+    s.data.forEach((v, i) => {
+      if (v == null || fracOf(s, i) > nf) return;
+      d += (d ? "L" : "M") + px(fracOf(s, i)).toFixed(1) + " " + py(v).toFixed(1) + " ";
+    });
+    return d;
+  };
+  // the "past" curve as per-segment colored lines (severity colorset)
+  const pastSegs = (s: GSeries, nf: number) => {
+    const segs: { x1: number; y1: number; x2: number; y2: number; col: string }[] = [];
+    for (let i = 0; i < s.data.length - 1; i++) {
+      const a = s.data[i], b = s.data[i + 1];
+      if (a == null || b == null) continue;
+      const f1 = fracOf(s, i), f2 = fracOf(s, i + 1);
+      if ((f1 + f2) / 2 > nf) continue;
+      const col = s.colorFn ? s.colorFn(s.colorData ? s.colorData[i] : a) : s.color;
+      segs.push({ x1: px(f1), y1: py(a), x2: px(f2), y2: py(b), col });
+    }
+    return segs;
   };
   const valAt = (s: GSeries, frac: number) => s.data[Math.round(frac * (s.data.length - 1))] ?? null;
 
@@ -50,7 +84,9 @@ export default function ProfileGraph({
 
   return (
     <>
-      <div style={{ fontSize: "0.72rem", color: "var(--muted)", height: 13 }}>{hover != null ? hhmm(hover) : ""}</div>
+      <div style={{ fontSize: "0.72rem", color: "var(--muted)", height: 13 }}>
+        {hover != null ? hhmm(hover) : nowF != null ? `${hhmm(nowF)} Uhr` : ""}
+      </div>
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", cursor: "crosshair" }}
            onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {[0, 6, 12, 18, 24].map((h) => {
@@ -75,13 +111,34 @@ export default function ProfileGraph({
             </g>
           );
         })}
+
         {series.map((s) => {
           const d = line(s);
           if (!s.fill || !d) return null;
           return <path key={"a" + s.label} d={`${d}L${px(1).toFixed(1)} ${py(yMin).toFixed(1)} L${px(0).toFixed(1)} ${py(yMin).toFixed(1)} Z`}
-                       fill={s.color} opacity={0.14} />;
+                       fill={s.color} opacity={nowF != null ? 0.09 : 0.14} />;
         })}
-        {series.map((s) => <path key={"l" + s.label} d={line(s)} fill="none" stroke={s.color} strokeWidth={1.5} opacity={0.92} />)}
+        {series.map((s) => {
+          const full = line(s);
+          if (!full) return null;
+          return (
+            <g key={"l" + s.label}>
+              {/* whole day, faded when a "now" split is active (this is the future part) */}
+              <path d={full} fill="none" stroke={s.color} strokeWidth={1.5} opacity={nowF != null ? 0.25 : 0.92} />
+              {/* opaque past overlay up to the current time, severity-colored if provided */}
+              {nowF != null && (s.colorFn
+                ? pastSegs(s, nowF).map((sg, k) => (
+                    <line key={k} x1={sg.x1} y1={sg.y1} x2={sg.x2} y2={sg.y2} stroke={sg.col} strokeWidth={2} strokeLinecap="round" />
+                  ))
+                : <path d={pastPath(s, nowF)} fill="none" stroke={s.color} strokeWidth={2} />)}
+            </g>
+          );
+        })}
+
+        {/* current simulation time marker */}
+        {nowF != null && (
+          <line x1={px(nowF)} y1={T} x2={px(nowF)} y2={H - B} stroke="#e6e6e6" strokeWidth={1} opacity={0.5} />
+        )}
 
         {hover != null && (
           <g pointerEvents="none">

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { LineProfiles } from "../types";
+import { loadingColor } from "../scales";
 import ProfileGraph from "./ProfileGraph";
 
 // Per-line daily current graph with the line's rated current (ampacity) limit.
-export default function LineProfile({ line, name, onClose }: { line: number; name: string; onClose: () => void }) {
+export default function LineProfile({ line, name, now, onClose }: { line: number; name: string; now: number | null; onClose: () => void }) {
   const [data, setData] = useState<LineProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -27,11 +28,12 @@ export default function LineProfile({ line, name, onClose }: { line: number; nam
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>loading…</div>}
       {!err && data && hasData && (
         <ProfileGraph
-          series={[{ label: "Current", color: "#4c8dff", data: data.current, fill: true }]}
+          series={[{ label: "Current", color: "#4c8dff", data: data.current, fill: true,
+                     colorData: data.loading, colorFn: loadingColor }]}
           limits={data.rated_i_ka != null
             ? [{ value: data.rated_i_ka, label: `rated ${(data.rated_i_ka * 1000).toFixed(0)} A`, color: "#f85149" }]
             : []}
-          scale={1000} unit="A" dec={0}
+          scale={1000} unit="A" dec={0} now={now}
         />
       )}
       {!err && data && !hasData && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { NodeProfiles, NodeSeriesKind } from "../types";
+import { voltageColor } from "../scales";
 import ProfileGraph, { type GSeries } from "./ProfileGraph";
 
 const COLOR: Record<NodeSeriesKind, string> = { residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950" };
@@ -12,7 +13,7 @@ const VLIMIT = [
 
 // Per-node daily graph: power (residential/EV/PV load & generation) or voltage,
 // switchable, with the EN 50160 ±10 % voltage limits shown in voltage mode.
-export default function NodeProfile({ bus, name, onClose }: { bus: number; name: string; onClose: () => void }) {
+export default function NodeProfile({ bus, name, now, onClose }: { bus: number; name: string; now: number | null; onClose: () => void }) {
   const [data, setData] = useState<NodeProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<"power" | "voltage">("power");
@@ -45,13 +46,13 @@ export default function NodeProfile({ bus, name, onClose }: { bus: number; name:
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>loading…</div>}
       {!err && data && mode === "power" && (
         powerSeries.length
-          ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} />
+          ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} now={now} />
           : <div className="muted" style={{ fontSize: "0.72rem" }}>No load or generation at this node.</div>
       )}
       {!err && data && mode === "voltage" && hasVoltage && (
         <ProfileGraph
-          series={[{ label: "Voltage", color: "#c586ff", data: data.voltage }]}
-          limits={VLIMIT} scale={1} unit="pu" dec={3} baseZero={false}
+          series={[{ label: "Voltage", color: "#c586ff", data: data.voltage, colorData: data.voltage, colorFn: voltageColor }]}
+          limits={VLIMIT} scale={1} unit="pu" dec={3} baseZero={false} now={now}
         />
       )}
     </div>

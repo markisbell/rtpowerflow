@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { TrafoProfiles } from "../types";
+import { loadingColor } from "../scales";
 import ProfileGraph, { type GLimit } from "./ProfileGraph";
 
 // Per-transformer daily power-exchange graph (HV-side P) with the transformer's
 // rated apparent power as the capacity limit. When the flow reverses (PV export),
 // the axis spans ±rated; otherwise it's an import-only 0..rated view.
-export default function TrafoProfile({ trafo, name, onClose }: { trafo: number; name: string; onClose: () => void }) {
+export default function TrafoProfile({ trafo, name, now, onClose }: { trafo: number; name: string; now: number | null; onClose: () => void }) {
   const [data, setData] = useState<TrafoProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -37,8 +38,9 @@ export default function TrafoProfile({ trafo, name, onClose }: { trafo: number; 
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>loading…</div>}
       {!err && data && hasData && (
         <ProfileGraph
-          series={[{ label: "P exchange", color: "#f2ae00", data: power, fill: !hasExport }]}
-          limits={limits} scale={1000} unit="kW" dec={1} baseZero={!hasExport}
+          series={[{ label: "P exchange", color: "#f2ae00", data: power, fill: !hasExport,
+                     colorData: data.loading, colorFn: loadingColor }]}
+          limits={limits} scale={1000} unit="kW" dec={1} baseZero={!hasExport} now={now}
         />
       )}
       {!err && data && !hasData && (
