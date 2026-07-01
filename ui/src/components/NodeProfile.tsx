@@ -13,7 +13,7 @@ const VLIMIT = [
 
 // Per-node daily graph: power (residential/EV/PV load & generation) or voltage,
 // switchable, with the EN 50160 ±10 % voltage limits shown in voltage mode.
-export default function NodeProfile({ bus, name, now, onClose }: { bus: number; name: string; now: number | null; onClose: () => void }) {
+export default function NodeProfile({ bus, name, now, day, onClose }: { bus: number; name: string; now: number | null; day: number; onClose: () => void }) {
   const [data, setData] = useState<NodeProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<"power" | "voltage">("power");
@@ -23,7 +23,7 @@ export default function NodeProfile({ bus, name, now, onClose }: { bus: number; 
     setData(null); setErr(null);
     api.nodeProfiles(bus).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [bus]);
+  }, [bus, day]);
 
   const powerSeries: GSeries[] = (data?.series ?? []).map((s) => ({
     label: LABEL[s.kind], color: COLOR[s.kind], data: s.p_mw, fill: true,

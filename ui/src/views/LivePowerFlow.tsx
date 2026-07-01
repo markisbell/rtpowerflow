@@ -21,6 +21,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [selectedTrafo, setSelectedTrafo] = useState<number | null>(null);
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
+  const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
@@ -37,6 +38,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     loadTopo();
     loadStatus();
     onActive();
+    api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
@@ -63,6 +65,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   };
   const seek = async (step: number) => setStatus(await api.seek(step));
   const changeInterval = async (s: number) => { setStepSeconds(s); setStatus(await api.stepInterval(s)); };
+  const seekDay = async (d: number) => setStatus(await api.seekDay(d));
 
   if (error) return <div className="empty">Failed to load network:<br />{error}</div>;
   if (!topo) return <div className="spinner">Loading network…</div>;
@@ -72,6 +75,10 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const spd = topo.steps_per_day || status?.steps_per_day || 1440;
   // current time of day as a 0..1 fraction, for the "now" marker on the graphs
   const nowFrac = latest && spd > 1 ? latest.step / (spd - 1) : null;
+  // real-PV day: use the per-step value while running, else the (seek-updated) status
+  const nDays = status?.n_days ?? 1;
+  const curDay = (latest && status?.running) ? latest.day : (status?.day ?? latest?.day ?? 0);
+  const dayIdx = nDays > 0 ? ((curDay % nDays) + nDays) % nDays : 0;
 
   return (
     <div className="live">
@@ -139,6 +146,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             bus={selectedBus}
             name={topo.buses.find((b) => b.id === selectedBus)?.name ?? String(selectedBus)}
             now={nowFrac}
+            day={curDay}
             onClose={() => setSelectedBus(null)}
           />
         )}
@@ -147,6 +155,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             line={selectedLine}
             name={topo.lines.find((l) => l.id === selectedLine)?.name ?? String(selectedLine)}
             now={nowFrac}
+            day={curDay}
             onClose={() => setSelectedLine(null)}
           />
         )}
@@ -155,6 +164,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             trafo={selectedTrafo}
             name={topo.trafos.find((t) => t.id === selectedTrafo)?.name ?? String(selectedTrafo)}
             now={nowFrac}
+            day={curDay}
             onClose={() => setSelectedTrafo(null)}
           />
         )}
@@ -215,6 +225,23 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           value={step}
           onChange={(e) => seek(+e.target.value)}
         />
+        {nDays > 1 && (
+          <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}
+                 title="Realer PV-Tag (Messdaten)">
+            Tag
+            <input
+              type="range"
+              min={0}
+              max={nDays - 1}
+              value={dayIdx}
+              onChange={(e) => seekDay(+e.target.value)}
+              style={{ flex: "0 0 90px", width: 90 }}
+            />
+            <span style={{ minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              {pvDates[dayIdx] ?? `#${dayIdx + 1}`}
+            </span>
+          </label>
+        )}
         <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}
                title="Realzeit pro Simulationsschritt">
           Schrittdauer

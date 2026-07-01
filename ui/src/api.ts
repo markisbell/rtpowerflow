@@ -8,6 +8,7 @@ import type {
   LineProfiles,
   LoadgenPolicy,
   NodeProfiles,
+  PvDays,
   StepResult,
   Topology,
   TrafoProfiles,
@@ -59,7 +60,9 @@ export const api = {
   pause: () => post<EngineStatus>("/control/pause"),
   resume: () => post<EngineStatus>("/control/resume"),
   seek: (step: number) => post<EngineStatus>(`/control/seek?step=${step}`),
+  seekDay: (day: number) => post<EngineStatus>(`/control/seekday?day=${day}`),
   stepInterval: (seconds: number) => post<EngineStatus>(`/control/interval?seconds=${seconds}`),
+  pvDays: () => get<PvDays>("/pv/days"),
 };
 
 export function wsUrl(): string {

@@ -13,6 +13,7 @@ from .config import settings
 from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
 from .grid_catalog import GridCatalog, preview
+from .realpv import load_pv_days
 from .loadgen import (
     AssignPolicy,
     EvPolicy,
@@ -36,6 +37,8 @@ class App:
     catalog: GridCatalog
     library: LoadLibrary
     active: dict
+    pv_dates: list
+    pv_peak_w: float
 
 
 runtime = App()
@@ -68,6 +71,14 @@ async def lifespan(app: FastAPI):
                                   library_manifest=settings.grid_library)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
+    # Real multi-day PV (optional): when the cache is present, PV follows measured
+    # days and the UI offers a day slider.
+    pv = load_pv_days(settings.real_pv_file, steps=settings.steps_per_day)
+    runtime.pv_dates = pv.dates if pv else []
+    runtime.pv_peak_w = pv.peak_w if pv else 0.0
+    if pv:
+        runtime.engine.set_pv_days(pv.shapes)
+        log.info("Real PV: %d day(s) loaded from %s", pv.n_days, settings.real_pv_file)
     log.info("Grid catalog: %d grid(s); LPG library: %d archetype(s)",
              len(runtime.catalog.list()), len(runtime.library.list()))
     if settings.autostart:
@@ -177,6 +188,20 @@ async def control_interval(seconds: float = Query(..., ge=0.1, le=1.0)):
     """Set the accelerated-tick interval (real seconds per simulated step)."""
     runtime.engine.set_interval(seconds)
     return runtime.engine.status
+
+
+@app.post("/control/seekday")
+async def control_seekday(day: int = Query(..., ge=0)):
+    """Jump to a specific real-PV day (wraps within the available days)."""
+    runtime.engine.seek_day(day)
+    return runtime.engine.status
+
+
+@app.get("/pv/days")
+def pv_days():
+    """Real-PV day calendar for the day slider (empty when no cache is loaded)."""
+    return {"available": bool(runtime.pv_dates), "peak_w": runtime.pv_peak_w,
+            "dates": runtime.pv_dates}
 
 
 # --------------------------------------------------------------------------- #

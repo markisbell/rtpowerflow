@@ -188,6 +188,13 @@ export interface EngineStatus {
   day: number;
   steps_per_day: number;
   interval_seconds: number;
+  n_days: number;
+}
+
+export interface PvDays {
+  available: boolean;
+  peak_w: number;
+  dates: string[];
 }
 
 export interface ActiveGrid {

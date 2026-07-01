@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     # Cached LPG household load library (served by /loadgen)
     lpg_library_dir: Path = Path("./data/lpg_library")
 
+    # Cached real-PV daily shapes (see scripts/fetch_real_pv.py). When present,
+    # PV generation follows these real measured days and a day slider is offered.
+    real_pv_file: Path = Path("./data/real_pv_days.json")
+
     # CORS (comma-separated origins; "*" allows any)
     cors_origins: str = "*"
 

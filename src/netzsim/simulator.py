@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
 import pandapower as pp
 
 from .data_loader import InputData
@@ -46,6 +47,29 @@ class Simulator:
         self.steps_per_day = data.steps_per_day
         self._solved_once = False
         self._coords: tuple[dict[int, list[float]], dict[int, list[float]]] | None = None
+        # multi-day real PV (optional): per-day normalised 0..1 shapes applied as a
+        # scale on each PV sgen. `day` selects the active day; graphs cache per day.
+        self.day = 0
+        self.pv_days: np.ndarray | None = None
+        self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
+        self._daily_by_day: dict[int, dict] = {}
+
+    def set_pv_days(self, shapes: np.ndarray | None) -> None:
+        """Attach per-day PV shapes ([n_days, steps], 0..1). Applied only if the
+        grid actually has PV sgens; clears the per-day graph cache."""
+        self.pv_days = shapes if (shapes is not None and len(shapes) and self.sgen_peak.size) else None
+        self._daily_by_day.clear()
+
+    @property
+    def n_days(self) -> int:
+        return int(self.pv_days.shape[0]) if self.pv_days is not None else 1
+
+    def _sgen_p_col(self, day: int, t: int) -> "np.ndarray":
+        """PV/sgen active power at step ``t`` — the real day's shape × each
+        system's peak when real PV is loaded, else the built-in profile."""
+        if self.pv_days is not None:
+            return self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
+        return self.prof.sgen_p[:, t]
 
     # -- profile application -------------------------------------------- #
     def _apply_step(self, t: int) -> None:
@@ -54,7 +78,7 @@ class Simulator:
             self.net.load.loc[p.load_idx, "p_mw"] = p.load_p[:, t]
             self.net.load.loc[p.load_idx, "q_mvar"] = p.load_q[:, t]
         if p.sgen_idx:
-            self.net.sgen.loc[p.sgen_idx, "p_mw"] = p.sgen_p[:, t]
+            self.net.sgen.loc[p.sgen_idx, "p_mw"] = self._sgen_p_col(self.day, t)
             self.net.sgen.loc[p.sgen_idx, "q_mvar"] = p.sgen_q[:, t]
         if p.ext_idx:
             self.net.ext_grid.loc[p.ext_idx, "vm_pu"] = p.ext_vm[:, t]
@@ -63,6 +87,7 @@ class Simulator:
     # -- the power flow -------------------------------------------------- #
     def run_step(self, step: int, day: int = 0) -> StepResult:
         t = step % self.steps_per_day
+        self.day = day
         self._apply_step(t)
 
         init = "results" if (self.warm_start and self._solved_once) else "auto"
@@ -221,15 +246,17 @@ class Simulator:
             self._coords = compute_layouts(self.net)
         return self._coords
 
-    def daily_curves(self, samples: int = 97) -> dict:
-        """Sweep the whole day once (on an ISOLATED net, so the live engine is not
-        disturbed) and cache per-bus voltage + per-line current/loading, sampled
-        ~evenly across the day. The result is deterministic for a grid, so it is
-        computed lazily and cached for the lifetime of this Simulator."""
-        cached = getattr(self, "_daily", None)
+    def daily_curves(self, day: int | None = None, samples: int = 97) -> dict:
+        """Sweep a whole day once (on an ISOLATED net, so the live engine is not
+        disturbed) and cache per-bus voltage + per-line current/loading + per-trafo
+        power, sampled ~evenly across the day. Cached per day, since real-PV days
+        differ; a grid without real PV only ever uses day 0."""
+        d = self.day if day is None else day
+        cached = self._daily_by_day.get(d)
         if cached is not None:
             return cached
         net, prof = build_network(self.data)          # isolated from self.net
+        sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
         spd = self.steps_per_day
         n = max(2, min(samples, spd))
         steps = [round(i * (spd - 1) / (n - 1)) for i in range(n)]
@@ -244,7 +271,9 @@ class Simulator:
         for t in steps:
             net.load.loc[prof.load_idx, "p_mw"] = prof.load_p[:, t]
             net.load.loc[prof.load_idx, "q_mvar"] = prof.load_q[:, t]
-            net.sgen.loc[prof.sgen_idx, "p_mw"] = prof.sgen_p[:, t]
+            sgen_p = (sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
+                      if self.pv_days is not None else prof.sgen_p[:, t])
+            net.sgen.loc[prof.sgen_idx, "p_mw"] = sgen_p
             net.sgen.loc[prof.sgen_idx, "q_mvar"] = prof.sgen_q[:, t]
             net.ext_grid.loc[prof.ext_idx, "vm_pu"] = prof.ext_vm[:, t]
             net.ext_grid.loc[prof.ext_idx, "va_degree"] = prof.ext_va[:, t]
@@ -267,9 +296,10 @@ class Simulator:
                     i_ka[int(l)].append(None); loading[int(l)].append(None)
                 for tr in net.trafo.index:
                     tr_p_hv[int(tr)].append(None); tr_loading[int(tr)].append(None)
-        self._daily = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading,
-                       "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading}
-        return self._daily
+        result = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading,
+                  "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading}
+        self._daily_by_day[d] = result
+        return result
 
     def node_profiles(self, bus: int) -> dict:
         """A bus's daily curves: input p_mw split into residential / EV loads and PV
@@ -286,19 +316,22 @@ class Simulator:
         for i, si in enumerate(p.sgen_idx):
             if int(net.sgen.at[si, "bus"]) != bus:
                 continue
-            add("pv", p.sgen_p[i])
+            # real-PV day → this system's peak × the day's shape; else built-in
+            row = (self.sgen_peak[i] * self.pv_days[self.day % self.pv_days.shape[0]]
+                   if self.pv_days is not None else p.sgen_p[i])
+            add("pv", row)
         order = ["residential", "ev", "pv"]
         series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
                   for k in order if cats.get(k) is not None]
         name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)
         return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day,
-                "series": series, "voltage": self.daily_curves()["bus_vm"].get(bus, [])}
+                "series": series, "voltage": self.daily_curves(self.day)["bus_vm"].get(bus, [])}
 
     def line_profiles(self, line: int) -> dict:
         """A line's daily current + loading curves, with its rated current (the
         ampacity limit = ``max_i_ka × parallel``)."""
         net = self.net
-        d = self.daily_curves()
+        d = self.daily_curves(self.day)
         rated = float(net.line.at[line, "max_i_ka"]) * int(net.line.at[line, "parallel"])
         return {
             "line": line, "name": str(net.line.at[line, "name"] or line),
@@ -311,7 +344,7 @@ class Simulator:
         """A transformer's daily power exchange (HV-side P) + loading curves, with
         its rated apparent power (``sn_mva × parallel``) as the capacity limit."""
         net = self.net
-        d = self.daily_curves()
+        d = self.daily_curves(self.day)
         rated = float(net.trafo.at[trafo, "sn_mva"]) * int(net.trafo.at[trafo, "parallel"])
         return {
             "trafo": trafo, "name": str(net.trafo.at[trafo, "name"] or trafo),

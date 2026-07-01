@@ -28,6 +28,7 @@ class RealtimeEngine:
         self.store = store
         self.interval = interval_seconds
         self.steps_per_day = simulator.steps_per_day
+        self.pv_days = None  # real multi-day PV shapes, re-applied on reconfigure
 
         self.step = 0
         self.day = 0
@@ -71,6 +72,7 @@ class RealtimeEngine:
         self.sim = await asyncio.to_thread(
             Simulator, data, warm_start=self.sim.warm_start
         )
+        self.sim.set_pv_days(self.pv_days)   # real PV re-applies to the new grid
         self.steps_per_day = self.sim.steps_per_day
         self.step = 0
         self.day = 0
@@ -86,6 +88,18 @@ class RealtimeEngine:
     def seek(self, step: int) -> None:
         self.step = step % self.steps_per_day
 
+    def set_pv_days(self, shapes) -> None:
+        """Hold real multi-day PV shapes and apply them to the current sim; they
+        are re-applied whenever the grid is reconfigured."""
+        self.pv_days = shapes
+        self.sim.set_pv_days(shapes)
+
+    def seek_day(self, day: int) -> None:
+        """Jump to a specific (real PV) day; wraps within the available days."""
+        n = max(1, self.sim.n_days)
+        self.day = day % n
+        self.sim.day = self.day
+
     def set_interval(self, seconds: float) -> None:
         """Change the accelerated-tick interval (real seconds per step). The
         running loop picks up the new value on its next sleep."""
@@ -99,6 +113,7 @@ class RealtimeEngine:
             "day": self.day,
             "steps_per_day": self.steps_per_day,
             "interval_seconds": self.interval,
+            "n_days": self.sim.n_days,
         }
 
     # -- main loop ------------------------------------------------------- #

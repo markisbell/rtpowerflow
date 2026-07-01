@@ -5,7 +5,7 @@ import { loadingColor } from "../scales";
 import ProfileGraph from "./ProfileGraph";
 
 // Per-line daily current graph with the line's rated current (ampacity) limit.
-export default function LineProfile({ line, name, now, onClose }: { line: number; name: string; now: number | null; onClose: () => void }) {
+export default function LineProfile({ line, name, now, day, onClose }: { line: number; name: string; now: number | null; day: number; onClose: () => void }) {
   const [data, setData] = useState<LineProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -14,7 +14,7 @@ export default function LineProfile({ line, name, now, onClose }: { line: number
     setData(null); setErr(null);
     api.lineProfiles(line).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [line]);
+  }, [line, day]);
 
   const hasData = (data?.current?.length ?? 0) > 0 && data!.current.some((v) => v != null);
 

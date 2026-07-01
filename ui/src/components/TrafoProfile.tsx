@@ -7,7 +7,7 @@ import ProfileGraph, { type GLimit } from "./ProfileGraph";
 // Per-transformer daily power-exchange graph (HV-side P) with the transformer's
 // rated apparent power as the capacity limit. When the flow reverses (PV export),
 // the axis spans ±rated; otherwise it's an import-only 0..rated view.
-export default function TrafoProfile({ trafo, name, now, onClose }: { trafo: number; name: string; now: number | null; onClose: () => void }) {
+export default function TrafoProfile({ trafo, name, now, day, onClose }: { trafo: number; name: string; now: number | null; day: number; onClose: () => void }) {
   const [data, setData] = useState<TrafoProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -16,7 +16,7 @@ export default function TrafoProfile({ trafo, name, now, onClose }: { trafo: num
     setData(null); setErr(null);
     api.trafoProfiles(trafo).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [trafo]);
+  }, [trafo, day]);
 
   const power = data?.power ?? [];
   const hasData = power.length > 0 && power.some((v) => v != null);
