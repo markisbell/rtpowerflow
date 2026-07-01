@@ -10,6 +10,7 @@ interface Props {
   onSelectBus?: (bus: number, additive: boolean) => void;
   onSelectLine?: (line: number, additive: boolean) => void;
   onSelectTrafo?: (trafo: number, additive: boolean) => void;
+  batteryBuses?: number[];
 }
 
 const isAdditive = (e: L.LeafletMouseEvent) =>
@@ -34,7 +35,7 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [] }: Props) {
   const onSelectRef = useRef(onSelectBus);
   onSelectRef.current = onSelectBus;
   const onSelectLineRef = useRef(onSelectLine);
@@ -47,7 +48,9 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   const lineRef = useRef<Map<number, L.Polyline>>(new Map());
   const busRef = useRef<Map<number, L.CircleMarker>>(new Map());
   const trafoRef = useRef<Map<number, L.CircleMarker>>(new Map());
+  const batteryRef = useRef<L.CircleMarker[]>([]);
   const [light, setLight] = useState(true);
+  const batKey = batteryBuses.join(",");
 
   // build map + static layers when the grid changes
   useEffect(() => {
@@ -169,6 +172,24 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       cm.setStyle({ fillColor: voltageReds(vm.get(id)) });
     }
   }, [latest, topo]);
+
+  // battery markers (green ring) at battery buses; redraw when the set changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    batteryRef.current.forEach((m) => map.removeLayer(m));
+    batteryRef.current = [];
+    const set = new Set(batteryBuses);
+    for (const b of topo.buses) {
+      if (!set.has(b.id) || !b.geo) continue;
+      const m = L.circleMarker([b.geo[1], b.geo[0]], {
+        radius: 6, color: "#0b0d11", weight: 1.5, fillColor: "#3fb950", fillOpacity: 1,
+      }).addTo(map);
+      m.bindTooltip(`Battery · bus ${b.id}`);
+      batteryRef.current.push(m);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topo, batKey]);
 
   return (
     <div className="map-wrap">

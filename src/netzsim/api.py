@@ -12,8 +12,9 @@ from pydantic import BaseModel
 from .config import settings
 from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
+from .battery import MODES
 from .grid_catalog import GridCatalog, preview
-from .realpv import load_pv_days
+from .realpv import load_prices, load_pv_days
 from .loadgen import (
     AssignPolicy,
     EvPolicy,
@@ -79,6 +80,10 @@ async def lifespan(app: FastAPI):
     if pv:
         runtime.engine.set_pv_days(pv.shapes)
         log.info("Real PV: %d day(s) loaded from %s", pv.n_days, settings.real_pv_file)
+        prices = load_prices(settings.awattar_file, pv.dates)
+        if prices is not None:
+            runtime.engine.set_prices(prices)
+            log.info("aWATTar prices: %d day(s) loaded", len(prices))
     log.info("Grid catalog: %d grid(s); LPG library: %d archetype(s)",
              len(runtime.catalog.list()), len(runtime.library.list()))
     if settings.autostart:
@@ -202,6 +207,49 @@ def pv_days():
     """Real-PV day calendar for the day slider (empty when no cache is loaded)."""
     return {"available": bool(runtime.pv_dates), "peak_w": runtime.pv_peak_w,
             "dates": runtime.pv_dates}
+
+
+# --------------------------------------------------------------------------- #
+# Local battery storage (manually placed at runtime)
+# --------------------------------------------------------------------------- #
+def _battery_dict(b) -> dict:
+    return {"index": b.storage_idx, "bus": b.bus, "name": b.name, "mode": b.mode,
+            "capacity_kwh": round(b.capacity_mwh * 1000, 3), "power_kw": round(b.power_mw * 1000, 3),
+            "soc_percent": round(b.soc_frac() * 100, 2)}
+
+
+class BatteryRequest(BaseModel):
+    bus: int
+    capacity_kwh: float = 10.0
+    power_kw: float = 5.0
+    mode: str = "self"
+    soc0: float = 0.5
+
+
+@app.get("/batteries")
+def batteries():
+    """Current batteries + available modes + whether price data is loaded."""
+    sim = runtime.engine.sim
+    return {"modes": list(MODES), "has_prices": sim.prices is not None,
+            "batteries": [_battery_dict(b) for b in sim.batteries]}
+
+
+@app.post("/battery")
+async def add_battery(req: BatteryRequest):
+    sim = runtime.engine.sim
+    if req.bus not in sim.net.bus.index:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+    if req.mode not in MODES:
+        raise HTTPException(422, f"mode must be one of {MODES}")
+    b = sim.add_battery(req.bus, req.capacity_kwh, req.power_kw, req.mode, req.soc0)
+    return _battery_dict(b)
+
+
+@app.delete("/battery/{idx}")
+async def remove_battery(idx: int):
+    if not runtime.engine.sim.remove_battery(idx):
+        raise HTTPException(404, f"no battery with index {idx}")
+    return {"removed": idx}
 
 
 # --------------------------------------------------------------------------- #

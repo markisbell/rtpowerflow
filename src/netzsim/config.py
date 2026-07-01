@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # PV generation follows these real measured days and a day slider is offered.
     real_pv_file: Path = Path("./data/real_pv_days.json")
 
+    # Cached hourly aWATTar prices (see scripts/fetch_awattar.py), aligned to the
+    # PV days; drive the battery "price" strategy.
+    awattar_file: Path = Path("./data/awattar_prices.json")
+
     # CORS (comma-separated origins; "*" allows any)
     cors_origins: str = "*"
 

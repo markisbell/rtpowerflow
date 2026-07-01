@@ -9,6 +9,8 @@ from typing import Any
 import numpy as np
 import pandapower as pp
 
+from . import battery as bat
+from .battery import MODES, Battery
 from .data_loader import InputData
 from .network_builder import ProfileArrays, build_network
 
@@ -27,6 +29,7 @@ class StepResult:
     lines: list[dict[str, Any]] = field(default_factory=list)
     trafos: list[dict[str, Any]] = field(default_factory=list)
     ext_grids: list[dict[str, Any]] = field(default_factory=list)
+    batteries: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
 
@@ -54,6 +57,20 @@ class Simulator:
         self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
         self._daily_by_day: dict[int, dict] = {}
 
+        # local battery storage (added at runtime); prices drive the "price" mode.
+        self.batteries: list[Battery] = []
+        self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
+        self._loads_at: dict[int, list[int]] = {}
+        for i, li in enumerate(self.prof.load_idx):
+            self._loads_at.setdefault(int(self.net.load.at[li, "bus"]), []).append(i)
+        self._sgens_at: dict[int, list[int]] = {}
+        for i, si in enumerate(self.prof.sgen_idx):
+            self._sgens_at.setdefault(int(self.net.sgen.at[si, "bus"]), []).append(i)
+        trafo_r = float((self.net.trafo["sn_mva"] * self.net.trafo["parallel"]).sum()) if len(self.net.trafo) else 0.0
+        if trafo_r <= 0:  # no transformer → reference the grid's peak load for peak-shaving
+            trafo_r = float(self.prof.load_p.sum(axis=0).max()) if self.prof.load_p.size else 1.0
+        self._peak_ref_mw = trafo_r
+
     def set_pv_days(self, shapes: np.ndarray | None) -> None:
         """Attach per-day PV shapes ([n_days, steps], 0..1). Applied only if the
         grid actually has PV sgens; clears the per-day graph cache."""
@@ -71,18 +88,92 @@ class Simulator:
             return self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
         return self.prof.sgen_p[:, t]
 
+    # -- battery storage ------------------------------------------------- #
+    def set_prices(self, prices) -> None:
+        self.prices = np.asarray(prices, dtype=float) if prices is not None and len(prices) else None
+        self._daily_by_day.clear()
+
+    def add_battery(self, bus: int, capacity_kwh: float, power_kw: float,
+                    mode: str = "self", soc0: float = 0.5) -> Battery:
+        cap = max(0.0, capacity_kwh) / 1000.0
+        b = Battery(bus=int(bus), capacity_mwh=cap, power_mw=max(0.0, power_kw) / 1000.0,
+                    mode=mode if mode in MODES else "self", soc_mwh=soc0 * cap,
+                    name=f"BAT_{bus}")
+        self.batteries.append(b)
+        self._rebuild_storage()
+        self._daily_by_day.clear()
+        return b
+
+    def remove_battery(self, storage_idx: int) -> bool:
+        n = len(self.batteries)
+        self.batteries = [b for b in self.batteries if b.storage_idx != storage_idx]
+        if len(self.batteries) != n:
+            self._rebuild_storage()
+            self._daily_by_day.clear()
+            return True
+        return False
+
+    def _rebuild_storage(self) -> None:
+        """Recreate the pandapower storage table from ``self.batteries`` (keeps
+        indices in sync after add/remove)."""
+        self.net.storage.drop(self.net.storage.index, inplace=True)
+        for b in self.batteries:
+            b.storage_idx = int(pp.create_storage(
+                self.net, bus=b.bus, p_mw=0.0, max_e_mwh=b.capacity_mwh,
+                soc_percent=b.soc_frac() * 100.0, name=b.name))
+
+    def _price_ctx(self, day: int, t: int) -> dict:
+        if self.prices is None or not len(self.prices):
+            return {}
+        pday = self.prices[day % self.prices.shape[0]]
+        hour = min(23, int(t / (self.steps_per_day / 24)))
+        return {"price": float(pday[hour]),
+                "price_lo": float(np.percentile(pday, 33)),
+                "price_hi": float(np.percentile(pday, 66))}
+
+    def _apply_batteries(self, net, batteries, prof, sgen_col, day, t, dt_h,
+                         loads_at, sgens_at, do_integrate: bool) -> None:
+        """Compute each battery's charge/discharge setpoint from the step's local
+        load/PV, transformer through-power and price; write it into the net's
+        storage and (optionally) advance SOC."""
+        if not batteries:
+            return
+        total_load = float(prof.load_p[:, t].sum()) if prof.load_p.size else 0.0
+        total_gen = float(sgen_col.sum()) if sgen_col is not None and sgen_col.size else 0.0
+        base = {"through_mw": total_load - total_gen,
+                "peak_hi_mw": self._peak_ref_mw * 0.6,
+                "peak_lo_mw": self._peak_ref_mw * 0.3,
+                **self._price_ctx(day, t)}
+        for b in batteries:
+            ctx = dict(base)
+            if b.mode == "self":
+                ctx["load_mw"] = sum(float(prof.load_p[i, t]) for i in loads_at.get(b.bus, []))
+                ctx["pv_mw"] = (sum(float(sgen_col[i]) for i in sgens_at.get(b.bus, []))
+                                if sgen_col is not None and sgen_col.size else 0.0)
+            p = bat.setpoint(b, ctx, dt_h)
+            if b.storage_idx is not None and b.storage_idx in net.storage.index:
+                net.storage.at[b.storage_idx, "p_mw"] = p
+            if do_integrate:
+                bat.integrate(b, p, dt_h)
+
     # -- profile application -------------------------------------------- #
     def _apply_step(self, t: int) -> None:
         p = self.prof
+        sgen_col = None
         if p.load_idx:
             self.net.load.loc[p.load_idx, "p_mw"] = p.load_p[:, t]
             self.net.load.loc[p.load_idx, "q_mvar"] = p.load_q[:, t]
         if p.sgen_idx:
-            self.net.sgen.loc[p.sgen_idx, "p_mw"] = self._sgen_p_col(self.day, t)
+            sgen_col = self._sgen_p_col(self.day, t)
+            self.net.sgen.loc[p.sgen_idx, "p_mw"] = sgen_col
             self.net.sgen.loc[p.sgen_idx, "q_mvar"] = p.sgen_q[:, t]
         if p.ext_idx:
             self.net.ext_grid.loc[p.ext_idx, "vm_pu"] = p.ext_vm[:, t]
             self.net.ext_grid.loc[p.ext_idx, "va_degree"] = p.ext_va[:, t]
+        if self.batteries:
+            self._apply_batteries(self.net, self.batteries, p, sgen_col, self.day, t,
+                                  24.0 / self.steps_per_day, self._loads_at, self._sgens_at,
+                                  do_integrate=True)
 
     # -- the power flow -------------------------------------------------- #
     def run_step(self, step: int, day: int = 0) -> StepResult:
@@ -157,6 +248,13 @@ class Simulator:
                 "name": str(net.ext_grid.at[idx, "name"]),
                 "p_mw": _r(row.p_mw),
                 "q_mvar": _r(row.q_mvar),
+            })
+        for b in self.batteries:
+            p_mw = float(net.storage.at[b.storage_idx, "p_mw"]) if b.storage_idx in net.storage.index else 0.0
+            res.batteries.append({
+                "index": b.storage_idx, "bus": b.bus, "name": b.name, "mode": b.mode,
+                "soc_percent": _r(b.soc_frac() * 100.0), "p_mw": _r(p_mw),
+                "capacity_kwh": _r(b.capacity_mwh * 1000.0), "power_kw": _r(b.power_mw * 1000.0),
             })
 
         vm = net.res_bus.vm_pu

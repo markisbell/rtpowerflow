@@ -29,6 +29,7 @@ class RealtimeEngine:
         self.interval = interval_seconds
         self.steps_per_day = simulator.steps_per_day
         self.pv_days = None  # real multi-day PV shapes, re-applied on reconfigure
+        self.prices = None   # hourly price days (battery "price" mode), re-applied too
 
         self.step = 0
         self.day = 0
@@ -73,6 +74,7 @@ class RealtimeEngine:
             Simulator, data, warm_start=self.sim.warm_start
         )
         self.sim.set_pv_days(self.pv_days)   # real PV re-applies to the new grid
+        self.sim.set_prices(self.prices)     # (batteries themselves reset with the grid)
         self.steps_per_day = self.sim.steps_per_day
         self.step = 0
         self.day = 0
@@ -93,6 +95,12 @@ class RealtimeEngine:
         are re-applied whenever the grid is reconfigured."""
         self.pv_days = shapes
         self.sim.set_pv_days(shapes)
+
+    def set_prices(self, prices) -> None:
+        """Hold hourly price days and apply them to the current sim (re-applied on
+        reconfigure)."""
+        self.prices = prices
+        self.sim.set_prices(prices)
 
     def seek_day(self, day: int) -> None:
         """Jump to a specific (real PV) day; wraps within the available days."""

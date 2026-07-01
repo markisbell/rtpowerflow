@@ -21,6 +21,7 @@ interface Props {
   selectedLines?: number[];
   onSelectTrafo?: (trafo: number, additive: boolean) => void;
   selectedTrafos?: number[];
+  batteryBuses?: number[];
 }
 
 interface Tip {
@@ -31,7 +32,7 @@ interface Tip {
 
 type XY = { x: number; y: number };
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [] }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [] }: Props) {
   // ---- stacked horizontal feeder layout ------------------------------------
   // x = depth from the slack (feeders run straight left→right, using the width);
   // the largest child continues its parent's track, other feeders drop to a new
@@ -338,6 +339,18 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
                 ])
               }
             />
+          );
+        })}
+
+        {/* battery markers (green cell to the upper-left of the bus) */}
+        {[...new Set(batteryBuses)].map((bid) => {
+          const p = pos.get(bid);
+          if (!p) return null;
+          return (
+            <g key={`bat${bid}`} pointerEvents="none">
+              <rect x={p.x - 12} y={p.y - 12} width={8} height={5} rx={1} fill="#3fb950" stroke="#0b0d11" strokeWidth={0.5} />
+              <rect x={p.x - 4.3} y={p.y - 10.5} width={1.3} height={2} fill="#3fb950" />
+            </g>
           );
         })}
 

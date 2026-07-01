@@ -2,6 +2,9 @@ import type {
   ActiveGrid,
   ArchetypesResponse,
   AssignResponse,
+  BatteriesResponse,
+  Battery,
+  BatteryMode,
   EngineStatus,
   GridPreview,
   GridsResponse,
@@ -30,6 +33,12 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`POST ${path} -> ${r.status} ${await r.text()}`);
+  return r.json() as Promise<T>;
+}
+
+async function del<T>(path: string): Promise<T> {
+  const r = await fetch(`${API}${path}`, { method: "DELETE" });
+  if (!r.ok) throw new Error(`DELETE ${path} -> ${r.status} ${await r.text()}`);
   return r.json() as Promise<T>;
 }
 
@@ -63,6 +72,10 @@ export const api = {
   seekDay: (day: number) => post<EngineStatus>(`/control/seekday?day=${day}`),
   stepInterval: (seconds: number) => post<EngineStatus>(`/control/interval?seconds=${seconds}`),
   pvDays: () => get<PvDays>("/pv/days"),
+  batteries: () => get<BatteriesResponse>("/batteries"),
+  addBattery: (body: { bus: number; capacity_kwh: number; power_kw: number; mode: BatteryMode }) =>
+    post<Battery>("/battery", body),
+  removeBattery: (idx: number) => del<{ removed: number }>(`/battery/${idx}`),
 };
 
 export function wsUrl(): string {

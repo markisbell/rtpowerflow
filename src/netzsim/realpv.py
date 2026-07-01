@@ -31,6 +31,25 @@ def _resample(arr: np.ndarray, steps: int) -> np.ndarray:
     return np.vstack([np.interp(xi, np.arange(m), row) for row in arr])
 
 
+def load_prices(path: str | Path, dates: list[str]) -> np.ndarray | None:
+    """Load cached hourly aWATTar prices aligned 1:1 with ``dates`` (the PV days),
+    so day index d → prices[d]. Missing days fall back to the mean day. Returns
+    ``[n_days, 24]`` EUR/MWh or ``None``."""
+    p = Path(path)
+    if not p.exists() or not dates:
+        return None
+    try:
+        pr = (json.loads(p.read_text()).get("prices") or {})
+    except Exception:  # noqa: BLE001
+        return None
+    have = [pr[d] for d in dates if d in pr and len(pr[d]) == 24]
+    if not have:
+        return None
+    mean_day = np.mean(np.asarray(have, dtype=float), axis=0)
+    rows = [pr[d] if (d in pr and len(pr[d]) == 24) else mean_day for d in dates]
+    return np.asarray(rows, dtype=float)
+
+
 def load_pv_days(path: str | Path, steps: int = 1440) -> PvDays | None:
     p = Path(path)
     if not p.exists():

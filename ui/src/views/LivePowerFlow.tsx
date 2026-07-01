@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { EngineStatus, Topology } from "../types";
+import type { Battery, BatteryMode, EngineStatus, Topology } from "../types";
 import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor } from "../scales";
 import GridDiagram from "../components/GridDiagram";
@@ -8,6 +8,7 @@ import MapDiagram from "../components/MapDiagram";
 import NodeProfile from "../components/NodeProfile";
 import LineProfile from "../components/LineProfile";
 import TrafoProfile from "../components/TrafoProfile";
+import BatteryPanel from "../components/BatteryPanel";
 
 type Layout = "map" | "tree";
 type SelKind = "bus" | "line" | "trafo";
@@ -24,6 +25,9 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
+  const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [batModes, setBatModes] = useState<BatteryMode[]>([]);
+  const [batHasPrices, setBatHasPrices] = useState(false);
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
@@ -48,12 +52,16 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
   const loadStatus = () => api.status().then(setStatus).catch(() => {});
+  const reloadBatteries = () => api.batteries()
+    .then((r) => { setBatteries(r.batteries); setBatModes(r.modes); setBatHasPrices(r.has_prices); })
+    .catch(() => {});
 
   useEffect(() => {
     loadTopo();
     loadStatus();
     onActive();
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
+    reloadBatteries();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
@@ -67,8 +75,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     }
   }, [topo]);
 
-  // drop a stale selection when the grid changes
-  useEffect(() => { setSelection([]); }, [topo?.name]);
+  // drop a stale selection when the grid changes; batteries reset with the grid
+  useEffect(() => { setSelection([]); reloadBatteries(); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -81,6 +89,12 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const seek = async (step: number) => setStatus(await api.seek(step));
   const changeInterval = async (s: number) => { setStepSeconds(s); setStatus(await api.stepInterval(s)); };
   const seekDay = async (d: number) => setStatus(await api.seekDay(d));
+  const addBattery = async (bus: number, capacity_kwh: number, power_kw: number, mode: BatteryMode) => {
+    try { await api.addBattery({ bus, capacity_kwh, power_kw, mode }); } finally { reloadBatteries(); }
+  };
+  const removeBattery = async (idx: number) => {
+    try { await api.removeBattery(idx); } finally { reloadBatteries(); }
+  };
 
   if (error) return <div className="empty">Failed to load network:<br />{error}</div>;
   if (!topo) return <div className="spinner">Loading network…</div>;
@@ -98,6 +112,21 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const selBuses = selection.filter((x) => x.kind === "bus").map((x) => x.id);
   const selLines = selection.filter((x) => x.kind === "line").map((x) => x.id);
   const selTrafos = selection.filter((x) => x.kind === "trafo").map((x) => x.id);
+
+  // where "add battery" targets: a single selected node, or the transformer's LV busbar
+  let addBus: number | null = null;
+  let addIsTrafo = false;
+  if (selection.length === 1) {
+    const one = selection[0];
+    if (one.kind === "bus") addBus = one.id;
+    else if (one.kind === "trafo") {
+      const tr = topo.trafos.find((t) => t.id === one.id);
+      if (tr) { addBus = tr.lv_bus; addIsTrafo = true; }
+    }
+  }
+  const batLive: Record<number, { soc_percent: number; p_mw: number }> = {};
+  latest?.batteries?.forEach((b) => { batLive[b.index] = { soc_percent: b.soc_percent, p_mw: b.p_mw }; });
+  const batteryBuses = batteries.map((b) => b.bus);
 
   // drag the panel's left edge to widen it (and the graphs, which are width:100%)
   const startResize = (e: React.MouseEvent) => {
@@ -133,10 +162,10 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           )}
         </div>
         {layout === "map" ? (
-          <MapDiagram topo={topo} latest={latest} onSelectBus={selectBus}
+          <MapDiagram topo={topo} latest={latest} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo} />
         ) : (
-          <GridDiagram topo={topo} latest={latest} showValues={showValues}
+          <GridDiagram topo={topo} latest={latest} showValues={showValues} batteryBuses={batteryBuses}
                        onSelectBus={selectBus} selectedBuses={selBuses}
                        onSelectLine={selectLine} selectedLines={selLines}
                        onSelectTrafo={selectTrafo} selectedTrafos={selTrafos} />
@@ -190,6 +219,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             (power) for its daily graph. Strg/⌘+Klick marks several (up to {MAX_SEL}).
           </p>
         )}
+
+        <BatteryPanel
+          batteries={batteries} live={batLive} modes={batModes} hasPrices={batHasPrices}
+          addBus={addBus} addIsTrafo={addIsTrafo} onAdd={addBattery} onRemove={removeBattery}
+        />
 
         {layout === "tree" && (
           <>

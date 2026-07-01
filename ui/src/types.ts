@@ -149,8 +149,25 @@ export interface StepResult {
   lines: { index: number; name: string; from_bus: number; to_bus: number; loading_percent: number; i_ka: number; p_from_mw: number; pl_mw: number }[];
   trafos: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
   ext_grids: { index: number; name: string; p_mw: number; q_mvar: number }[];
+  batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
   summary: StepSummary;
   error: string | null;
+}
+
+export type BatteryMode = "self" | "peak" | "price";
+export interface Battery {
+  index: number;
+  bus: number;
+  name: string;
+  mode: BatteryMode;
+  capacity_kwh: number;
+  power_kw: number;
+  soc_percent: number;
+}
+export interface BatteriesResponse {
+  modes: BatteryMode[];
+  has_prices: boolean;
+  batteries: Battery[];
 }
 
 export type NodeSeriesKind = "residential" | "ev" | "pv";
