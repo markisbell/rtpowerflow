@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { Battery, BatteryMode, EngineStatus, Topology } from "../types";
 import { useStepStream } from "../useWebSocket";
@@ -17,6 +18,7 @@ interface Sel { kind: SelKind; id: number; }
 const MAX_SEL = 4;
 
 export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
+  const { t } = useTranslation();
   const [topo, setTopo] = useState<Topology | null>(null);
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +101,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     try { await api.removeBattery(idx); } finally { reloadBatteries(); }
   };
 
-  if (error) return <div className="empty">Failed to load network:<br />{error}</div>;
-  if (!topo) return <div className="spinner">Loading network…</div>;
+  if (error) return <div className="empty">{t("live.failedNet")}<br />{error}</div>;
+  if (!topo) return <div className="spinner">{t("live.loadingNet")}</div>;
 
   const s = latest?.summary;
   const step = latest?.step ?? status?.step ?? 0;
@@ -146,21 +148,21 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         <div className="layout-toggle">
           {topo.has_geo && (
             <button className={layout === "map" ? "on" : ""} onClick={() => setLayout("map")}
-                    title="Real OpenStreetMap basemap at the grid's coordinates">
-              🗺 Map
+                    title={t("live.mapTitle")}>
+              🗺 {t("live.map")}
             </button>
           )}
           <button className={layout === "tree" ? "on" : ""} onClick={() => setLayout("tree")}>
-            Schematic
+            {t("live.schematic")}
           </button>
           {layout === "tree" && (
             <button
               className={showValues ? "on" : ""}
               style={{ marginLeft: 6 }}
               onClick={() => setShowValues((v) => !v)}
-              title="Show live current on lines and voltage/power at nodes (SCADA-style readings)"
+              title={t("live.valuesTitle")}
             >
-              Values
+              {t("live.values")}
             </button>
           )}
         </div>
@@ -176,31 +178,31 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
       </div>
 
       <aside className="side">
-        <div className="side-resizer" onMouseDown={startResize} title="Drag to resize" />
+        <div className="side-resizer" onMouseDown={startResize} />
         <div className="clock">
-          {latest ? `day ${latest.day} · ${latest.time_of_day}` : "—"}
-          {latest && !latest.converged && <span className="note"> · not converged</span>}
+          {latest ? t("live.day", { day: latest.day, time: latest.time_of_day }) : "—"}
+          {latest && !latest.converged && <span className="note">{t("live.notConverged")}</span>}
         </div>
         <div className="muted" style={{ fontSize: "0.75rem", marginBottom: "0.6rem" }}>
-          {topo.name} · {topo.buses.length} buses · ws {wsStatus}
+          {t("live.gridInfo", { name: topo.name, buses: topo.buses.length, ws: wsStatus })}
         </div>
 
-        <Stat label="V min / max" value={s ? `${fmt(s.vm_pu_min, 3)} / ${fmt(s.vm_pu_max, 3)} pu` : "—"} />
+        <Stat label={t("live.vminmax")} value={s ? `${fmt(s.vm_pu_min, 3)} / ${fmt(s.vm_pu_max, 3)} pu` : "—"} />
         <Stat
-          label="max line loading"
+          label={t("live.maxLine")}
           value={s ? `${fmt(s.max_line_loading_percent, 1)} %` : "—"}
           color={loadingColor(s?.max_line_loading_percent)}
         />
         <Stat
-          label="max trafo loading"
-          value={s?.max_trafo_loading_percent != null ? `${fmt(s.max_trafo_loading_percent, 1)} %` : "n/a"}
+          label={t("live.maxTrafo")}
+          value={s?.max_trafo_loading_percent != null ? `${fmt(s.max_trafo_loading_percent, 1)} %` : t("live.na")}
           color={loadingColor(s?.max_trafo_loading_percent)}
         />
-        <Stat label="total load" value={s ? `${fmt(s.total_load_mw * 1000, 1)} kW` : "—"} />
-        <Stat label="generation" value={s ? `${fmt(s.total_gen_mw * 1000, 1)} kW` : "—"} />
-        <Stat label="slack (import)" value={s ? `${fmt(s.total_ext_grid_mw * 1000, 1)} kW` : "—"} />
-        <Stat label="losses" value={s ? `${fmt(s.total_losses_mw * 1000, 2)} kW` : "—"} />
-        <Stat label="solve time" value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
+        <Stat label={t("live.totalLoad")} value={s ? `${fmt(s.total_load_mw * 1000, 1)} kW` : "—"} />
+        <Stat label={t("live.generation")} value={s ? `${fmt(s.total_gen_mw * 1000, 1)} kW` : "—"} />
+        <Stat label={t("live.slack")} value={s ? `${fmt(s.total_ext_grid_mw * 1000, 1)} kW` : "—"} />
+        <Stat label={t("live.losses")} value={s ? `${fmt(s.total_losses_mw * 1000, 2)} kW` : "—"} />
+        <Stat label={t("live.solveTime")} value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
 
         {selection.map((sel) => {
           const key = `${sel.kind}${sel.id}`;
@@ -218,8 +220,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         })}
         {selection.length === 0 && (
           <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
-            Click a node (load / generation / voltage), a line (current) or the transformer
-            (power) for its daily graph. Strg/⌘+Klick marks several (up to {MAX_SEL}).
+            {t("live.selectHint", { max: MAX_SEL })}
           </p>
         )}
 
@@ -235,45 +236,29 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         {layout === "tree" && (
           <>
             <div className="legend">
-              <span>
-                <i className="swatch" style={{ background: loadingColor(10) }} /> &lt;50%
-              </span>
-              <span>
-                <i className="swatch" style={{ background: loadingColor(65) }} /> &lt;80%
-              </span>
-              <span>
-                <i className="swatch" style={{ background: loadingColor(90) }} /> &lt;100%
-              </span>
-              <span>
-                <i className="swatch" style={{ background: loadingColor(120) }} /> overload
-              </span>
+              <span><i className="swatch" style={{ background: loadingColor(10) }} /> {t("live.legLow")}</span>
+              <span><i className="swatch" style={{ background: loadingColor(65) }} /> {t("live.legMed")}</span>
+              <span><i className="swatch" style={{ background: loadingColor(90) }} /> {t("live.legHigh")}</span>
+              <span><i className="swatch" style={{ background: loadingColor(120) }} /> {t("live.legOver")}</span>
             </div>
             <div className="legend">
-              <span>
-                <i className="swatch" style={{ background: voltageColor(0.9) }} /> under-V
-              </span>
-              <span>
-                <i className="swatch" style={{ background: voltageColor(1.0) }} /> ok
-              </span>
-              <span>
-                <i className="swatch" style={{ background: voltageColor(1.1) }} /> over-V
-              </span>
+              <span><i className="swatch" style={{ background: voltageColor(0.9) }} /> {t("live.underV")}</span>
+              <span><i className="swatch" style={{ background: voltageColor(1.0) }} /> {t("live.okV")}</span>
+              <span><i className="swatch" style={{ background: voltageColor(1.1) }} /> {t("live.overV")}</span>
             </div>
           </>
         )}
         <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.6rem" }}>
-          {layout === "map"
-            ? "Lines on a jet colormap by loading; nodes reddened by voltage Δ — like ding0's plot. Scroll to zoom, drag to pan."
-            : "Line width ∝ current. Scroll to zoom, drag to pan."}
+          {layout === "map" ? t("live.mapHint") : t("live.schematicHint")}
         </p>
       </aside>
 
       <div className="controls-bar">
         <button className="primary" onClick={toggleRun}>
-          {status?.running ? "⏸ Pause" : "▶ Play"}
+          {status?.running ? t("live.pause") : t("live.play")}
         </button>
         <span className="clock" style={{ minWidth: 180 }}>
-          Zeitpunkt: {latest?.time_of_day ?? "00:00"} Uhr
+          {t("live.time", { time: latest?.time_of_day ?? "00:00" })}
         </span>
         <input
           type="range"
@@ -284,8 +269,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         />
         {nDays > 1 && (
           <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}
-                 title="Realer PV-Tag (Messdaten)">
-            Tag
+                 title={t("live.dayTitle")}>
+            {t("live.dayLabel")}
             <input
               type="range"
               min={0}
@@ -300,8 +285,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           </label>
         )}
         <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}
-               title="Realzeit pro Simulationsschritt">
-          Schrittdauer
+               title={t("live.stepDurTitle")}>
+          {t("live.stepDur")}
           <input
             type="range"
             min={0.1}
