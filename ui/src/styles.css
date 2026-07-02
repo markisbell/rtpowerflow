@@ -120,6 +120,35 @@ button.ghost {
   background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
   padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem;
 }
+/* element action menu (opens at the clicked node / line / transformer) */
+.menu-overlay { position: fixed; inset: 0; z-index: 1499; }
+.el-menu {
+  position: fixed; z-index: 1500; min-width: 200px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px #000a; padding: 4px; font-size: 0.8rem;
+}
+.el-menu .menu-title {
+  padding: 5px 8px; font-weight: 600; font-size: 0.75rem; color: var(--muted);
+  border-bottom: 1px solid var(--border); margin-bottom: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
+}
+.el-menu .menu-group { padding: 4px 8px 1px; font-size: 0.68rem; color: var(--muted); }
+.el-menu .menu-item {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--text); padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem;
+}
+.el-menu .menu-item:hover { background: var(--accent-2); color: #fff; }
+
+/* collapsible side-panel sections (one per grid element / overview / meters) */
+.section { border: 1px solid var(--border); border-radius: 8px; margin-top: 0.55rem; }
+.sec-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer; user-select: none; }
+.sec-head .chev { display: inline-block; transition: transform 0.12s; font-size: 0.7rem; color: var(--muted); }
+.sec-head .chev.open { transform: rotate(90deg); }
+.sec-head .sec-title { font-weight: 600; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sec-head .sec-badges { display: flex; gap: 3px; font-size: 0.75rem; }
+.sec-head .sec-close { padding: 0 5px; font-size: 0.72rem; }
+.sec-body { padding: 2px 8px 8px; border-top: 1px solid var(--border); }
+
 /* voltage-layer switch (MV / LV / both) below the basemap toggle */
 .map-layers { position: absolute; top: 46px; right: 10px; z-index: 650; display: flex; gap: 2px; }
 .map-layers button {

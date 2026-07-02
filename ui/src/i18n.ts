@@ -60,7 +60,7 @@ const en = {
     vminmax: "V min / max", maxLine: "max line loading", maxTrafo: "max trafo loading",
     totalLoad: "total load", generation: "generation", slack: "slack (import)",
     losses: "losses", solveTime: "solve time", na: "n/a",
-    selectHint: "Click a node (load / generation / voltage), a line (current) or the transformer (power) for its daily graph. Strg/⌘+click marks several (up to {{max}}).",
+    selectHint: "Click an element for actions (graph, battery, meter). Ctrl/⌘+click pins its daily graph directly.",
     legLow: "<50%", legMed: "<80%", legHigh: "<100%", legOver: "overload",
     underV: "under-V", okV: "ok", overV: "over-V",
     mapHint: "Lines on a jet colormap by loading; nodes reddened by voltage Δ — like ding0's plot. Scroll to zoom, drag to pan.",
@@ -114,6 +114,14 @@ const en = {
     strict: "Strict mode — the server hides ground truth.",
     unknown: "unknown",
   },
+
+  menu: {
+    graph: "Daily profile", addMeter: "Place meter", removeMeter: "Remove meter",
+    addBattery: "Add battery:", addBatteryTrafo: "Battery @ LV busbar:",
+    removeBattery: "Remove battery",
+  },
+
+  sec: { overview: "Overview", readings: "Readings" },
 
   common: { loading: "loading…", error: "error: {{msg}}" },
 
@@ -198,7 +206,7 @@ const de: typeof en = {
     vminmax: "U min / max", maxLine: "max. Leitungsauslastung", maxTrafo: "max. Trafo-Auslastung",
     totalLoad: "Gesamtlast", generation: "Erzeugung", slack: "Bezug (Netz)",
     losses: "Verluste", solveTime: "Rechenzeit", na: "k. A.",
-    selectHint: "Knoten (Last / Erzeugung / Spannung), Leitung (Strom) oder Transformator (Leistung) anklicken für den Tagesverlauf. Strg/⌘+Klick markiert mehrere (bis zu {{max}}).",
+    selectHint: "Element anklicken für Aktionen (Verlauf, Batterie, Messung). Strg/⌘+Klick heftet den Tagesverlauf direkt an.",
     legLow: "<50 %", legMed: "<80 %", legHigh: "<100 %", legOver: "Überlast",
     underV: "Unterspg.", okV: "ok", overV: "Überspg.",
     mapHint: "Leitungen auf Jet-Farbskala nach Auslastung; Knoten nach Spannungs-Δ gerötet — wie ding0. Scrollen zum Zoomen, ziehen zum Verschieben.",
@@ -252,6 +260,14 @@ const de: typeof en = {
     strict: "Strikter Modus — der Server verbirgt die Wahrheit.",
     unknown: "unbekannt",
   },
+
+  menu: {
+    graph: "Tagesverlauf", addMeter: "Messung platzieren", removeMeter: "Messung entfernen",
+    addBattery: "Batterie hinzufügen:", addBatteryTrafo: "Batterie @ NS-Sammelschiene:",
+    removeBattery: "Batterie entfernen",
+  },
+
+  sec: { overview: "Übersicht", readings: "Messwerte" },
 
   common: { loading: "lädt…", error: "Fehler: {{msg}}" },
 
