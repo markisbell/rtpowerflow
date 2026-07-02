@@ -138,6 +138,51 @@ export interface StepSummary {
   total_losses_mw: number;
 }
 
+// One smart-meter reading at a bus (three-phase sums; per-phase is balanced).
+export interface NodeMeasurement {
+  bus: number;
+  name: string;
+  vm_pu: number | null;
+  v_ll_kv: number | null;
+  p_mw: number | null;
+  q_mvar: number | null;
+  s_mva: number | null;
+  i_ka: number | null;
+}
+export interface TrafoMeasurement {
+  trafo: number;
+  name: string;
+  hv_bus: number;
+  lv_bus: number;
+  loading_percent: number | null;
+  p_hv_mw: number | null;
+  q_hv_mvar: number | null;
+  i_hv_ka: number | null;
+  pl_mw: number | null;
+}
+export interface Coverage {
+  n_bus: number;
+  n_node_meter: number;
+  n_trafo: number;
+  n_trafo_meter: number;
+  node_fraction: number;
+  trafo_fraction: number;
+}
+// The observed projection: only what placed measurement devices reveal.
+export interface Measurements {
+  nodes: NodeMeasurement[];
+  trafos: TrafoMeasurement[];
+  coverage: Coverage;
+  phases?: number;
+  balanced?: boolean;
+}
+export interface ObservedSummary extends Coverage {
+  vm_pu_min: number | null;
+  vm_pu_max: number | null;
+  max_trafo_loading_percent: number | null;
+  measured_node_p_mw: number | null;
+}
+
 export interface StepResult {
   step: number;
   day: number;
@@ -145,13 +190,26 @@ export interface StepResult {
   converged: boolean;
   solve_ms: number;
   timestamp: number;
-  buses: { index: number; name: string; vm_pu: number; va_degree: number; p_mw: number; q_mvar: number }[];
-  lines: { index: number; name: string; from_bus: number; to_bus: number; loading_percent: number; i_ka: number; p_from_mw: number; pl_mw: number }[];
-  trafos: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
-  ext_grids: { index: number; name: string; p_mw: number; q_mvar: number }[];
+  // The observed projection is ALWAYS present. The ground-truth fields below are
+  // present only when the server exposes them (NETZSIM_EXPOSE_GROUND_TRUTH).
+  measurements: Measurements;
+  observed_summary: ObservedSummary | null;
+  buses?: { index: number; name: string; vm_pu: number; va_degree: number; p_mw: number; q_mvar: number }[];
+  lines?: { index: number; name: string; from_bus: number; to_bus: number; loading_percent: number; i_ka: number; p_from_mw: number; pl_mw: number }[];
+  trafos?: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
+  ext_grids?: { index: number; name: string; p_mw: number; q_mvar: number }[];
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
-  summary: StepSummary;
+  summary?: StepSummary;
   error: string | null;
+}
+
+export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
+export interface MeasurementsResponse {
+  node_buses: number[];
+  trafo_idxs: number[];
+  coverage: Coverage;
+  presets: MeterPreset[];
+  expose_ground_truth: boolean;
 }
 
 export type BatteryMode = "self" | "peak" | "price";

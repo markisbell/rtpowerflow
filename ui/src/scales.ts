@@ -1,5 +1,10 @@
 // Shared color/size scales for the power-flow visualization.
 
+/** Color for an element with no measurement — deliberately dim/neutral so the
+ *  eye reads it as "unknown", not as a valid low/green reading. */
+export const UNOBSERVED = "#39424f";
+export const UNOBSERVED_LINE = "#2b323c";
+
 /** Loading % -> traffic-light color (green < 50 < amber < 80 < orange < 100 < red). */
 export function loadingColor(pct: number | null | undefined): string {
   if (pct == null) return "#64748b";

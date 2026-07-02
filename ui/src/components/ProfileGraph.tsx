@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export interface GSeries {
   label: string;
@@ -22,6 +23,7 @@ const W = 300, H = 128, L = 30, R = 8, T = 10, B = 18;
 export default function ProfileGraph({
   series, limits = [], scale, unit, dec, baseZero = true, now = null,
 }: { series: GSeries[]; limits?: GLimit[]; scale: number; unit: string; dec: number; baseZero?: boolean; now?: number | null }) {
+  const { t } = useTranslation();
   const [hover, setHover] = useState<number | null>(null); // fraction of the day 0..1
   const ref = useRef<SVGSVGElement | null>(null);
   const nowF = now == null ? null : Math.min(1, Math.max(0, now));
@@ -89,7 +91,7 @@ export default function ProfileGraph({
   return (
     <>
       <div style={{ fontSize: "0.72rem", color: "var(--muted)", height: 13 }}>
-        {hover != null ? hhmm(hover) : nowF != null ? `${hhmm(nowF)} Uhr` : ""}
+        {hover != null ? hhmm(hover) : nowF != null ? t("graph.uhr", { time: hhmm(nowF) }) : ""}
       </div>
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", cursor: "crosshair" }}
            onMouseMove={onMove} onMouseLeave={() => setHover(null)}>

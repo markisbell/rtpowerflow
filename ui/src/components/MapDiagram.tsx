@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { StepResult, Topology } from "../types";
-import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT } from "../scales";
+import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
 
 interface Props {
   topo: Topology;
@@ -11,6 +12,9 @@ interface Props {
   onSelectLine?: (line: number, additive: boolean) => void;
   onSelectTrafo?: (trafo: number, additive: boolean) => void;
   batteryBuses?: number[];
+  meterBuses?: number[];
+  meterTrafos?: number[];
+  revealTruth?: boolean;
 }
 
 const isAdditive = (e: L.LeafletMouseEvent) =>
@@ -35,7 +39,8 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [] }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [], meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
+  const { t, i18n } = useTranslation();
   const onSelectRef = useRef(onSelectBus);
   onSelectRef.current = onSelectBus;
   const onSelectLineRef = useRef(onSelectLine);
@@ -49,8 +54,10 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   const busRef = useRef<Map<number, L.CircleMarker>>(new Map());
   const trafoRef = useRef<Map<number, L.CircleMarker>>(new Map());
   const batteryRef = useRef<L.CircleMarker[]>([]);
+  const meterRef = useRef<L.CircleMarker[]>([]);
   const [light, setLight] = useState(true);
   const batKey = batteryBuses.join(",");
+  const meterKey = `${meterBuses.join(",")}|${meterTrafos.join(",")}`;
 
   // build map + static layers when the grid changes
   useEffect(() => {
@@ -83,7 +90,8 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       const pl = L.polyline(latlngs, open
         ? { color: "#888", weight: 2, opacity: 0.85, dashArray: "5 7" }
         : { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
-      pl.bindTooltip(open ? `Line ${ln.name ?? ln.id} · normally open` : `Line ${ln.name ?? ln.id} · click for graph`);
+      pl.bindTooltip(open ? t("tip.line", { name: ln.name ?? ln.id }) + t("tip.normallyOpen")
+                          : t("tip.lineMap", { name: ln.name ?? ln.id }));
       pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e)));
       lineRef.current.set(ln.id, pl);
     }
@@ -103,7 +111,9 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillColor: isExt ? STATION_COLOR : isCab ? "#eafbe7" : "rgb(200,200,200)",
         fillOpacity: isExt ? 1 : isCab ? 1 : 0.9,
       }).addTo(map);
-      cm.bindTooltip(`${isExt ? "MV station " : isCab ? "Cable cabinet " : "Bus "}${bus.name} · ${bus.vn_kv} kV · click for graph`);
+      cm.bindTooltip((isExt ? t("tip.mvStation", { name: bus.name, kv: bus.vn_kv })
+                     : isCab ? t("tip.cabinet", { name: bus.name, kv: bus.vn_kv })
+                     : t("tip.busMap", { name: bus.name, kv: bus.vn_kv })));
       cm.on("click", (e) => onSelectRef.current?.(bus.id, isAdditive(e)));
       busRef.current.set(bus.id, cm);
     }
@@ -119,22 +129,23 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillColor: STATION_COLOR,
         fillOpacity: 0.95,
       }).addTo(map);
-      cm.bindTooltip(`Trafo ${tr.name ?? tr.id} · ${(tr.sn_mva * 1000).toFixed(0)} kVA · click for graph`);
+      cm.bindTooltip(t("tip.trafoMap", { name: tr.name ?? tr.id, kva: (tr.sn_mva * 1000).toFixed(0) }));
       cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e)));
       trafoRef.current.set(tr.id, cm);
     }
 
     const pts = [...pos.values()];
     if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
-    const t = setTimeout(() => map.invalidateSize(), 80);
+    const timer = setTimeout(() => map.invalidateSize(), 80);
 
     return () => {
-      clearTimeout(t);
+      clearTimeout(timer);
       map.remove();
       mapRef.current = null;
       tileRef.current = null;
     };
-  }, [topo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topo, i18n.language]);   // rebuild (incl. tooltips) on language change
 
   // (re)apply the basemap when the light/dark choice or grid changes
   useEffect(() => {
@@ -153,25 +164,40 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     }
   }, [light, topo]);
 
-  // restyle from live results (jet by loading, Reds by voltage)
+  // restyle from live results, honoring observability: only metered nodes get a
+  // voltage colour; lines carry no meter (unknown) unless ground truth is revealed;
+  // metered transformers colour by loading.
   useEffect(() => {
     if (!latest || !mapRef.current) return;
-    const maxIka = Math.max(1e-6, ...latest.lines.map((l) => l.i_ka));
-    const lineLive = new Map(latest.lines.map((l) => [l.index, l]));
+    const meteredBus = new Set(meterBuses);
+    const meteredTrafo = new Set(meterTrafos);
+    const truthLines = latest.lines ?? [];
+    const maxIka = Math.max(1e-6, ...truthLines.map((l) => l.i_ka));
+    const lineLive = new Map(truthLines.map((l) => [l.index, l]));
     const openLines = new Set(topo.lines.filter((l) => l.in_service === false).map((l) => l.id));
     for (const [id, pl] of lineRef.current) {
       if (openLines.has(id)) continue; // keep normally-open ties dashed grey
-      const live = lineLive.get(id);
-      pl.setStyle({ color: jetColor(live?.loading_percent), weight: live ? currentWidth(live.i_ka, maxIka) : 1.5 });
+      const live = revealTruth ? lineLive.get(id) : undefined;
+      pl.setStyle(live
+        ? { color: jetColor(live.loading_percent), weight: currentWidth(live.i_ka, maxIka), opacity: 0.55 }
+        : { color: UNOBSERVED_LINE, weight: 1.5, opacity: 0.8 });
     }
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
     const cabs = new Set(topo.cabinet_buses ?? []);
-    const vm = new Map(latest.buses.map((b) => [b.index, b.vm_pu]));
+    const measVm = new Map((latest.measurements?.nodes ?? []).map((n) => [n.bus, n.vm_pu]));
+    const truthVm = new Map((latest.buses ?? []).map((b) => [b.index, b.vm_pu]));
     for (const [id, cm] of busRef.current) {
-      if (ext.has(id) || cabs.has(id)) continue;  // cabinets stay green
-      cm.setStyle({ fillColor: voltageReds(vm.get(id)) });
+      if (ext.has(id) || cabs.has(id)) continue;  // slack + cabinets keep their symbol
+      if (meteredBus.has(id)) cm.setStyle({ fillColor: voltageReds(measVm.get(id)), fillOpacity: 0.95 });
+      else if (revealTruth) cm.setStyle({ fillColor: voltageReds(truthVm.get(id)), fillOpacity: 0.4 });
+      else cm.setStyle({ fillColor: UNOBSERVED, fillOpacity: 0.7 });
     }
-  }, [latest, topo]);
+    const measTr = new Map((latest.measurements?.trafos ?? []).map((tr) => [tr.trafo, tr.loading_percent]));
+    for (const [id, cm] of trafoRef.current) {
+      if (meteredTrafo.has(id)) cm.setStyle({ fillColor: jetColor(measTr.get(id)), color: "#0b0d11" });
+      else cm.setStyle({ fillColor: STATION_COLOR, color: "#7a5400" });
+    }
+  }, [latest, topo, meterKey, revealTruth]);
 
   // battery markers (green ring) at battery buses; redraw when the set changes
   useEffect(() => {
@@ -185,21 +211,45 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       const m = L.circleMarker([b.geo[1], b.geo[0]], {
         radius: 6, color: "#0b0d11", weight: 1.5, fillColor: "#3fb950", fillOpacity: 1,
       }).addTo(map);
-      m.bindTooltip(`Battery · bus ${b.id}`);
+      m.bindTooltip(t("tip.battery", { bus: b.id }));
       batteryRef.current.push(m);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topo, batKey]);
+  }, [topo, batKey, i18n.language]);
+
+  // meter markers (blue ring) at metered buses + transformers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    meterRef.current.forEach((m) => map.removeLayer(m));
+    meterRef.current = [];
+    const busPos = new Map<number, [number, number]>();
+    for (const b of topo.buses) if (b.geo) busPos.set(b.id, [b.geo[1], b.geo[0]]);
+    const ring = (at: [number, number], tip: string) => {
+      const m = L.circleMarker(at, {
+        radius: 7, color: "#4c8dff", weight: 2, fill: false, opacity: 0.95,
+      }).addTo(map);
+      m.bindTooltip(tip);
+      meterRef.current.push(m);
+    };
+    for (const bus of meterBuses) { const p = busPos.get(bus); if (p) ring(p, t("tip.metered")); }
+    for (const tr of topo.trafos) {
+      if (!meterTrafos.includes(tr.id)) continue;
+      const at = busPos.get(tr.lv_bus) ?? busPos.get(tr.hv_bus);
+      if (at) ring(at, t("tip.metered"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topo, meterKey, i18n.language]);
 
   return (
     <div className="map-wrap">
       <div ref={elRef} className="map-canvas" />
-      <button className="map-basemap" onClick={() => setLight((v) => !v)} title="Toggle basemap">
-        {light ? "🌙 Dark" : "☀ Light"}
+      <button className="map-basemap" onClick={() => setLight((v) => !v)}>
+        {light ? t("map.dark") : t("map.light")}
       </button>
       <div className="map-colorbars">
-        <Colorbar gradient={JET_GRADIENT} top="100%" bottom="0%" caption="line loading" />
-        <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption="bus voltage Δ" />
+        <Colorbar gradient={JET_GRADIENT} top="100%" bottom="0%" caption={t("map.lineLoading")} />
+        <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption={t("map.busVolt")} />
       </div>
     </div>
   );
