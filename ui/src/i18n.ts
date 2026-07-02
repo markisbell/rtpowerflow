@@ -110,7 +110,12 @@ const en = {
     trafoMap: "Trafo {{name}} · {{kva}} kVA · click for graph",
     battery: "Battery · bus {{bus}}",
   },
-  map: { dark: "🌙 Dark", light: "☀ Light", lineLoading: "line loading", busVolt: "bus voltage Δ" },
+  map: {
+    dark: "🌙 Dark", light: "☀ Light", lineLoading: "line loading", busVolt: "bus voltage Δ",
+    layerMv: "MV", layerLv: "LV", layerAll: "All",
+    layerMvTitle: "Medium voltage only", layerLvTitle: "Low voltage only",
+    layerAllTitle: "Both voltage levels",
+  },
 };
 
 const de: typeof en = {
@@ -221,7 +226,12 @@ const de: typeof en = {
     trafoMap: "Trafo {{name}} · {{kva}} kVA · Klick für Diagramm",
     battery: "Batterie · Knoten {{bus}}",
   },
-  map: { dark: "🌙 Dunkel", light: "☀ Hell", lineLoading: "Leitungsauslastung", busVolt: "Spannungs-Δ" },
+  map: {
+    dark: "🌙 Dunkel", light: "☀ Hell", lineLoading: "Leitungsauslastung", busVolt: "Spannungs-Δ",
+    layerMv: "MS", layerLv: "NS", layerAll: "Alle",
+    layerMvTitle: "Nur Mittelspannung", layerLvTitle: "Nur Niederspannung",
+    layerAllTitle: "Beide Spannungsebenen",
+  },
 };
 
 i18n.use(initReactI18next).init({

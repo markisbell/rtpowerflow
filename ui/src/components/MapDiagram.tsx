@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -53,6 +53,17 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   const batteryRef = useRef<L.CircleMarker[]>([]);
   const [light, setLight] = useState(true);
   const batKey = batteryBuses.join(",");
+
+  // voltage layers: an interconnected district is too crowded to show at once,
+  // so it opens on the MV layer and the LV subgrids toggle in on demand. The
+  // switch only appears when the grid really has both levels (a standalone LV
+  // grid's single MV feed bus doesn't count).
+  const mvBus = useMemo(
+    () => new Set(topo.buses.filter((b) => b.vn_kv > 1.0).map((b) => b.id)), [topo]);
+  const layered = mvBus.size > 1 && topo.buses.length - mvBus.size > 1;
+  const [layer, setLayer] = useState<"mv" | "lv" | "all">("all");
+  useEffect(() => { setLayer(layered ? "mv" : "all"); },
+            [topo]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   // build map + static layers when the grid changes
   useEffect(() => {
@@ -197,12 +208,42 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topo, batKey, i18n.language]);
 
+  // apply the voltage layer: hide/show buses + lines by level. Station (trafo)
+  // markers stay visible in every layer — they anchor both grids. Runs after
+  // every rebuild (topo / language) so visibility survives marker re-creation.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const showMv = layer !== "lv", showLv = layer !== "mv";
+    const vis = (want: boolean, l: L.Path) => {
+      if (want && !map.hasLayer(l)) l.addTo(map);
+      else if (!want && map.hasLayer(l)) map.removeLayer(l);
+    };
+    for (const [id, cm] of busRef.current) vis(mvBus.has(id) ? showMv : showLv, cm);
+    for (const ln of topo.lines) {
+      const pl = lineRef.current.get(ln.id);
+      if (pl) vis(mvBus.has(ln.from_bus) && mvBus.has(ln.to_bus) ? showMv : showLv, pl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layer, topo, mvBus, i18n.language]);
+
   return (
     <div className="map-wrap">
       <div ref={elRef} className="map-canvas" />
       <button className="map-basemap" onClick={() => setLight((v) => !v)}>
         {light ? t("map.dark") : t("map.light")}
       </button>
+      {layered && (
+        <div className="map-layers">
+          {(["mv", "lv", "all"] as const).map((k) => (
+            <button key={k} className={layer === k ? "on" : ""}
+                    title={t(`map.layer${k[0].toUpperCase()}${k.slice(1)}Title`)}
+                    onClick={() => setLayer(k)}>
+              {t(`map.layer${k[0].toUpperCase()}${k.slice(1)}`)}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="map-colorbars">
         <Colorbar gradient={JET_GRADIENT} top="100%" bottom="0%" caption={t("map.lineLoading")} />
         <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption={t("map.busVolt")} />
