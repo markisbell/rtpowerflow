@@ -31,6 +31,8 @@ class GridEntry:
     scope: str = "full"               # convert_ding0_csv scope: full | mv | lv
     lv_grid_id: str | None = None
     osm_grid: str | None = None        # path to an OSM-routed LV grid JSON (overrides scope)
+    lv_subgrids: list[dict] | None = None  # MV only: OSM LV grids of the same district
+                                           # -> build the interconnected MV+LV network
 
 
 class GridCatalog:
@@ -62,6 +64,20 @@ class GridCatalog:
                 nodes=g.get("nodes"), scope=g.get("scope", "full"),
                 lv_grid_id=g.get("lv_grid_id"), osm_grid=osm,
             )
+        # An MV district entry subsumes the street-routed LV grids of the same
+        # source district: picking it builds the interconnected MV+LV network
+        # (LV grids without an OSM version stay lumped at their station).
+        for e in self._entries.values():
+            if e.voltage != "MV":
+                continue
+            subs = [{"lv_grid_id": s.lv_grid_id, "path": s.osm_grid, "id": s.id}
+                    for s in self._entries.values()
+                    if s.voltage == "LV" and s.osm_grid and s.member == e.member]
+            if subs:
+                e.lv_subgrids = subs
+                e.nodes = (e.nodes or 0) + sum(
+                    s.nodes or 0 for s in self._entries.values()
+                    if s.voltage == "LV" and s.osm_grid and s.member == e.member)
 
     def _scan_ding0(self) -> None:
         for sub in sorted(self.ding0_dir.iterdir()):
@@ -108,6 +124,10 @@ class GridCatalog:
             if e.osm_grid:
                 from .osm_lv_import import convert_osm_lv
                 self._cache[key] = convert_osm_lv(e.osm_grid, name=e.name, steps=steps)
+            elif e.lv_subgrids:
+                from .district_import import convert_district
+                self._cache[key] = convert_district(
+                    e.member, e.lv_subgrids, name=e.name, steps=steps)
             else:
                 from .ding0_import import convert_ding0_csv
                 self._cache[key] = convert_ding0_csv(
