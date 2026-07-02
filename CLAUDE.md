@@ -64,10 +64,11 @@ EchtzeitNetzSimulator/
 │   ├── models.py             # pydantic schemas for the 5 input files
 │   ├── data_loader.py        # read + cross-validate inputs -> InputData
 │   ├── network_builder.py    # build pandapower net once + numpy profile arrays
-│   ├── simulator.py          # apply one step, run_step() -> StepResult
+│   ├── simulator.py          # apply one step, run_step() -> StepResult (+ observed projection)
+│   ├── measurements.py       # OBSERVABILITY layer: MeasurementSet (meter placement + observe(net))
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
-│   ├── state.py              # latest + history ring buffer + WS broadcast
-│   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + monitor
+│   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip)
+│   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + measurements + monitor
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
 │   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM)
 │   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
@@ -87,6 +88,7 @@ EchtzeitNetzSimulator/
 │   ├── test_simulator.py     # smoke tests (load/build/solve/day-wrap)
 │   ├── test_runtime_swap.py  # grid catalog + engine.reconfigure (live grid swap)
 │   ├── test_loadgen.py       # LPG library reader + assignment
+│   ├── test_measurements.py  # observability: meter placement, projection, strict-mode strip
 │   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
 ├── ui/                       # app 3: React + Vite + TS frontend (served by nginx)
 │   ├── src/views/            # GridBrowser, LoadStudio, LivePowerFlow (3-step flow)
@@ -189,6 +191,12 @@ default to zeros if omitted.
 | POST | `/loadgen/assign` | Body `{grid_id, policy}` → preview net curve (load + EV − PV) + assignment |
 | POST | `/config/apply` | Body `{grid_id, loadgen?}` → convert (+ LPG loads, EV, PV) + `engine.reconfigure` |
 | GET | `/config/active` | Currently loaded grid metadata (id, name, counts, source, load_source, n_ev, n_pv, notes) |
+| GET | `/measurements` | Meter placement (`node_buses`, `trafo_idxs`), `coverage`, `presets`, `expose_ground_truth` |
+| POST | `/measurements/node` | Body `{bus}` → install a smart meter at a bus |
+| DELETE | `/measurements/node/{bus}` | Remove a node's smart meter |
+| POST | `/measurements/trafo` | Body `{trafo}` → install a transformer meter |
+| DELETE | `/measurements/trafo/{trafo}` | Remove a transformer meter |
+| POST | `/measurements/preset?name=` | Bulk: `all_nodes` \| `all_trafos` \| `substation_trafos` \| `clear` |
 | WS | `/ws` | Live stream: one JSON `StepResult` per solved step |
 
 **`StepResult`** (see `simulator.py`): `step, day, time_of_day ("HH:MM"),
@@ -200,6 +208,16 @@ max_trafo_loading_percent, total_load_mw, total_gen_mw, total_ext_grid_mw,
 total_losses_mw}` (`max_trafo_loading_percent` is `null` when the grid has no
 transformer).
 
+**Observability projection** (always present on `StepResult`): `measurements =
+{nodes[], trafos[], coverage, phases:3, balanced:true}` — readings ONLY at placed
+meters. A node reading = `{bus, name, vm_pu, v_ll_kv, p_mw, q_mvar, s_mva, i_ka}`
+(three-phase sums; `i_ka = S/(√3·V_LL)`); a trafo reading =
+`{trafo, name, hv_bus, lv_bus, loading_percent, p_hv_mw, q_hv_mvar, i_hv_ka,
+pl_mw}`. `observed_summary` aggregates over metered elements only
+(`vm_pu_min/max`, `max_trafo_loading_percent`, `measured_node_p_mw`, + coverage).
+The truth fields (`buses/lines/trafos/ext_grids/summary`) are **stripped from the
+wire** when `NETZSIM_EXPOSE_GROUND_TRUTH=false` — see §12.
+
 ---
 
 ## 6. Configuration (env vars)
@@ -210,7 +228,10 @@ netzsim (prefix `NETZSIM_`, loaded via pydantic-settings, `.env` supported — s
 (true), `HOST`, `PORT` (8000), `LOG_LEVEL`, `DING0_DIR` (committed ding0 grids,
 default `./data/ding0_grids`), `GRID_LIBRARY` (manifest, default
 `./data/grid_library.json`), `CORS_ORIGINS` (default `*`),
-`LPG_LIBRARY_DIR` (cached household profiles, default `./data/lpg_library`).
+`LPG_LIBRARY_DIR` (cached household profiles, default `./data/lpg_library`),
+`EXPOSE_GROUND_TRUTH` (default `true` — set `false` to enforce strict
+observability, stripping the true power flow from `/state`, `/ws`, `/history`;
+see §12).
 
 > Note: `STEPS_PER_DAY` exists in config but the simulator currently derives steps
 > from the input files (`InputData.steps_per_day`). Keep the env value and the file
@@ -384,3 +405,44 @@ provisioned datasource + dashboard, all in compose.
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
   Use Bash-tool paths accordingly.
 ```
+
+---
+
+## 12. Observability layer (reality vs what you can measure)
+
+The simulator computes the **full** power flow every step (reality), but the UI
+only *reveals* a quantity where a **measurement device** has been placed. This
+separates ground truth from the operator's partial view — the groundwork for
+state estimation.
+
+- **Two device kinds** (`measurements.py`, `MeasurementSet`):
+  - **Smart meter** at a bus → reveals that node's `vm_pu`, `p_mw`, `q_mvar`, and
+    derived current `i_ka = S / (√3 · V_LL)`. The power flow is **balanced
+    single-phase-equivalent**, so the three phases are symmetric: reported P/Q are
+    the three-phase sums, per-phase = sum/3, current is the per-phase line current.
+    True per-phase would need pandapower's `runpp_3ph` (a separate mode — not done).
+  - **Transformer meter** → reveals that transformer's `loading_percent` + HV P/Q/I.
+  - **Lines carry no meter** in this model → line loading/current is *unknown*
+    (drawn dim/grey) unless ground truth is revealed. This is deliberate: it shows
+    how sparse real observability is.
+- **Placement is grid-specific** and held per-`Simulator` (like batteries), so it
+  **resets on grid swap** (`engine.reconfigure` builds a fresh `Simulator`).
+  Placed via the UI (click a node/trafo → "place meter") or bulk presets
+  (`all_nodes` / `all_trafos` / `substation_trafos` / `clear`).
+- **Projection happens in `simulator._collect`**: after the solve, `meters.observe(net)`
+  → `StepResult.measurements`, `meters.observed_summary(...)` → `observed_summary`.
+- **`NETZSIM_EXPOSE_GROUND_TRUTH`** (default `true`): when `false`, `StateStore`
+  strips `buses/lines/trafos/ext_grids/summary` from `/state`, `/ws`, `/history`
+  so only the observed projection leaves the server (strict observability). Default
+  `true` keeps the InfluxDB collector and the UI's **reveal-ground-truth toggle**
+  working. The toggle (`LivePowerFlow`, off by default) overlays the true power
+  flow, faded, for comparison.
+- **UI** (`LivePowerFlow` + `GridDiagram`/`MapDiagram` + `MeasurementPanel`):
+  default view = observed only (unmetered nodes/trafos grey with `?`, blue meter
+  badges on metered ones); sidebar shows the observed summary + coverage. The
+  reveal toggle is hidden when the server enforces strict mode.
+- **Known gap**: the per-element *daily profile* endpoints (`/node/{}/profiles`,
+  `/line/…`, `/trafo/…`, used by the click-to-graph panels) still return the full
+  simulated curves regardless of meter placement or `expose_ground_truth`. They
+  bypass the observability layer; gate them too if strict end-to-end hiding is
+  needed.

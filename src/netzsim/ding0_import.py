@@ -56,11 +56,29 @@ def _lvg(v: Any) -> str:
     return s.split(".")[0]
 
 
-def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id):
+def trafo_spec_from_row(r, hv_bus: int, lv_bus: int, vn_hv: float, vn_lv: float) -> dict[str, Any]:
+    """A netzsim TransformerSpec dict from a ding0 ``transformers.csv`` row
+    (PyPSA-style: r/x in pu on s_nom → vk/vkr in percent)."""
+    rr, xx = _num(r.get("r")), _num(r.get("x"))
+    vk = max(min(100.0 * math.sqrt(rr * rr + xx * xx), 15.0), 1.0)
+    return {
+        "name": str(r["name"]),
+        "hv_bus": hv_bus, "lv_bus": lv_bus,
+        "sn_mva": _num(r["s_nom"], 0.4) or 0.4,
+        "vn_hv_kv": vn_hv, "vn_lv_kv": vn_lv,
+        "vk_percent": round(vk, 4), "vkr_percent": round(min(100.0 * rr, vk), 4),
+        "pfe_kw": 0.0, "i0_percent": 0.0,
+    }
+
+
+def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id,
+                 exclude_lv: set[str] | None = None):
     """Reduce a full ding0 district to a single voltage level.
 
     ``scope="mv"`` keeps the MV graph (v_nom > 1 kV, no ``lv_grid_id``) and folds
-    each downstream LV grid into one lumped load at its feeding MV bus.
+    each downstream LV grid into one lumped load at its feeding MV bus — except
+    grids in ``exclude_lv``, whose loads/gens are dropped entirely (the district
+    importer splices those in as full street-routed LV subgrids instead).
     ``scope="lv"`` extracts one standalone LV grid (``lv_grid_id``), fed at its
     busbar (the LV side of its MV/LV transformer). Returns the filtered frames
     plus a forced-slack bus name (or None) and notes.
@@ -100,6 +118,7 @@ def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id
     if scope == "mv":
         from collections import defaultdict
 
+        excl = exclude_lv or set()
         mvset = {nm for nm, g in lvof.items() if g == "" and vnof.get(nm, 0.0) > 1.0}
         lvg_mvbus: dict[str, str] = {}  # lv grid id -> feeding MV bus
         for _, r in trafos.iterrows():
@@ -117,7 +136,7 @@ def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id
             b = _real(r["bus"])
             if b in mvset:
                 kept.append({"name": str(r["name"]), "bus": b, "peak_load": _num(r.get("peak_load"))})
-            else:
+            elif lvof.get(b, "") not in excl:
                 agg[lvof.get(b, "")] += _num(r.get("peak_load"))
         for g, peak in agg.items():
             mvb = lvg_mvbus.get(g)
@@ -134,7 +153,7 @@ def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id
                 if b in mvset:
                     keptg.append({"name": str(r["name"]), "bus": b, "p_nom": _num(r.get("p_nom")),
                                   "subtype": r.get("subtype"), "type": r.get("type")})
-                else:
+                elif lvof.get(b, "") not in excl:
                     gagg[lvof.get(b, "")] += _num(r.get("p_nom"))
             for g, p in gagg.items():
                 mvb = lvg_mvbus.get(g)
@@ -143,7 +162,8 @@ def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id
             gens_f = pd.DataFrame(keptg) if keptg else gens.iloc[0:0]
 
         notes.append(f"MV-only graph: {len(buses_f)} MV buses, {len(lines_f)} MV lines, "
-                     f"{len(agg)} LV grids folded into lumped loads")
+                     f"{len(agg)} LV grids folded into lumped loads"
+                     + (f", {len(excl)} LV grids excluded for splicing" if excl else ""))
         return buses_f, lines_f, loads_f, empty_tr, hvmv, gens_f, None, notes
 
     return buses, lines, loads, trafos, hvmv, gens, None, notes
@@ -151,7 +171,8 @@ def _apply_scope(buses, lines, loads, trafos, hvmv, gens, scope: str, lv_grid_id
 
 def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
                       steps: int = 1440, power_factor: float = 0.95,
-                      scope: str = "full", lv_grid_id: str | int | None = None) -> GridInputs:
+                      scope: str = "full", lv_grid_id: str | int | None = None,
+                      exclude_lv: set[str] | None = None) -> GridInputs:
     d = Path(grid_dir)
     name = name or d.name
 
@@ -170,7 +191,7 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
     forced_slack: str | None = None
     if scope in ("mv", "lv"):
         buses, lines, loads, trafos, hvmv, gens, forced_slack, snotes = _apply_scope(
-            buses, lines, loads, trafos, hvmv, gens, scope, lv_grid_id)
+            buses, lines, loads, trafos, hvmv, gens, scope, lv_grid_id, exclude_lv)
         notes.extend(snotes)
 
     # --- buses (skip 'virtual_' switch duplicates; index by row order) -------- #
@@ -215,16 +236,8 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
         if b0 not in bus_index or b1 not in bus_index:
             continue
         hv, lv = (b0, b1) if vn[b0] >= vn[b1] else (b1, b0)
-        rr, xx = _num(r.get("r")), _num(r.get("x"))
-        vk = max(min(100.0 * math.sqrt(rr * rr + xx * xx), 15.0), 1.0)
-        trafo_specs.append({
-            "name": str(r["name"]),
-            "hv_bus": bus_index[hv], "lv_bus": bus_index[lv],
-            "sn_mva": _num(r["s_nom"], 0.4) or 0.4,
-            "vn_hv_kv": max(vn[b0], vn[b1]), "vn_lv_kv": min(vn[b0], vn[b1]),
-            "vk_percent": round(vk, 4), "vkr_percent": round(min(100.0 * rr, vk), 4),
-            "pfe_kw": 0.0, "i0_percent": 0.0,
-        })
+        trafo_specs.append(trafo_spec_from_row(
+            r, bus_index[hv], bus_index[lv], max(vn[b0], vn[b1]), min(vn[b0], vn[b1])))
 
     # --- coordinates for buses ding0 leaves un-geo-referenced --------------- #
     # ding0's eDisGo export gives WGS84 coords to MV buses / stations but NOT to

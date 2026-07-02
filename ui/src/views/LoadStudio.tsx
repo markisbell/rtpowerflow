@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { ActiveGrid, Archetype, AssignResponse, LoadgenPolicy } from "../types";
 import { fmt } from "../scales";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function LoadStudio({ gridId, onApplied }: Props) {
+  const { t } = useTranslation();
   const [archetypes, setArchetypes] = useState<Archetype[] | null>(null);
   const [available, setAvailable] = useState(true);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
@@ -82,26 +84,22 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
   return (
     <div className="studio">
       <div className="controls">
-        <h2 style={{ marginTop: 0 }}>Generate loads</h2>
+        <h2 style={{ marginTop: 0 }}>{t("loads.title")}</h2>
         <p className="muted" style={{ fontSize: "0.82rem" }}>
-          Grid <b>{gridId}</b>. Profiles are real LPG households assigned across the loads.
+          {t("loads.subtitle", { grid: gridId })}
         </p>
 
-        {!available && (
-          <p className="note">
-            No LPG library on the server — you can still run with synthetic placeholder loads.
-          </p>
-        )}
+        {!available && <p className="note">{t("loads.noLpg")}</p>}
 
         {archetypes && available && (
           <div className="field">
-            <label>Household archetypes ({chosen.size} selected)</label>
+            <label>{t("loads.archetypes", { count: chosen.size })}</label>
             <div className="arch-list">
               {archetypes.map((a) => (
                 <label className="arch-row" key={a.id}>
                   <input type="checkbox" checked={chosen.has(a.id)} onChange={() => toggle(a.id)} />
                   <span style={{ flex: 1 }}>{a.label}</span>
-                  <span className="muted">{fmt(a.annual_kwh, 0)} kWh/yr</span>
+                  <span className="muted">{t("loads.kwhYr", { kwh: fmt(a.annual_kwh, 0) })}</span>
                 </label>
               ))}
             </div>
@@ -109,66 +107,64 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
         )}
 
         <div className="field">
-          <label>Assignment mode</label>
+          <label>{t("loads.mode")}</label>
           <select value={mode} onChange={(e) => setMode(e.target.value as "round_robin" | "random")}>
-            <option value="round_robin">Round-robin (even spread)</option>
-            <option value="random">Random (seeded)</option>
+            <option value="round_robin">{t("loads.roundRobin")}</option>
+            <option value="random">{t("loads.random")}</option>
           </select>
         </div>
         <div className="field">
-          <label>Random seed</label>
+          <label>{t("loads.seed")}</label>
           <input type="number" value={seed} onChange={(e) => setSeed(+e.target.value)} />
         </div>
         <div className="field">
-          <label>Scale factor ({scale.toFixed(2)}×)</label>
+          <label>{t("loads.scale", { scale: scale.toFixed(2) })}</label>
           <input type="range" min={0.2} max={3} step={0.1} value={scale} onChange={(e) => setScale(+e.target.value)} />
         </div>
         <div className="field">
-          <label>Power factor ({pf.toFixed(2)})</label>
+          <label>{t("loads.pf", { pf: pf.toFixed(2) })}</label>
           <input type="range" min={0.8} max={1} step={0.01} value={pf} onChange={(e) => setPf(+e.target.value)} />
         </div>
 
         <div className="field">
-          <label>🔌 EV penetration ({Math.round(evPen * 100)}%)</label>
+          <label>{t("loads.evPen", { pct: Math.round(evPen * 100) })}</label>
           <input type="range" min={0} max={1} step={0.05} value={evPen}
                  onChange={(e) => setEvPen(+e.target.value)} />
-          <span className="muted" style={{ fontSize: "0.72rem" }}>
-            Share of homes charging an EV in the evening (uncontrolled).
-          </span>
+          <span className="muted" style={{ fontSize: "0.72rem" }}>{t("loads.evHint")}</span>
         </div>
         {evPen > 0 && (
           <div className="field">
-            <label>Wallbox power</label>
+            <label>{t("loads.wallbox")}</label>
             <select value={evKw} onChange={(e) => setEvKw(+e.target.value)}>
-              <option value={3.7}>3.7 kW (slow)</option>
-              <option value={11}>11 kW (wallbox)</option>
-              <option value={22}>22 kW (fast)</option>
+              <option value={3.7}>{t("loads.ev37")}</option>
+              <option value={11}>{t("loads.ev11")}</option>
+              <option value={22}>{t("loads.ev22")}</option>
             </select>
           </div>
         )}
         <div className="field">
-          <label>☀️ PV penetration ({Math.round(pvPen * 100)}%)</label>
+          <label>{t("loads.pvPen", { pct: Math.round(pvPen * 100) })}</label>
           <input type="range" min={0} max={1} step={0.05} value={pvPen}
                  onChange={(e) => setPvPen(+e.target.value)} />
         </div>
         {pvPen > 0 && (
           <div className="field">
-            <label>PV size per home ({pvKwp.toFixed(1)} kWp)</label>
+            <label>{t("loads.pvSize", { kwp: pvKwp.toFixed(1) })}</label>
             <input type="range" min={1} max={15} step={0.5} value={pvKwp}
                    onChange={(e) => setPvKwp(+e.target.value)} />
           </div>
         )}
 
         <button className="ghost" onClick={doPreview} disabled={busy || !available}>
-          {busy ? "…" : "Preview"}
+          {busy ? "…" : t("loads.preview")}
         </button>
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.8rem" }}>
           <button className="primary" onClick={() => apply(available)} disabled={busy}>
-            Apply &amp; run →
+            {t("loads.applyRun")}
           </button>
           {available && (
-            <button className="ghost" onClick={() => apply(false)} disabled={busy} title="Skip LPG, use placeholder loads">
-              Placeholder
+            <button className="ghost" onClick={() => apply(false)} disabled={busy} title={t("loads.placeholderHint")}>
+              {t("loads.placeholder")}
             </button>
           )}
         </div>
@@ -176,19 +172,16 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
       </div>
 
       <div className="preview">
-        <h3 style={{ marginTop: 0 }}>Aggregate daily load</h3>
-        {!preview && <div className="muted">Click “Preview” to simulate the feeder’s net load curve.</div>}
+        <h3 style={{ marginTop: 0 }}>{t("loads.aggregate")}</h3>
+        {!preview && <div className="muted">{t("loads.previewHint")}</div>}
         {preview && (
           <>
             <div className="kpis">
-              <Kpi k="loads" v={`${preview.n_load}`} />
-              <Kpi k="EVs" v={`${preview.n_ev}`} />
-              <Kpi k="PV systems" v={`${preview.n_pv}`} />
-              <Kpi k="net peak" v={`${fmt(preview.peak_net_mw * 1000, 1)} kW`} />
-              <Kpi
-                k="min net"
-                v={`${fmt(preview.min_net_mw * 1000, 1)} kW`}
-              />
+              <Kpi k={t("loads.kLoads")} v={`${preview.n_load}`} />
+              <Kpi k={t("loads.kEvs")} v={`${preview.n_ev}`} />
+              <Kpi k={t("loads.kPv")} v={`${preview.n_pv}`} />
+              <Kpi k={t("loads.kNetPeak")} v={`${fmt(preview.peak_net_mw * 1000, 1)} kW`} />
+              <Kpi k={t("loads.kMinNet")} v={`${fmt(preview.min_net_mw * 1000, 1)} kW`} />
             </div>
             <Sparkline
               values={netKw}
@@ -197,13 +190,11 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
               height={240}
             />
             <p className="muted" style={{ fontSize: "0.78rem" }}>
-              Net feeder demand (solid) over 24 h, kW{hasPv && " — dashed = gross load before PV"}.
-              {preview.min_net_mw < 0 && (
-                <span className="note"> Net goes negative → midday reverse flow (PV export).</span>
-              )}
+              {t("loads.netDesc")}{hasPv && t("loads.netDescPv")}.
+              {preview.min_net_mw < 0 && <span className="note">{t("loads.reverseFlow")}</span>}
             </p>
             <p className="muted" style={{ fontSize: "0.78rem" }}>
-              Archetypes used: {preview.archetypes_used.join(", ")}.
+              {t("loads.archUsed", { list: preview.archetypes_used.join(", ") })}
             </p>
           </>
         )}

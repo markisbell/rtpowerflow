@@ -14,6 +14,7 @@ from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
 from .battery import MODES
 from .grid_catalog import GridCatalog, preview
+from .measurements import PRESETS
 from .realpv import load_prices, load_pv_days
 from .loadgen import (
     AssignPolicy,
@@ -64,7 +65,8 @@ async def lifespan(app: FastAPI):
     log.info("Loading inputs from %s", settings.data_dir)
     data = load_inputs(settings.data_dir)
     simulator = Simulator(data, warm_start=settings.warm_start)
-    runtime.store = StateStore(history_size=settings.history_size)
+    runtime.store = StateStore(history_size=settings.history_size,
+                               expose_ground_truth=settings.expose_ground_truth)
     runtime.engine = RealtimeEngine(
         simulator, runtime.store, settings.step_interval_seconds
     )
@@ -262,6 +264,72 @@ def battery_profiles(idx: int):
 
 
 # --------------------------------------------------------------------------- #
+# Observability: measurement device placement (smart meters + transformer meters)
+# --------------------------------------------------------------------------- #
+def _measurements_response() -> dict:
+    sim = runtime.engine.sim
+    p = sim.measurement_placement()
+    return {**p, "presets": list(PRESETS),
+            "expose_ground_truth": settings.expose_ground_truth}
+
+
+class NodeMeterRequest(BaseModel):
+    bus: int
+
+
+class TrafoMeterRequest(BaseModel):
+    trafo: int
+
+
+@app.get("/measurements")
+def measurements():
+    """Current meter placement + coverage + available presets. `expose_ground_truth`
+    tells the UI whether the true power flow is available (reveal toggle)."""
+    return _measurements_response()
+
+
+@app.post("/measurements/node")
+async def place_node_meter(req: NodeMeterRequest):
+    """Install a smart meter at a bus (reveals its voltage, P, Q, current)."""
+    try:
+        runtime.engine.sim.place_node_meter(req.bus)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+    return _measurements_response()
+
+
+@app.delete("/measurements/node/{bus}")
+async def remove_node_meter(bus: int):
+    runtime.engine.sim.remove_node_meter(bus)
+    return _measurements_response()
+
+
+@app.post("/measurements/trafo")
+async def place_trafo_meter(req: TrafoMeterRequest):
+    """Install a measurement at a transformer (reveals its loading, HV P/Q/I)."""
+    try:
+        runtime.engine.sim.place_trafo_meter(req.trafo)
+    except KeyError:
+        raise HTTPException(404, f"unknown transformer {req.trafo}")
+    return _measurements_response()
+
+
+@app.delete("/measurements/trafo/{trafo}")
+async def remove_trafo_meter(trafo: int):
+    runtime.engine.sim.remove_trafo_meter(trafo)
+    return _measurements_response()
+
+
+@app.post("/measurements/preset")
+async def measurements_preset(name: str = Query(...)):
+    """Bulk placement: all_nodes | all_trafos | substation_trafos | clear."""
+    if name not in PRESETS:
+        raise HTTPException(422, f"name must be one of {PRESETS}")
+    runtime.engine.sim.apply_meter_preset(name)
+    return _measurements_response()
+
+
+# --------------------------------------------------------------------------- #
 # Grid catalog + runtime grid swap
 # --------------------------------------------------------------------------- #
 @app.get("/grids")
@@ -314,13 +382,23 @@ def loadgen_archetypes():
     }
 
 
+def _household_loads(g) -> list[dict]:
+    """The loads that represent real households — LPG/EV/PV attach only to these.
+    Interconnected districts flag building loads ``household: true`` and lumped
+    station / MV loads ``false``; grids without flags are all-household (LV)."""
+    return [ld for ld in g.load["loads"] if ld.get("household", True)]
+
+
 def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
-    """Base household loads + any synthetic EV charging loads (additive)."""
+    """Base household loads + any synthetic EV charging loads (additive). Loads
+    that are not households (lumped LV stations in a district) pass through with
+    their aggregate profiles untouched."""
     if not runtime.library.available:
         raise HTTPException(409, "no LPG library built; run scripts/build_lpg_library.py")
+    households = _household_loads(g)
     try:
         doc = assign_to_loads(
-            g.load["loads"], runtime.library, _assign_policy(policy),
+            households, runtime.library, _assign_policy(policy),
             steps=settings.steps_per_day,
         )
     except ValueError as exc:
@@ -328,13 +406,16 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
     n_ev = 0
     if policy.ev_penetration > 0:
         ev = assign_ev(
-            g.load["loads"],
+            households,
             EvPolicy(penetration=policy.ev_penetration, charger_kw=policy.ev_charger_kw,
                      daily_kwh=policy.ev_daily_kwh, seed=policy.seed),
             steps=settings.steps_per_day,
         )
         doc["loads"] = doc["loads"] + ev["loads"]
         n_ev = len(ev["loads"])
+    fixed = [ld for ld in g.load["loads"] if not ld.get("household", True)]
+    doc["loads"] = doc["loads"] + [
+        {k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar") if k in ld} for ld in fixed]
     doc["n_ev"] = n_ev
     return doc
 
@@ -343,8 +424,8 @@ def _pv_gen_doc(g, policy: LoadgenPolicy) -> dict | None:
     if policy.pv_penetration <= 0:
         return None
     return assign_pv(
-        g.load["loads"], PvPolicy(penetration=policy.pv_penetration,
-                                  kwp=policy.pv_kwp, seed=policy.seed),
+        _household_loads(g), PvPolicy(penetration=policy.pv_penetration,
+                                      kwp=policy.pv_kwp, seed=policy.seed),
         steps=settings.steps_per_day,
     )
 

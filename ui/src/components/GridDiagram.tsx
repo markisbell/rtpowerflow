@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { StepResult, Topology } from "../types";
-import { currentWidth, loadingColor, voltageColor, fmt } from "../scales";
+import { useTranslation } from "react-i18next";
+import type { NodeMeasurement, StepResult, Topology, TrafoMeasurement } from "../types";
+import { currentWidth, loadingColor, voltageColor, fmt, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
 
 // stacked-feeder layout spacing (user units): horizontal per depth level, and the
 // vertical room for a feeder track + each leaf-load stub fanned below its node.
@@ -22,6 +23,10 @@ interface Props {
   onSelectTrafo?: (trafo: number, additive: boolean) => void;
   selectedTrafos?: number[];
   batteryBuses?: number[];
+  // observability
+  meterBuses?: number[];       // buses carrying a smart meter
+  meterTrafos?: number[];      // transformers carrying a meter
+  revealTruth?: boolean;       // overlay the true (unobserved) power flow, faded
 }
 
 interface Tip {
@@ -32,7 +37,10 @@ interface Tip {
 
 type XY = { x: number; y: number };
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [] }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [], meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
+  const { t } = useTranslation();
+  const meteredBus = useMemo(() => new Set(meterBuses), [meterBuses]);
+  const meteredTrafo = useMemo(() => new Set(meterTrafos), [meterTrafos]);
   // ---- stacked horizontal feeder layout ------------------------------------
   // x = depth from the slack (feeders run straight left→right, using the width);
   // the largest child continues its parent's track, other feeders drop to a new
@@ -157,27 +165,38 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
 
   // live lookups
   const liveLine = useMemo(() => {
-    const m = new Map<number, StepResult["lines"][number]>();
-    latest?.lines.forEach((l) => m.set(l.index, l));
+    const m = new Map<number, NonNullable<StepResult["lines"]>[number]>();
+    latest?.lines?.forEach((l) => m.set(l.index, l));
     return m;
   }, [latest]);
   const liveTrafo = useMemo(() => {
-    const m = new Map<number, StepResult["trafos"][number]>();
-    latest?.trafos.forEach((t) => m.set(t.index, t));
+    const m = new Map<number, NonNullable<StepResult["trafos"]>[number]>();
+    latest?.trafos?.forEach((t) => m.set(t.index, t));
     return m;
   }, [latest]);
   const liveBus = useMemo(() => {
     const m = new Map<number, number>();
-    latest?.buses.forEach((b) => m.set(b.index, b.vm_pu));
+    latest?.buses?.forEach((b) => m.set(b.index, b.vm_pu));
     return m;
   }, [latest]);
   const liveBusFull = useMemo(() => {
-    const m = new Map<number, StepResult["buses"][number]>();
-    latest?.buses.forEach((b) => m.set(b.index, b));
+    const m = new Map<number, NonNullable<StepResult["buses"]>[number]>();
+    latest?.buses?.forEach((b) => m.set(b.index, b));
+    return m;
+  }, [latest]);
+  // observed readings (only at placed meters) — the default source of colour/values
+  const measBus = useMemo(() => {
+    const m = new Map<number, NodeMeasurement>();
+    latest?.measurements?.nodes.forEach((n) => m.set(n.bus, n));
+    return m;
+  }, [latest]);
+  const measTrafo = useMemo(() => {
+    const m = new Map<number, TrafoMeasurement>();
+    latest?.measurements?.trafos.forEach((tr) => m.set(tr.trafo, tr));
     return m;
   }, [latest]);
 
-  const maxIka = useMemo(() => Math.max(1e-6, ...(latest?.lines.map((l) => l.i_ka) ?? [0])), [latest]);
+  const maxIka = useMemo(() => Math.max(1e-6, ...(latest?.lines?.map((l) => l.i_ka) ?? [0])), [latest]);
   const animate = topo.lines.length < 400;
 
   // ---- pan / zoom ----
@@ -238,12 +257,14 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
         {topo.lines.map((ln) => {
           const e = edge(ln.from_bus, ln.to_bus);
           if (!e) return null;
-          const live = liveLine.get(ln.id);
-          const color = loadingColor(live?.loading_percent);
-          const wdt = live ? currentWidth(live.i_ka, maxIka) : 1.5;
+          const live = liveLine.get(ln.id);            // truth (absent in strict mode)
+          const open = ln.in_service === false;
+          // Lines carry no measurement device: unknown unless truth is revealed.
+          const showTruth = revealTruth && !!live;
+          const color = open ? "#888" : showTruth ? loadingColor(live!.loading_percent) : UNOBSERVED_LINE;
+          const wdt = open ? 1.5 : showTruth ? currentWidth(live!.i_ka, maxIka) : 1.5;
           const rev = (live?.p_from_mw ?? 0) < 0;
           const sel = selectedLines.includes(ln.id);
-          const open = ln.in_service === false;
           return (
             <g
               key={`l${ln.id}`}
@@ -251,13 +272,15 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               style={{ cursor: "pointer" }}
               onClick={(e) => onSelectLine?.(ln.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
-                showTip(ev, [
-                  `Line ${ln.name ?? ln.id}`,
-                  `loading ${fmt(live?.loading_percent, 1)} %`,
-                  `I ${fmt(live?.i_ka != null ? live.i_ka * 1000 : null, 1)} A`,
-                  `P ${fmt(live?.p_from_mw != null ? live.p_from_mw * 1000 : null, 1)} kW`,
-                  "click → current graph",
-                ])
+                showTip(ev, showTruth
+                  ? [
+                      t("tip.line", { name: ln.name ?? ln.id }),
+                      t("tip.loadingPct", { v: fmt(live!.loading_percent, 1) }),
+                      t("tip.currentA", { v: fmt(live!.i_ka * 1000, 1) }),
+                      t("tip.powerKw", { v: fmt(live!.p_from_mw * 1000, 1) }),
+                      t("tip.clickCurrent"),
+                    ]
+                  : [t("tip.line", { name: ln.name ?? ln.id }), t("tip.noMeter"), t("tip.clickCurrent")])
               }
             >
               {sel && <path d={e.d} fill="none" stroke="#ffd166" strokeWidth={wdt + 5} strokeLinejoin="round" strokeLinecap="round" opacity={0.5} />}
@@ -266,12 +289,13 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               <path
                 d={e.d}
                 fill="none"
-                stroke={open ? "#888" : color}
+                stroke={color}
                 strokeWidth={open ? 1.5 : wdt}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 strokeDasharray={open ? "5 7" : undefined}
-                className={!open && animate && live && Math.abs(live.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
+                opacity={open ? 1 : showTruth ? 0.5 : 0.85}
+                className={!open && showTruth && animate && Math.abs(live!.p_from_mw) > 1e-4 ? `flow${rev ? " rev" : ""}` : ""}
               />
             </g>
           );
@@ -281,10 +305,17 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
         {topo.trafos.map((tr) => {
           const e = edge(tr.hv_bus, tr.lv_bus);
           if (!e) return null;
-          const live = liveTrafo.get(tr.id);
+          const metered = meteredTrafo.has(tr.id);
+          const meas = measTrafo.get(tr.id);            // observed (only if metered)
+          const truth = liveTrafo.get(tr.id);           // reality (reveal / strict-off)
+          // measured loading drives colour; else reveal-truth (faded); else unknown
+          const loadingPct = metered ? meas?.loading_percent ?? null
+                           : revealTruth ? truth?.loading_percent ?? null : null;
+          const known = loadingPct != null;
+          const color = known ? loadingColor(loadingPct) : UNOBSERVED;
+          const faded = !metered && revealTruth;        // showing reality, not a reading
           const mx = (e.p.x + e.c.x) / 2;
           const my = e.c.y;
-          const color = loadingColor(live?.loading_percent);
           const sel = selectedTrafos.includes(tr.id);
           return (
             <g
@@ -294,29 +325,40 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               onClick={(e) => onSelectTrafo?.(tr.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(ev) =>
                 showTip(ev, [
-                  `Trafo ${tr.name ?? tr.id}`,
-                  `${fmt(tr.sn_mva * 1000, 0)} kVA`,
-                  `loading ${fmt(live?.loading_percent, 1)} %`,
-                  "click → power graph",
-                ])
+                  t("tip.trafo", { name: tr.name ?? tr.id }),
+                  t("tip.kva", { v: fmt(tr.sn_mva * 1000, 0) }),
+                  metered ? t("tip.metered") : known ? "" : t("tip.noMeter"),
+                  known ? t("tip.loadingPct", { v: fmt(loadingPct, 1) }) : "",
+                  t("tip.clickPower"),
+                ].filter(Boolean))
               }
             >
-              <path d={e.d} fill="none" stroke={color} strokeWidth={6} strokeLinejoin="round" strokeLinecap="round" />
+              <path d={e.d} fill="none" stroke={color} strokeWidth={6} strokeLinejoin="round" strokeLinecap="round"
+                    opacity={faded ? 0.5 : 1} />
               <circle cx={mx} cy={my} r={sel ? 13 : 11} fill="#0b0d11"
-                stroke={sel ? "#ffd166" : color} strokeWidth={sel ? 4 : 3} />
-              <text x={mx} y={my + 3} textAnchor="middle" fontSize="9" fill="#e6e6e6">
-                {live ? Math.round(live.loading_percent) : "T"}
+                stroke={sel ? "#ffd166" : color} strokeWidth={sel ? 4 : 3}
+                strokeDasharray={!known ? "3 3" : undefined} opacity={faded ? 0.6 : 1} />
+              {metered && <MeterBadge x={mx - 15} y={my - 15} />}
+              <text x={mx} y={my + 3} textAnchor="middle" fontSize="9" fill="#e6e6e6" opacity={faded ? 0.7 : 1}>
+                {loadingPct != null ? Math.round(loadingPct) : "?"}
               </text>
             </g>
           );
         })}
 
-        {/* buses */}
+        {/* buses — voltage revealed only where a smart meter is placed */}
         {topo.buses.map((bus) => {
           const p = pos.get(bus.id);
           if (!p) return null;
-          const isExt = extBuses.has(bus.id);
-          const vm = liveBus.get(bus.id);
+          const isExt = extBuses.has(bus.id);   // slack/substation: always the reference
+          const metered = meteredBus.has(bus.id);
+          const meas = measBus.get(bus.id);
+          const truth = liveBus.get(bus.id);
+          const vm = metered ? meas?.vm_pu ?? null
+                   : revealTruth ? truth ?? null : null;
+          const known = isExt || vm != null;
+          const fill = isExt ? "#e6e6e6" : known ? voltageColor(vm) : UNOBSERVED;
+          const faded = !metered && !isExt && revealTruth;
           const busSel = selectedBuses.includes(bus.id);
           return (
             <circle
@@ -325,21 +367,31 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               cx={p.x}
               cy={p.y}
               r={busSel ? (isExt ? 7 : 5) : isExt ? 6 : 3}
-              fill={isExt ? "#e6e6e6" : voltageColor(vm)}
+              fill={fill}
+              fillOpacity={faded ? 0.55 : 1}
               stroke={busSel ? "#ffd166" : isExt ? "#7fd1ff" : "none"}
               strokeWidth={busSel ? 2.5 : isExt ? 2 : 0}
               style={{ cursor: "pointer" }}
               onClick={(e) => onSelectBus?.(bus.id, e.ctrlKey || e.metaKey)}
               onMouseEnter={(e) =>
                 showTip(e, [
-                  `${isExt ? "Slack " : "Bus "}${bus.name}`,
-                  `${bus.vn_kv} kV`,
-                  `Vm ${fmt(vm, 4)} pu`,
-                  "click → load/gen graph",
-                ])
+                  isExt ? t("tip.slack", { name: bus.name }) : t("tip.bus", { name: bus.name }),
+                  t("tip.kv", { v: bus.vn_kv }),
+                  metered ? t("tip.metered") : isExt ? "" : vm == null ? t("tip.noMeter") : "",
+                  vm != null ? t("tip.vmPu", { v: fmt(vm, 4) }) : "",
+                  metered && meas && meas.i_ka != null ? t("tip.meterI", { v: fmt(meas.i_ka * 1000, 1) }) : "",
+                  t("tip.clickNode"),
+                ].filter(Boolean))
               }
             />
           );
+        })}
+
+        {/* smart-meter badges at metered buses */}
+        {[...meteredBus].map((bid) => {
+          const p = pos.get(bid);
+          if (!p) return null;
+          return <MeterBadge key={`mb${bid}`} x={p.x + 4} y={p.y - 11} />;
         })}
 
         {/* battery markers (green cell to the upper-left of the bus) */}
@@ -354,32 +406,40 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           );
         })}
 
-        {/* SCADA value indicators: current on lines, voltage + power at nodes */}
+        {/* SCADA value indicators. Measured readings at metered nodes; line
+            currents + unmetered nodes appear only when ground truth is revealed. */}
         {showValues && latest && (
           <g pointerEvents="none">
-            {topo.lines.map((ln) => {
+            {revealTruth && topo.lines.map((ln) => {
               const e = edge(ln.from_bus, ln.to_bus);
               const live = liveLine.get(ln.id);
               if (!e || !live) return null;
               return (
                 <ValueBox key={`vl${ln.id}`} x={(e.p.x + e.c.x) / 2} y={e.c.y}
-                  rows={[`${fmt(live.i_ka * 1000, 0)} A`]} />
+                  rows={[`${fmt(live.i_ka * 1000, 0)} A`]} faded />
               );
             })}
             {topo.buses.map((bus) => {
               const p = pos.get(bus.id);
-              const lb = liveBusFull.get(bus.id);
-              if (!p || !lb) return null;
+              if (!p) return null;
+              const meas = measBus.get(bus.id);
+              if (meteredBus.has(bus.id) && meas) {
+                const rows = [`${fmt(meas.vm_pu, 3)} pu`];
+                if (meas.p_mw != null && Math.abs(meas.p_mw) > 1e-4) rows.push(`${fmt(meas.p_mw * 1000, 0)} kW`);
+                return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} accent />;
+              }
+              const lb = revealTruth ? liveBusFull.get(bus.id) : undefined;
+              if (!lb) return null;
               const rows = [`${fmt(lb.vm_pu, 3)} pu`];
               if (Math.abs(lb.p_mw) > 1e-4) rows.push(`${fmt(lb.p_mw * 1000, 0)} kW`);
-              return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} accent />;
+              return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} faded />;
             })}
           </g>
         )}
       </svg>
 
       <button className="ghost" style={{ position: "absolute", top: 10, right: 10 }} onClick={reset}>
-        Reset view
+        {t("live.reset")}
       </button>
       {tip && (
         <div className="tooltip" style={{ left: tip.x, top: tip.y }}>
@@ -396,19 +456,30 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
 
 // A small SCADA-style value box (dark rectangle + monospace reading) drawn in SVG
 // user units, so it scales with zoom — like the indicators on a control-room board.
-function ValueBox({ x, y, rows, accent }: { x: number; y: number; rows: string[]; accent?: boolean }) {
+function ValueBox({ x, y, rows, accent, faded }: { x: number; y: number; rows: string[]; accent?: boolean; faded?: boolean }) {
   const w = Math.max(...rows.map((r) => r.length)) * 5.4 + 6;
   const h = rows.length * 10 + 3;
   return (
-    <g transform={`translate(${x + 2},${y - h / 2})`}>
+    <g transform={`translate(${x + 2},${y - h / 2})`} opacity={faded ? 0.6 : 1}>
       <rect width={w} height={h} rx={2} fill="#0b0d11" opacity={0.82} stroke="#33414f" strokeWidth={0.4} />
       {rows.map((r, i) => (
         <text key={i} x={3} y={9 + i * 10} fontSize={8.5}
           style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-          fill={accent ? "#8fe3c8" : "#74c0fc"}>
+          fill={faded ? "#8a94a3" : accent ? "#8fe3c8" : "#74c0fc"}>
           {r}
         </text>
       ))}
+    </g>
+  );
+}
+
+// A small "meter" glyph (a filled tag) marking a node/transformer that carries a
+// measurement device, so metered elements are identifiable at a glance.
+function MeterBadge({ x, y }: { x: number; y: number }) {
+  return (
+    <g pointerEvents="none" transform={`translate(${x},${y})`}>
+      <rect width={9} height={7} rx={1.5} fill="#4c8dff" stroke="#0b0d11" strokeWidth={0.6} />
+      <circle cx={4.5} cy={3.5} r={1.4} fill="#0b0d11" />
     </g>
   );
 }

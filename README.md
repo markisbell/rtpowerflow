@@ -132,11 +132,25 @@ See [`visualization/README.md`](visualization/README.md) for details.
 | POST   | `/control/pause`  | Pause |
 | POST   | `/control/resume` | Resume |
 | POST   | `/control/seek?step=` | Jump to a step |
+| GET    | `/measurements`   | Meter placement + coverage + presets |
+| POST   | `/measurements/node` · `/measurements/trafo` | Place a smart / transformer meter |
+| POST   | `/measurements/preset?name=` | Bulk place: `all_nodes`/`all_trafos`/`substation_trafos`/`clear` |
 | WS     | `/ws`             | Live stream: one JSON `StepResult` per solved step |
 
 Each `StepResult` contains: `step`, `day`, `time_of_day`, `converged`, `solve_ms`,
 `buses[]`, `lines[]`, `ext_grids[]`, and a `summary` (Vmin/Vmax, max line loading,
-total load/gen/slack/losses).
+total load/gen/slack/losses) — plus a `measurements` projection (§ Observability).
+
+### Observability — reality vs what you can measure
+
+The simulator always computes the **true** power flow, but a quantity is only
+*visible* where a **measurement device** is placed: a **smart meter** at a bus
+reveals its voltage, active/reactive power and current; a **transformer meter**
+reveals its loading. Everything else is unknown. Place meters by clicking a
+node/transformer in the Live view (or use the bulk presets), and toggle **Reveal
+ground truth** to overlay reality for comparison. Set
+`NETZSIM_EXPOSE_GROUND_TRUTH=false` to make the server withhold the true power
+flow entirely and stream only the observed readings.
 
 ---
 
@@ -150,6 +164,7 @@ total load/gen/slack/losses).
 | `NETZSIM_AUTOSTART` | `true` | Start loop on boot |
 | `NETZSIM_HISTORY_SIZE` | `1440` | In-memory history length |
 | `NETZSIM_WARM_START` | `true` | Warm-start each power flow |
+| `NETZSIM_EXPOSE_GROUND_TRUTH` | `true` | `false` = stream only observed measurements (strict observability) |
 
 ---
 

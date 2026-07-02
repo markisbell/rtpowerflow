@@ -11,6 +11,8 @@ import type {
   GridsResponse,
   LineProfiles,
   LoadgenPolicy,
+  MeasurementsResponse,
+  MeterPreset,
   NodeProfiles,
   PvDays,
   StepResult,
@@ -78,6 +80,15 @@ export const api = {
     post<Battery>("/battery", body),
   removeBattery: (idx: number) => del<{ removed: number }>(`/battery/${idx}`),
   batteryProfiles: (idx: number) => get<BatteryProfiles>(`/battery/${idx}/profiles`),
+
+  // observability: measurement device placement
+  measurements: () => get<MeasurementsResponse>("/measurements"),
+  placeNodeMeter: (bus: number) => post<MeasurementsResponse>("/measurements/node", { bus }),
+  removeNodeMeter: (bus: number) => del<MeasurementsResponse>(`/measurements/node/${bus}`),
+  placeTrafoMeter: (trafo: number) => post<MeasurementsResponse>("/measurements/trafo", { trafo }),
+  removeTrafoMeter: (trafo: number) => del<MeasurementsResponse>(`/measurements/trafo/${trafo}`),
+  meterPreset: (name: MeterPreset) =>
+    post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
 };
 
 export function wsUrl(): string {
