@@ -69,6 +69,12 @@ const en = {
     time: "Time: {{time}}", dayLabel: "Day", dayTitle: "Real PV day (measured)",
     stepDur: "Step duration", stepDurTitle: "Real seconds per simulation step",
     failedNet: "Failed to load network:", loadingNet: "Loading network…",
+    reveal: "Reveal ground truth", revealOff: "Observed only",
+    revealTitle: "Overlay the true power flow (faded) behind the measurements",
+    observedNote: "Observed values only — from placed measurements.",
+    truthHidden: "Ground truth hidden by the server (strict observability).",
+    measuredVmm: "measured V min / max", measuredTrafo: "measured max trafo",
+    measuredLoad: "measured load (Σ)", coverage: "meter coverage", groundTruth: "ground truth",
   },
 
   graph: { uhr: "{{time}}" },
@@ -95,6 +101,20 @@ const en = {
     noData: "No power data (battery out of service?).",
   },
 
+  meas: {
+    heading: "Measurements", none: "No measurements placed — the grid is unobservable.",
+    smartMeter: "Smart meter", trafoMeter: "Transformer meter",
+    node: "node {{bus}}", trafo: "transformer {{trafo}}",
+    coverage: "Coverage", coverageVal: "{{nodes}}/{{totalNodes}} nodes · {{trafos}}/{{totalTrafos}} trafos",
+    addNodeHint: "Select a node or transformer to place a measurement there.",
+    addNode: "📟 Meter @ node {{bus}}", addTrafo: "📟 Meter @ transformer {{trafo}}",
+    remove: "remove measurement",
+    presets: "Bulk", presetAllNodes: "All nodes", presetSubstations: "Substations",
+    presetAllTrafos: "All trafos", clear: "Clear all",
+    strict: "Strict mode — the server hides ground truth.",
+    unknown: "unknown",
+  },
+
   common: { loading: "loading…", error: "error: {{msg}}" },
 
   tip: {
@@ -109,6 +129,8 @@ const en = {
     lineMap: "Line {{name}} · click for graph",
     trafoMap: "Trafo {{name}} · {{kva}} kVA · click for graph",
     battery: "Battery · bus {{bus}}",
+    metered: "📟 metered", noMeter: "no meter · unknown",
+    voltA: "Vm {{v}} pu", meterI: "I {{v}} A", meterP: "P {{v}} kW", meterQ: "Q {{v}} kvar",
   },
   map: { dark: "🌙 Dark", light: "☀ Light", lineLoading: "line loading", busVolt: "bus voltage Δ" },
 };
@@ -180,6 +202,12 @@ const de: typeof en = {
     time: "Zeitpunkt: {{time}} Uhr", dayLabel: "Tag", dayTitle: "Realer PV-Tag (Messdaten)",
     stepDur: "Schrittdauer", stepDurTitle: "Realzeit pro Simulationsschritt",
     failedNet: "Netz konnte nicht geladen werden:", loadingNet: "Netz wird geladen…",
+    reveal: "Wahrheit zeigen", revealOff: "Nur beobachtet",
+    revealTitle: "Den echten Lastfluss (blass) hinter den Messungen einblenden",
+    observedNote: "Nur beobachtete Werte — aus platzierten Messungen.",
+    truthHidden: "Wahrheit vom Server verborgen (strikte Beobachtbarkeit).",
+    measuredVmm: "gemessen U min / max", measuredTrafo: "gemessen max Trafo",
+    measuredLoad: "gemessene Last (Σ)", coverage: "Messabdeckung", groundTruth: "Wahrheit",
   },
 
   graph: { uhr: "{{time}} Uhr" },
@@ -206,6 +234,20 @@ const de: typeof en = {
     noData: "Keine Leistungsdaten (Batterie außer Betrieb?).",
   },
 
+  meas: {
+    heading: "Messungen", none: "Keine Messungen platziert — das Netz ist unbeobachtbar.",
+    smartMeter: "Smart Meter", trafoMeter: "Trafo-Messung",
+    node: "Knoten {{bus}}", trafo: "Transformator {{trafo}}",
+    coverage: "Abdeckung", coverageVal: "{{nodes}}/{{totalNodes}} Knoten · {{trafos}}/{{totalTrafos}} Trafos",
+    addNodeHint: "Einen Knoten oder Transformator wählen, um dort eine Messung zu platzieren.",
+    addNode: "📟 Messung @ Knoten {{bus}}", addTrafo: "📟 Messung @ Transformator {{trafo}}",
+    remove: "Messung entfernen",
+    presets: "Schnell", presetAllNodes: "Alle Knoten", presetSubstations: "Stationen",
+    presetAllTrafos: "Alle Trafos", clear: "Alle löschen",
+    strict: "Strikter Modus — der Server verbirgt die Wahrheit.",
+    unknown: "unbekannt",
+  },
+
   common: { loading: "lädt…", error: "Fehler: {{msg}}" },
 
   tip: {
@@ -220,6 +262,8 @@ const de: typeof en = {
     lineMap: "Leitung {{name}} · Klick für Diagramm",
     trafoMap: "Trafo {{name}} · {{kva}} kVA · Klick für Diagramm",
     battery: "Batterie · Knoten {{bus}}",
+    metered: "📟 gemessen", noMeter: "keine Messung · unbekannt",
+    voltA: "U {{v}} pu", meterI: "I {{v}} A", meterP: "P {{v}} kW", meterQ: "Q {{v}} kvar",
   },
   map: { dark: "🌙 Dunkel", light: "☀ Hell", lineLoading: "Leitungsauslastung", busVolt: "Spannungs-Δ" },
 };

@@ -12,6 +12,7 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .data_loader import InputData
+from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
 
@@ -32,6 +33,11 @@ class StepResult:
     batteries: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+    # Observability projection: what the placed measurement devices reveal (see
+    # measurements.py). Always present; the truth fields above are stripped from
+    # the wire when NETZSIM_EXPOSE_GROUND_TRUTH is off (state.StateStore).
+    measurements: dict[str, Any] = field(default_factory=dict)
+    observed_summary: dict[str, Any] | None = None
 
 
 def _hhmm(step: int, steps_per_day: int) -> str:
@@ -56,6 +62,12 @@ class Simulator:
         self.pv_days: np.ndarray | None = None
         self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
         self._daily_by_day: dict[int, dict] = {}
+
+        # Observability: which buses / transformers carry a measurement device.
+        # Empty by default — a fresh grid is almost entirely unobservable until
+        # meters are placed. Grid-specific, so it resets when the grid is swapped
+        # (a new Simulator is built by engine.reconfigure).
+        self.meters = MeasurementSet()
 
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
@@ -121,6 +133,30 @@ class Simulator:
             b.storage_idx = int(pp.create_storage(
                 self.net, bus=b.bus, p_mw=0.0, max_e_mwh=b.capacity_mwh,
                 soc_percent=b.soc_frac() * 100.0, name=b.name))
+
+    # -- observability / measurement placement --------------------------- #
+    def measurement_placement(self) -> dict:
+        """Current meter placement + coverage (no power-flow results needed)."""
+        return self.meters.placement(self.net)
+
+    def place_node_meter(self, bus: int) -> bool:
+        if bus not in self.net.bus.index:
+            raise KeyError(bus)
+        return self.meters.add_node(bus)
+
+    def remove_node_meter(self, bus: int) -> bool:
+        return self.meters.remove_node(bus)
+
+    def place_trafo_meter(self, trafo: int) -> bool:
+        if trafo not in self.net.trafo.index:
+            raise KeyError(trafo)
+        return self.meters.add_trafo(trafo)
+
+    def remove_trafo_meter(self, trafo: int) -> bool:
+        return self.meters.remove_trafo(trafo)
+
+    def apply_meter_preset(self, name: str) -> None:
+        self.meters.apply_preset(name, self.net)
 
     def _price_ctx(self, day: int, t: int) -> dict:
         if self.prices is None or not len(self.prices):
@@ -207,6 +243,11 @@ class Simulator:
             error=error,
         )
         if not converged:
+            # No readings without a solve, but keep coverage so the UI can still
+            # show where meters are placed.
+            res.measurements = {"nodes": [], "trafos": [],
+                                "coverage": self.meters.placement(self.net)["coverage"],
+                                "phases": 3, "balanced": True}
             return res
 
         net = self.net
@@ -275,6 +316,10 @@ class Simulator:
             "total_ext_grid_mw": _r(net.res_ext_grid.p_mw.sum()),
             "total_losses_mw": _r(net.res_line.pl_mw.sum()) if len(net.res_line) else 0.0,
         }
+        # Observability projection: reduce the solved net to what the placed
+        # measurement devices actually reveal, plus the operator-visible summary.
+        res.measurements = self.meters.observe(net)
+        res.observed_summary = self.meters.observed_summary(res.measurements)
         return res
 
     # -- static topology for the API ------------------------------------ #

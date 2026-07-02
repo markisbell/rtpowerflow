@@ -14,6 +14,7 @@ from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
 from .battery import MODES
 from .grid_catalog import GridCatalog, preview
+from .measurements import PRESETS
 from .realpv import load_prices, load_pv_days
 from .loadgen import (
     AssignPolicy,
@@ -64,7 +65,8 @@ async def lifespan(app: FastAPI):
     log.info("Loading inputs from %s", settings.data_dir)
     data = load_inputs(settings.data_dir)
     simulator = Simulator(data, warm_start=settings.warm_start)
-    runtime.store = StateStore(history_size=settings.history_size)
+    runtime.store = StateStore(history_size=settings.history_size,
+                               expose_ground_truth=settings.expose_ground_truth)
     runtime.engine = RealtimeEngine(
         simulator, runtime.store, settings.step_interval_seconds
     )
@@ -259,6 +261,72 @@ def battery_profiles(idx: int):
     if prof is None:
         raise HTTPException(404, f"no battery with index {idx}")
     return prof
+
+
+# --------------------------------------------------------------------------- #
+# Observability: measurement device placement (smart meters + transformer meters)
+# --------------------------------------------------------------------------- #
+def _measurements_response() -> dict:
+    sim = runtime.engine.sim
+    p = sim.measurement_placement()
+    return {**p, "presets": list(PRESETS),
+            "expose_ground_truth": settings.expose_ground_truth}
+
+
+class NodeMeterRequest(BaseModel):
+    bus: int
+
+
+class TrafoMeterRequest(BaseModel):
+    trafo: int
+
+
+@app.get("/measurements")
+def measurements():
+    """Current meter placement + coverage + available presets. `expose_ground_truth`
+    tells the UI whether the true power flow is available (reveal toggle)."""
+    return _measurements_response()
+
+
+@app.post("/measurements/node")
+async def place_node_meter(req: NodeMeterRequest):
+    """Install a smart meter at a bus (reveals its voltage, P, Q, current)."""
+    try:
+        runtime.engine.sim.place_node_meter(req.bus)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+    return _measurements_response()
+
+
+@app.delete("/measurements/node/{bus}")
+async def remove_node_meter(bus: int):
+    runtime.engine.sim.remove_node_meter(bus)
+    return _measurements_response()
+
+
+@app.post("/measurements/trafo")
+async def place_trafo_meter(req: TrafoMeterRequest):
+    """Install a measurement at a transformer (reveals its loading, HV P/Q/I)."""
+    try:
+        runtime.engine.sim.place_trafo_meter(req.trafo)
+    except KeyError:
+        raise HTTPException(404, f"unknown transformer {req.trafo}")
+    return _measurements_response()
+
+
+@app.delete("/measurements/trafo/{trafo}")
+async def remove_trafo_meter(trafo: int):
+    runtime.engine.sim.remove_trafo_meter(trafo)
+    return _measurements_response()
+
+
+@app.post("/measurements/preset")
+async def measurements_preset(name: str = Query(...)):
+    """Bulk placement: all_nodes | all_trafos | substation_trafos | clear."""
+    if name not in PRESETS:
+        raise HTTPException(422, f"name must be one of {PRESETS}")
+    runtime.engine.sim.apply_meter_preset(name)
+    return _measurements_response()
 
 
 # --------------------------------------------------------------------------- #

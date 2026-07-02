@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     history_size: int = 1440
     warm_start: bool = True
 
+    # Observability: when False, the live /state + /ws stream carries ONLY the
+    # observed measurement projection (readings at placed meters) — the full
+    # ground-truth power flow (per-bus/line/trafo results + system summary) never
+    # leaves the server. Default True so the UI's "reveal ground truth" toggle and
+    # the InfluxDB collector keep working out of the box; set False to enforce
+    # strict observability on the wire.
+    expose_ground_truth: bool = True
+
     # API
     host: str = "0.0.0.0"
     port: int = 8000
