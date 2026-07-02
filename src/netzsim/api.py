@@ -314,13 +314,23 @@ def loadgen_archetypes():
     }
 
 
+def _household_loads(g) -> list[dict]:
+    """The loads that represent real households — LPG/EV/PV attach only to these.
+    Interconnected districts flag building loads ``household: true`` and lumped
+    station / MV loads ``false``; grids without flags are all-household (LV)."""
+    return [ld for ld in g.load["loads"] if ld.get("household", True)]
+
+
 def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
-    """Base household loads + any synthetic EV charging loads (additive)."""
+    """Base household loads + any synthetic EV charging loads (additive). Loads
+    that are not households (lumped LV stations in a district) pass through with
+    their aggregate profiles untouched."""
     if not runtime.library.available:
         raise HTTPException(409, "no LPG library built; run scripts/build_lpg_library.py")
+    households = _household_loads(g)
     try:
         doc = assign_to_loads(
-            g.load["loads"], runtime.library, _assign_policy(policy),
+            households, runtime.library, _assign_policy(policy),
             steps=settings.steps_per_day,
         )
     except ValueError as exc:
@@ -328,13 +338,16 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
     n_ev = 0
     if policy.ev_penetration > 0:
         ev = assign_ev(
-            g.load["loads"],
+            households,
             EvPolicy(penetration=policy.ev_penetration, charger_kw=policy.ev_charger_kw,
                      daily_kwh=policy.ev_daily_kwh, seed=policy.seed),
             steps=settings.steps_per_day,
         )
         doc["loads"] = doc["loads"] + ev["loads"]
         n_ev = len(ev["loads"])
+    fixed = [ld for ld in g.load["loads"] if not ld.get("household", True)]
+    doc["loads"] = doc["loads"] + [
+        {k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar") if k in ld} for ld in fixed]
     doc["n_ev"] = n_ev
     return doc
 
@@ -343,8 +356,8 @@ def _pv_gen_doc(g, policy: LoadgenPolicy) -> dict | None:
     if policy.pv_penetration <= 0:
         return None
     return assign_pv(
-        g.load["loads"], PvPolicy(penetration=policy.pv_penetration,
-                                  kwp=policy.pv_kwp, seed=policy.seed),
+        _household_loads(g), PvPolicy(penetration=policy.pv_penetration,
+                                      kwp=policy.pv_kwp, seed=policy.seed),
         steps=settings.steps_per_day,
     )
 
