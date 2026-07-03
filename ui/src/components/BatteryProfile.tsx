@@ -9,7 +9,8 @@ const COLOR: Record<BatteryMode, string> = { self: "#3fb950", peak: "#f2ae00", p
 // A battery's daily state-of-charge and charge/discharge power (illustrative day
 // starting at 50 %); for the price strategy, also the price curve with its
 // cheap/expensive thresholds. `now` marks the current time on each graph.
-export default function BatteryProfile({ idx, now, day, onClose }: { idx: number; now: number | null; day: number; onClose: () => void }) {
+// `embedded`: rendered inside an accordion Section, which owns title + close.
+export default function BatteryProfile({ idx, now, day, onClose, embedded = false }: { idx: number; now: number | null; day: number; onClose?: () => void; embedded?: boolean }) {
   const { t } = useTranslation();
   const [data, setData] = useState<BatteryProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -28,13 +29,15 @@ export default function BatteryProfile({ idx, now, day, onClose }: { idx: number
     : [];
 
   return (
-    <div style={{ marginTop: "0.6rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem", marginBottom: 3 }}>
-        <span style={{ fontWeight: 600 }}>
-          {data ? t("bat.title", { bus: data.bus, mode: t(`bat.${data.mode}`) }) : ""}
-        </span>
-        <button className="ghost" style={{ fontSize: "0.7rem", padding: "0 6px" }} onClick={onClose}>✕</button>
-      </div>
+    <div style={embedded ? {} : { marginTop: "0.6rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+      {!embedded && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem", marginBottom: 3 }}>
+          <span style={{ fontWeight: 600 }}>
+            {data ? t("bat.title", { bus: data.bus, mode: t(`bat.${data.mode}`) }) : ""}
+          </span>
+          {onClose && <button className="ghost" style={{ fontSize: "0.7rem", padding: "0 6px" }} onClick={onClose}>✕</button>}
+        </div>
+      )}
       {err && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.error", { msg: err })}</div>}
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
       {!err && data && (

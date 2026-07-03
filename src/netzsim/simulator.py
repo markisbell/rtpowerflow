@@ -219,14 +219,24 @@ class Simulator:
 
         init = "results" if (self.warm_start and self._solved_once) else "auto"
         t0 = time.perf_counter()
-        try:
-            pp.runpp(self.net, init=init, calculate_voltage_angles=True)
-            converged = True
+        converged, error = False, None
+        # Newton-Raphson can stall on healthy operating points of these nets
+        # (zero-impedance ding0 busbar links make the Jacobian ill-conditioned,
+        # and the dc-based "auto" init then oscillates at certain load patterns).
+        # Retry with a flat start, then damped (Iwamoto) Newton, before
+        # reporting the step as non-converged.
+        for kw in (dict(init=init),
+                   dict(init="flat"),
+                   dict(init="flat", algorithm="iwamoto_nr", max_iteration=30)):
+            try:
+                pp.runpp(self.net, calculate_voltage_angles=True, **kw)
+                converged = True
+                self._solved_once = True
+                break
+            except pp.LoadflowNotConverged as exc:  # type: ignore[attr-defined]
+                error = f"Load flow did not converge: {exc}"
+        if converged:
             error = None
-            self._solved_once = True
-        except pp.LoadflowNotConverged as exc:  # type: ignore[attr-defined]
-            converged = False
-            error = f"Load flow did not converge: {exc}"
         solve_ms = (time.perf_counter() - t0) * 1000.0
 
         return self._collect(step, day, t, converged, solve_ms, error)
@@ -439,8 +449,19 @@ class Simulator:
             net.sgen.loc[prof.sgen_idx, "q_mvar"] = prof.sgen_q[:, t]
             net.ext_grid.loc[prof.ext_idx, "vm_pu"] = prof.ext_vm[:, t]
             net.ext_grid.loc[prof.ext_idx, "va_degree"] = prof.ext_va[:, t]
-            try:
-                pp.runpp(net, init=init, calculate_voltage_angles=True)
+            solved = False
+            # same retry ladder as run_step: flat init rescues the steps where
+            # the warm/dc-init Newton stalls on ill-conditioned district nets
+            for kw in (dict(init=init),
+                       dict(init="flat"),
+                       dict(init="flat", algorithm="iwamoto_nr", max_iteration=30)):
+                try:
+                    pp.runpp(net, calculate_voltage_angles=True, **kw)
+                    solved = True
+                    break
+                except Exception:  # noqa: BLE001
+                    continue
+            if solved:
                 init = "results"
                 for b in net.bus.index:
                     vm[int(b)].append(_r(net.res_bus.at[b, "vm_pu"]))
@@ -450,7 +471,7 @@ class Simulator:
                 for tr in net.trafo.index:
                     tr_p_hv[int(tr)].append(_r(net.res_trafo.at[tr, "p_hv_mw"]))
                     tr_loading[int(tr)].append(_r(net.res_trafo.at[tr, "loading_percent"]))
-            except Exception:  # noqa: BLE001 — non-convergence at this step → gaps
+            else:  # non-convergence at this step → gaps
                 init = "auto"
                 for b in net.bus.index:
                     vm[int(b)].append(None)

@@ -13,7 +13,8 @@ const VLIMIT = [
 
 // Per-node daily graph: power (residential/EV/PV load & generation) or voltage,
 // switchable, with the EN 50160 ±10 % voltage limits shown in voltage mode.
-export default function NodeProfile({ bus, name, now, day, onClose }: { bus: number; name: string; now: number | null; day: number; onClose: () => void }) {
+// `embedded`: rendered inside an accordion Section, which owns title + close.
+export default function NodeProfile({ bus, name, now, day, onClose, embedded = false }: { bus: number; name: string; now: number | null; day: number; onClose?: () => void; embedded?: boolean }) {
   const { t } = useTranslation();
   const [data, setData] = useState<NodeProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -32,14 +33,16 @@ export default function NodeProfile({ bus, name, now, day, onClose }: { bus: num
   const hasVoltage = (data?.voltage?.length ?? 0) > 0;
 
   return (
-    <div style={{ marginTop: "0.7rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+    <div style={embedded ? {} : { marginTop: "0.7rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem", marginBottom: 3 }}>
-        <span style={{ fontWeight: 600 }}>{t("node.title", { name })}</span>
-        <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        {!embedded && <span style={{ fontWeight: 600 }}>{t("node.title", { name })}</span>}
+        <span style={{ display: "flex", gap: 4, alignItems: "center", marginLeft: "auto" }}>
           <button className={mode === "power" ? "on" : ""} style={{ fontSize: "0.68rem", padding: "1px 6px" }} onClick={() => setMode("power")}>{t("node.power")}</button>
           <button className={mode === "voltage" ? "on" : ""} style={{ fontSize: "0.68rem", padding: "1px 6px" }}
                   onClick={() => setMode("voltage")} disabled={!hasVoltage}>{t("node.voltage")}</button>
-          <button className="ghost" style={{ fontSize: "0.7rem", padding: "0 6px" }} onClick={onClose}>✕</button>
+          {!embedded && onClose && (
+            <button className="ghost" style={{ fontSize: "0.7rem", padding: "0 6px" }} onClick={onClose}>✕</button>
+          )}
         </span>
       </div>
 

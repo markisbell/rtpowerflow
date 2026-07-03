@@ -8,9 +8,9 @@ import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT, UNOBS
 interface Props {
   topo: Topology;
   latest: StepResult | null;
-  onSelectBus?: (bus: number, additive: boolean) => void;
-  onSelectLine?: (line: number, additive: boolean) => void;
-  onSelectTrafo?: (trafo: number, additive: boolean) => void;
+  onSelectBus?: (bus: number, additive: boolean, at?: { x: number; y: number }) => void;
+  onSelectLine?: (line: number, additive: boolean, at?: { x: number; y: number }) => void;
+  onSelectTrafo?: (trafo: number, additive: boolean, at?: { x: number; y: number }) => void;
   batteryBuses?: number[];
   meterBuses?: number[];
   meterTrafos?: number[];
@@ -19,6 +19,9 @@ interface Props {
 
 const isAdditive = (e: L.LeafletMouseEvent) =>
   !!(e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey));
+
+const clickAt = (e: L.LeafletMouseEvent) =>
+  e.originalEvent ? { x: e.originalEvent.clientX, y: e.originalEvent.clientY } : undefined;
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
 
@@ -103,7 +106,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         : { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(open ? t("tip.line", { name: ln.name ?? ln.id }) + t("tip.normallyOpen")
                           : t("tip.lineMap", { name: ln.name ?? ln.id }));
-      pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e)));
+      pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e), clickAt(e)));
       lineRef.current.set(ln.id, pl);
     }
 
@@ -125,7 +128,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       cm.bindTooltip((isExt ? t("tip.mvStation", { name: bus.name, kv: bus.vn_kv })
                      : isCab ? t("tip.cabinet", { name: bus.name, kv: bus.vn_kv })
                      : t("tip.busMap", { name: bus.name, kv: bus.vn_kv })));
-      cm.on("click", (e) => onSelectRef.current?.(bus.id, isAdditive(e)));
+      cm.on("click", (e) => onSelectRef.current?.(bus.id, isAdditive(e), clickAt(e)));
       busRef.current.set(bus.id, cm);
     }
 
@@ -141,7 +144,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillOpacity: 0.95,
       }).addTo(map);
       cm.bindTooltip(t("tip.trafoMap", { name: tr.name ?? tr.id, kva: (tr.sn_mva * 1000).toFixed(0) }));
-      cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e)));
+      cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e), clickAt(e)));
       trafoRef.current.set(tr.id, cm);
     }
 

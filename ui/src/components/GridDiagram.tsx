@@ -16,11 +16,11 @@ interface Props {
   topo: Topology;
   latest: StepResult | null;
   showValues?: boolean;
-  onSelectBus?: (bus: number, additive: boolean) => void;
+  onSelectBus?: (bus: number, additive: boolean, at?: { x: number; y: number }) => void;
   selectedBuses?: number[];
-  onSelectLine?: (line: number, additive: boolean) => void;
+  onSelectLine?: (line: number, additive: boolean, at?: { x: number; y: number }) => void;
   selectedLines?: number[];
-  onSelectTrafo?: (trafo: number, additive: boolean) => void;
+  onSelectTrafo?: (trafo: number, additive: boolean, at?: { x: number; y: number }) => void;
   selectedTrafos?: number[];
   batteryBuses?: number[];
   // observability
@@ -270,7 +270,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               key={`l${ln.id}`}
               data-line={ln.id}
               style={{ cursor: "pointer" }}
-              onClick={(e) => onSelectLine?.(ln.id, e.ctrlKey || e.metaKey)}
+              onClick={(e) => onSelectLine?.(ln.id, e.ctrlKey || e.metaKey, { x: e.clientX, y: e.clientY })}
               onMouseEnter={(ev) =>
                 showTip(ev, showTruth
                   ? [
@@ -322,7 +322,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               key={`t${tr.id}`}
               data-trafo={tr.id}
               style={{ cursor: "pointer" }}
-              onClick={(e) => onSelectTrafo?.(tr.id, e.ctrlKey || e.metaKey)}
+              onClick={(e) => onSelectTrafo?.(tr.id, e.ctrlKey || e.metaKey, { x: e.clientX, y: e.clientY })}
               onMouseEnter={(ev) =>
                 showTip(ev, [
                   t("tip.trafo", { name: tr.name ?? tr.id }),
@@ -372,7 +372,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               stroke={busSel ? "#ffd166" : isExt ? "#7fd1ff" : "none"}
               strokeWidth={busSel ? 2.5 : isExt ? 2 : 0}
               style={{ cursor: "pointer" }}
-              onClick={(e) => onSelectBus?.(bus.id, e.ctrlKey || e.metaKey)}
+              onClick={(e) => onSelectBus?.(bus.id, e.ctrlKey || e.metaKey, { x: e.clientX, y: e.clientY })}
               onMouseEnter={(e) =>
                 showTip(e, [
                   isExt ? t("tip.slack", { name: bus.name }) : t("tip.bus", { name: bus.name }),
