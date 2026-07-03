@@ -446,3 +446,23 @@ state estimation.
   simulated curves regardless of meter placement or `expose_ground_truth`. They
   bypass the observability layer; gate them too if strict end-to-end hiding is
   needed.
+
+### State estimation (the operator's *calculated* view)
+
+`estimator.py` adds the third layer beside reality and observation: **WLS state
+estimation** (`pandapower.estimation`) from only what an operator has — the grid
+model (lines/trafos known), the placed meter readings (+ slack setpoint),
+structural zero-injection knowledge (junctions/cabinets), and profile-based
+pseudo-measurements (per-bus **daily-mean** load, std = 50 % of daily peak;
+battery buses get rating-bounded pseudos since setpoints are unknown). It runs
+on a lazily deep-copied net whenever ≥ 1 meter is placed, **adaptively throttled**
+(spaced 2× its own runtime — every step on LV grids at ~20–90 ms, every ~3 s on
+the 475-bus district at ~1–1.6 s; numba does NOT speed pandapower's SE path).
+`StepResult.estimated = {buses, lines, trafos, solve_ms, step, day, error}`
+mirrors the truth arrays; `error` (max/mean |ΔV|, max |ΔI| vs truth) is stripped
+by `StateStore` in strict mode, the estimate itself survives. UI: a third
+segmented view mode 👁 Wahrheit / Nur beobachtet / 🧮 Schätzung (`LivePowerFlow`
+feeds the estimated arrays through the diagrams' truth path); the Übersicht
+shows estimate aggregates + the error metric. Tests: `tests/test_estimation.py`.
+Quality on the 30-bus LV grid: exact under full metering; < 10 mpu with only the
+station trafo meter + pseudo-loads.

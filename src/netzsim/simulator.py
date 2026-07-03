@@ -12,6 +12,7 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .data_loader import InputData
+from .estimator import Estimator
 from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
@@ -38,6 +39,10 @@ class StepResult:
     # the wire when NETZSIM_EXPOSE_GROUND_TRUTH is off (state.StateStore).
     measurements: dict[str, Any] = field(default_factory=dict)
     observed_summary: dict[str, Any] | None = None
+    # WLS state estimation from the placed meters + grid model (estimator.py).
+    # Present only while at least one meter is placed; derived purely from the
+    # observed readings, so it survives strict mode (except its error metric).
+    estimated: dict[str, Any] | None = None
 
 
 def _hhmm(step: int, steps_per_day: int) -> str:
@@ -68,6 +73,16 @@ class Simulator:
         # meters are placed. Grid-specific, so it resets when the grid is swapped
         # (a new Simulator is built by engine.reconfigure).
         self.meters = MeasurementSet()
+        # WLS state estimation from those meters; built lazily on first use
+        # (it deep-copies the net) and only run while meters are placed. On big
+        # district nets one WLS run costs ~1-2 s, so estimation is re-run
+        # adaptively (spaced by 2× its own runtime) and the latest estimate is
+        # carried on every step in between.
+        self._estimator: Estimator | None = None
+        self._sgen_day_mean_cache: dict[int, np.ndarray] = {}
+        self._est_last: dict | None = None
+        self._est_wall = 0.0            # monotonic time of the last estimation run
+        self._est_ms = 0.0              # its duration (drives the adaptive spacing)
 
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
@@ -99,6 +114,19 @@ class Simulator:
         if self.pv_days is not None:
             return self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
         return self.prof.sgen_p[:, t]
+
+    def _sgen_day_mean(self, day: int) -> "np.ndarray":
+        """Per-sgen mean generation of the active day — the operator's coarse PV
+        knowledge, used as pseudo-measurement input by the state estimator."""
+        d = day % self.n_days
+        if d not in self._sgen_day_mean_cache:
+            if not self.prof.sgen_p.size:
+                self._sgen_day_mean_cache[d] = np.zeros(0)
+            elif self.pv_days is not None:
+                self._sgen_day_mean_cache[d] = self.sgen_peak * float(self.pv_days[d].mean())
+            else:
+                self._sgen_day_mean_cache[d] = self.prof.sgen_p.mean(axis=1)
+        return self._sgen_day_mean_cache[d]
 
     # -- battery storage ------------------------------------------------- #
     def set_prices(self, prices) -> None:
@@ -239,7 +267,26 @@ class Simulator:
             error = None
         solve_ms = (time.perf_counter() - t0) * 1000.0
 
-        return self._collect(step, day, t, converged, solve_ms, error)
+        res = self._collect(step, day, t, converged, solve_ms, error)
+        # state estimation (the operator's calculated view) — only meaningful
+        # once at least one meter is placed, and only from a converged truth
+        if converged and (self.meters.node_buses or self.meters.trafo_idxs):
+            if self._estimator is None:
+                self._estimator = Estimator(self.net, self.prof, self._loads_at, self._sgens_at)
+            now = time.monotonic()
+            if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
+                bats = {b.bus: b.power_mw for b in self.batteries}
+                est = self._estimator.run(self.net, self.meters,
+                                          self._sgen_day_mean(day), bats)
+                self._est_wall = time.monotonic()
+                if est is not None:
+                    est["step"], est["day"] = t, day   # which step it estimated
+                    self._est_ms = est["solve_ms"]
+                    self._est_last = est
+            res.estimated = self._est_last
+        else:
+            self._est_last = None
+        return res
 
     # -- result extraction ---------------------------------------------- #
     def _collect(self, step, day, t, converged, solve_ms, error) -> StepResult:

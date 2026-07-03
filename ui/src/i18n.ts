@@ -78,6 +78,9 @@ const en = {
     truthHidden: "Ground truth hidden by the server (strict observability).",
     measuredVmm: "measured V min / max", measuredTrafo: "measured max trafo",
     measuredLoad: "measured load (Σ)", coverage: "meter coverage", groundTruth: "ground truth",
+    estimate: "Estimate", estimateTitle: "WLS state estimation from the placed meters + grid model",
+    estCaption: "state estimate", estErrV: "est. error max |ΔV|",
+    estSolve: "estimation time",
   },
 
   graph: { uhr: "{{time}}" },
@@ -234,6 +237,9 @@ const de: typeof en = {
     truthHidden: "Wahrheit vom Server verborgen (strikte Beobachtbarkeit).",
     measuredVmm: "gemessen U min / max", measuredTrafo: "gemessen max Trafo",
     measuredLoad: "gemessene Last (Σ)", coverage: "Messabdeckung", groundTruth: "Wahrheit",
+    estimate: "Schätzung", estimateTitle: "WLS-Zustandsschätzung aus den platzierten Messungen + Netzmodell",
+    estCaption: "Zustandsschätzung", estErrV: "Schätzfehler max |ΔU|",
+    estSolve: "Rechenzeit Schätzung",
   },
 
   graph: { uhr: "{{time}} Uhr" },
