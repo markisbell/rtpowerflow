@@ -29,10 +29,15 @@ class StateStore:
 
     def _project(self, payload: dict[str, Any]) -> dict[str, Any]:
         """What actually goes on the wire: full truth when exposed, else only the
-        observed measurement projection + scalar fields."""
+        observed measurement projection + scalar fields. The state estimate is
+        derived purely from measurements and stays — but its error-vs-truth
+        metric would leak ground truth, so it is stripped too."""
         if self._expose:
             return payload
-        return {k: v for k, v in payload.items() if k not in _TRUTH_KEYS}
+        out = {k: v for k, v in payload.items() if k not in _TRUTH_KEYS}
+        if isinstance(out.get("estimated"), dict) and "error" in out["estimated"]:
+            out["estimated"] = {k: v for k, v in out["estimated"].items() if k != "error"}
+        return out
 
     # -- writes ---------------------------------------------------------- #
     async def publish(self, result: StepResult) -> None:

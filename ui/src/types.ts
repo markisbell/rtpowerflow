@@ -182,6 +182,18 @@ export interface ObservedSummary extends Coverage {
   max_trafo_loading_percent: number | null;
   measured_node_p_mw: number | null;
 }
+// WLS state estimation from the placed meters + grid model (estimator.py).
+// Present while at least one meter is placed; `error` (vs ground truth) is
+// stripped by the server in strict mode.
+export interface EstimatedState {
+  buses: { index: number; vm_pu: number | null; va_degree: number | null; p_mw: number | null; q_mvar: number | null }[];
+  lines: { index: number; loading_percent: number | null; i_ka: number | null; p_from_mw: number | null; pl_mw: number | null }[];
+  trafos: { index: number; loading_percent: number | null; p_hv_mw: number | null; q_hv_mvar: number | null; i_hv_ka: number | null; pl_mw: number | null }[];
+  solve_ms: number;
+  step?: number;
+  day?: number;
+  error?: { max_dv_pu: number | null; mean_dv_pu: number | null; max_di_ka: number | null } | null;
+}
 
 export interface StepResult {
   step: number;
@@ -194,6 +206,7 @@ export interface StepResult {
   // present only when the server exposes them (NETZSIM_EXPOSE_GROUND_TRUTH).
   measurements: Measurements;
   observed_summary: ObservedSummary | null;
+  estimated?: EstimatedState | null;
   buses?: { index: number; name: string; vm_pu: number; va_degree: number; p_mw: number; q_mvar: number }[];
   lines?: { index: number; name: string; from_bus: number; to_bus: number; loading_percent: number; i_ka: number; p_from_mw: number; pl_mw: number }[];
   trafos?: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
@@ -249,6 +262,7 @@ export interface NodeProfiles {
   steps_per_day: number;
   series: { kind: NodeSeriesKind; p_mw: (number | null)[] }[];
   voltage: (number | null)[];
+  est_voltage?: (number | null)[] | null;   // state estimate (meters placed)
 }
 export interface LineProfiles {
   line: number;
@@ -259,6 +273,7 @@ export interface LineProfiles {
   rated_i_ka: number | null;
   current: (number | null)[];
   loading: (number | null)[];
+  est_current?: (number | null)[] | null;   // state estimate (meters placed)
 }
 export interface TrafoProfiles {
   trafo: number;
@@ -269,6 +284,7 @@ export interface TrafoProfiles {
   sn_mva: number | null;
   power: (number | null)[];
   loading: (number | null)[];
+  est_power?: (number | null)[] | null;     // state estimate (meters placed)
 }
 
 export interface EngineStatus {

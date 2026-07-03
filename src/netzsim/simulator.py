@@ -12,6 +12,7 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .data_loader import InputData
+from .estimator import Estimator
 from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
@@ -38,6 +39,10 @@ class StepResult:
     # the wire when NETZSIM_EXPOSE_GROUND_TRUTH is off (state.StateStore).
     measurements: dict[str, Any] = field(default_factory=dict)
     observed_summary: dict[str, Any] | None = None
+    # WLS state estimation from the placed meters + grid model (estimator.py).
+    # Present only while at least one meter is placed; derived purely from the
+    # observed readings, so it survives strict mode (except its error metric).
+    estimated: dict[str, Any] | None = None
 
 
 def _hhmm(step: int, steps_per_day: int) -> str:
@@ -68,6 +73,16 @@ class Simulator:
         # meters are placed. Grid-specific, so it resets when the grid is swapped
         # (a new Simulator is built by engine.reconfigure).
         self.meters = MeasurementSet()
+        # WLS state estimation from those meters; built lazily on first use
+        # (it deep-copies the net) and only run while meters are placed. On big
+        # district nets one WLS run costs ~1-2 s, so estimation is re-run
+        # adaptively (spaced by 2× its own runtime) and the latest estimate is
+        # carried on every step in between.
+        self._estimator: Estimator | None = None
+        self._sgen_day_mean_cache: dict[int, np.ndarray] = {}
+        self._est_last: dict | None = None
+        self._est_wall = 0.0            # monotonic time of the last estimation run
+        self._est_ms = 0.0              # its duration (drives the adaptive spacing)
 
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
@@ -99,6 +114,19 @@ class Simulator:
         if self.pv_days is not None:
             return self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
         return self.prof.sgen_p[:, t]
+
+    def _sgen_day_mean(self, day: int) -> "np.ndarray":
+        """Per-sgen mean generation of the active day — the operator's coarse PV
+        knowledge, used as pseudo-measurement input by the state estimator."""
+        d = day % self.n_days
+        if d not in self._sgen_day_mean_cache:
+            if not self.prof.sgen_p.size:
+                self._sgen_day_mean_cache[d] = np.zeros(0)
+            elif self.pv_days is not None:
+                self._sgen_day_mean_cache[d] = self.sgen_peak * float(self.pv_days[d].mean())
+            else:
+                self._sgen_day_mean_cache[d] = self.prof.sgen_p.mean(axis=1)
+        return self._sgen_day_mean_cache[d]
 
     # -- battery storage ------------------------------------------------- #
     def set_prices(self, prices) -> None:
@@ -239,7 +267,26 @@ class Simulator:
             error = None
         solve_ms = (time.perf_counter() - t0) * 1000.0
 
-        return self._collect(step, day, t, converged, solve_ms, error)
+        res = self._collect(step, day, t, converged, solve_ms, error)
+        # state estimation (the operator's calculated view) — only meaningful
+        # once at least one meter is placed, and only from a converged truth
+        if converged and (self.meters.node_buses or self.meters.trafo_idxs):
+            if self._estimator is None:
+                self._estimator = Estimator(self.net, self.prof, self._loads_at, self._sgens_at)
+            now = time.monotonic()
+            if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
+                bats = {b.bus: b.power_mw for b in self.batteries}
+                est = self._estimator.run(self.net, self.meters,
+                                          self._sgen_day_mean(day), bats)
+                self._est_wall = time.monotonic()
+                if est is not None:
+                    est["step"], est["day"] = t, day   # which step it estimated
+                    self._est_ms = est["solve_ms"]
+                    self._est_last = est
+            res.estimated = self._est_last
+        else:
+            self._est_last = None
+        return res
 
     # -- result extraction ---------------------------------------------- #
     def _collect(self, step, day, t, converged, solve_ms, error) -> StepResult:
@@ -403,10 +450,17 @@ class Simulator:
         """Sweep a whole day once (on an ISOLATED net, so the live engine is not
         disturbed) and cache per-bus voltage + per-line current/loading + per-trafo
         power, sampled ~evenly across the day. Cached per day, since real-PV days
-        differ; a grid without real PV only ever uses day 0."""
+        differ; a grid without real PV only ever uses day 0.
+
+        While meters are placed the sweep also runs the state estimator at the
+        samples (decimated on big nets, where one WLS run costs ~1 s), so the
+        daily graphs can overlay the operator's estimate on the truth — placing
+        more meters visibly locks the estimated curve onto the real one. The
+        cache is keyed on the meter placement, so changing it re-sweeps."""
         d = self.day if day is None else day
+        sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs))
         cached = self._daily_by_day.get(d)
-        if cached is not None:
+        if cached is not None and cached.get("_sig") == sig:
             return cached
         net, prof = build_network(self.data)          # isolated from self.net
         sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
@@ -433,6 +487,15 @@ class Simulator:
         loading = {int(l): [] for l in net.line.index}
         tr_p_hv = {int(t): [] for t in net.trafo.index}
         tr_loading = {int(t): [] for t in net.trafo.index}
+        # estimated curves (only while meters are placed). A dedicated Estimator
+        # instance: the live engine's runs concurrently on another thread.
+        do_est = bool(self.meters.node_buses or self.meters.trafo_idxs)
+        est_vm = {int(b): [] for b in net.bus.index}
+        est_i = {int(l): [] for l in net.line.index}
+        est_p_hv = {int(t): [] for t in net.trafo.index}
+        estimator = Estimator(net, prof, self._loads_at, self._sgens_at) if do_est else None
+        est_bats = {b.bus: b.power_mw for b in self.batteries}
+        est_every, si = 1, -1           # decimation adapts to the first run's cost
         # "auto" (not "flat") so multi-voltage-level grids with a transformer
         # converge on the first solve, matching the live engine; then warm-start.
         init = "auto"
@@ -461,6 +524,8 @@ class Simulator:
                     break
                 except Exception:  # noqa: BLE001
                     continue
+            si += 1
+            est = None
             if solved:
                 init = "results"
                 for b in net.bus.index:
@@ -471,6 +536,12 @@ class Simulator:
                 for tr in net.trafo.index:
                     tr_p_hv[int(tr)].append(_r(net.res_trafo.at[tr, "p_hv_mw"]))
                     tr_loading[int(tr)].append(_r(net.res_trafo.at[tr, "loading_percent"]))
+                if estimator is not None and si % est_every == 0:
+                    est = estimator.run(net, self.meters, self._sgen_day_mean(d), est_bats)
+                    if est is not None and est_every == 1 and est["solve_ms"] > 120:
+                        # big net: one WLS run is expensive — sample the estimate
+                        # coarser so a sweep stays interactive (~a dozen runs)
+                        est_every = max(1, round(est["solve_ms"] / 120))
             else:  # non-convergence at this step → gaps
                 init = "auto"
                 for b in net.bus.index:
@@ -479,8 +550,21 @@ class Simulator:
                     i_ka[int(l)].append(None); loading[int(l)].append(None)
                 for tr in net.trafo.index:
                     tr_p_hv[int(tr)].append(None); tr_loading[int(tr)].append(None)
+            eb = {e["index"]: e["vm_pu"] for e in est["buses"]} if est else {}
+            el = {e["index"]: e["i_ka"] for e in est["lines"]} if est else {}
+            et = {e["index"]: e["p_hv_mw"] for e in est["trafos"]} if est else {}
+            for b in net.bus.index:
+                est_vm[int(b)].append(eb.get(int(b)))
+            for l in net.line.index:
+                est_i[int(l)].append(el.get(int(l)))
+            for tr in net.trafo.index:
+                est_p_hv[int(tr)].append(et.get(int(tr)))
         result = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading,
-                  "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading}
+                  "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading,
+                  "est_bus_vm": est_vm if do_est else {},
+                  "est_line_i_ka": est_i if do_est else {},
+                  "est_trafo_p_hv": est_p_hv if do_est else {},
+                  "_sig": sig}
         self._daily_by_day[d] = result
         return result
 
@@ -507,8 +591,10 @@ class Simulator:
         series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
                   for k in order if cats.get(k) is not None]
         name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)
+        d = self.daily_curves(self.day)
         return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day,
-                "series": series, "voltage": self.daily_curves(self.day)["bus_vm"].get(bus, [])}
+                "series": series, "voltage": d["bus_vm"].get(bus, []),
+                "est_voltage": d.get("est_bus_vm", {}).get(bus)}
 
     def line_profiles(self, line: int) -> dict:
         """A line's daily current + loading curves, with its rated current (the
@@ -521,6 +607,7 @@ class Simulator:
             "from_bus": int(net.line.at[line, "from_bus"]), "to_bus": int(net.line.at[line, "to_bus"]),
             "steps_per_day": self.steps_per_day, "rated_i_ka": _r(rated),
             "current": d["line_i_ka"].get(line, []), "loading": d["line_loading"].get(line, []),
+            "est_current": d.get("est_line_i_ka", {}).get(line),
         }
 
     def trafo_profiles(self, trafo: int) -> dict:
@@ -534,6 +621,7 @@ class Simulator:
             "hv_bus": int(net.trafo.at[trafo, "hv_bus"]), "lv_bus": int(net.trafo.at[trafo, "lv_bus"]),
             "steps_per_day": self.steps_per_day, "sn_mva": _r(rated),
             "power": d["trafo_p_hv"].get(trafo, []), "loading": d["trafo_loading"].get(trafo, []),
+            "est_power": d.get("est_trafo_p_hv", {}).get(trafo),
         }
 
     def battery_profiles(self, storage_idx: int, samples: int = 97) -> dict | None:

@@ -26,6 +26,9 @@ const en = {
     runScript: "Run scripts/build_grid_library.py to generate one from the OEP.",
     nodes: "{{count}} nodes",
     kBuses: "buses", kLines: "lines", kTrafos: "trafos", kLoads: "loads",
+    ruralAdj: "Rural", suburbanAdj: "Suburban", urbanAdj: "Urban",
+    nameMv: "{{adj}} MV grid · district {{district}}",
+    nameLv: "{{adj}} LV grid · {{lvid}}",
   },
 
   loads: {
@@ -75,9 +78,12 @@ const en = {
     truthHidden: "Ground truth hidden by the server (strict observability).",
     measuredVmm: "measured V min / max", measuredTrafo: "measured max trafo",
     measuredLoad: "measured load (Σ)", coverage: "meter coverage", groundTruth: "ground truth",
+    estimate: "Estimate", estimateTitle: "WLS state estimation from the placed meters + grid model",
+    estCaption: "state estimate", estErrV: "est. error max |ΔV|",
+    estSolve: "estimation time",
   },
 
-  graph: { uhr: "{{time}}" },
+  graph: { uhr: "{{time}}", est: "Estimate" },
 
   node: {
     title: "Node {{name}}", power: "Power", voltage: "Voltage",
@@ -122,6 +128,13 @@ const en = {
   },
 
   sec: { overview: "Overview", readings: "Readings" },
+
+  arch: {
+    CHR01: "Couple both at Work", CHR03: "Family 1 child both at work",
+    CHR05: "Family 3 children both with work", CHR07: "Single with work",
+    CHR16: "Couple over 65 years", CHR30: "Single Retired Man",
+    CHR22: "Single woman 1 child with work", CHR52: "Student Flatsharing",
+  },
 
   common: { loading: "loading…", error: "error: {{msg}}" },
 
@@ -172,6 +185,9 @@ const de: typeof en = {
     runScript: "scripts/build_grid_library.py ausführen, um eine aus dem OEP zu erzeugen.",
     nodes: "{{count}} Knoten",
     kBuses: "Knoten", kLines: "Leitungen", kTrafos: "Trafos", kLoads: "Lasten",
+    ruralAdj: "Ländliches", suburbanAdj: "Vorstädtisches", urbanAdj: "Städtisches",
+    nameMv: "{{adj}} MS-Netz · Bezirk {{district}}",
+    nameLv: "{{adj}} NS-Netz · {{lvid}}",
   },
 
   loads: {
@@ -221,9 +237,12 @@ const de: typeof en = {
     truthHidden: "Wahrheit vom Server verborgen (strikte Beobachtbarkeit).",
     measuredVmm: "gemessen U min / max", measuredTrafo: "gemessen max Trafo",
     measuredLoad: "gemessene Last (Σ)", coverage: "Messabdeckung", groundTruth: "Wahrheit",
+    estimate: "Schätzung", estimateTitle: "WLS-Zustandsschätzung aus den platzierten Messungen + Netzmodell",
+    estCaption: "Zustandsschätzung", estErrV: "Schätzfehler max |ΔU|",
+    estSolve: "Rechenzeit Schätzung",
   },
 
-  graph: { uhr: "{{time}} Uhr" },
+  graph: { uhr: "{{time}} Uhr", est: "Schätzung" },
 
   node: {
     title: "Knoten {{name}}", power: "Leistung", voltage: "Spannung",
@@ -268,6 +287,13 @@ const de: typeof en = {
   },
 
   sec: { overview: "Übersicht", readings: "Messwerte" },
+
+  arch: {
+    CHR01: "Paar, beide berufstätig", CHR03: "Familie, 1 Kind, beide berufstätig",
+    CHR05: "Familie, 3 Kinder, beide berufstätig", CHR07: "Single, berufstätig",
+    CHR16: "Paar über 65 Jahre", CHR30: "Alleinstehender Rentner",
+    CHR22: "Alleinerziehende, 1 Kind, berufstätig", CHR52: "Studenten-WG",
+  },
 
   common: { loading: "lädt…", error: "Fehler: {{msg}}" },
 

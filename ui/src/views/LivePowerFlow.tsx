@@ -13,6 +13,7 @@ import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import Section from "../components/Section";
+import { gridDisplayName } from "../gridname";
 
 type Layout = "map" | "tree";
 type SelKind = "bus" | "line" | "trafo";
@@ -39,10 +40,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
-  // Ground truth is shown by default so a fresh session sees a normal, colored
-  // grid; the strict observed-only view (grey unmetered elements) is opt-in via
-  // the eye toggle — otherwise the app boots into a near-invisible grid.
-  const [revealTruth, setRevealTruth] = useState(true);
+  const [gridId, setGridId] = useState<string | null>(null);   // active grid id -> localized name
+  // Three parallel views of the grid: ground truth (default, so a fresh session
+  // sees a normal colored grid), the strict observed-only projection, and the
+  // WLS state estimate computed from the placed meters (estimator.py).
+  const [viewMode, setViewMode] = useState<"truth" | "observed" | "est">("truth");
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
@@ -60,6 +62,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     loadStatus();
     onActive();
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
+    api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadBatteries();
     reloadMeasurements();
     const t = setInterval(loadStatus, 2000);
@@ -198,7 +201,18 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const meterBuses = placement?.node_buses ?? [];
   const meterTrafos = placement?.trafo_idxs ?? [];
   const canReveal = placement?.expose_ground_truth ?? false;
-  const reveal = revealTruth && canReveal;
+  const est = latest?.estimated ?? null;
+  // fall back gracefully when the chosen view is unavailable (strict server /
+  // no meters placed yet)
+  const mode = viewMode === "truth" && !canReveal ? "observed"
+    : viewMode === "est" && !est ? (canReveal ? "truth" : "observed")
+    : viewMode;
+  const reveal = mode === "truth";
+  // in estimate mode the diagrams render the estimated arrays through the same
+  // code path as ground truth (values keyed by element index)
+  const frame = mode === "est" && latest && est
+    ? ({ ...latest, buses: est.buses, lines: est.lines, trafos: est.trafos } as unknown as typeof latest)
+    : latest;
   const liveNodeMeas = new Map<number, NodeMeasurement>();
   latest?.measurements?.nodes.forEach((n) => liveNodeMeas.set(n.bus, n));
   const liveTrafoMeas = new Map<number, TrafoMeasurement>();
@@ -244,27 +258,37 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               {t("live.values")}
             </button>
           )}
-          {canReveal && (
-            <button
-              className={revealTruth ? "on" : ""}
-              style={{ marginLeft: 6 }}
-              onClick={() => setRevealTruth((v) => !v)}
-              title={t("live.revealTitle")}
-            >
-              👁 {revealTruth ? t("live.reveal") : t("live.revealOff")}
-            </button>
+          {(canReveal || est) && (
+            <span style={{ marginLeft: 6, display: "inline-flex", gap: 2 }}>
+              {canReveal && (
+                <button className={mode === "truth" ? "on" : ""} title={t("live.revealTitle")}
+                        onClick={() => setViewMode("truth")}>
+                  👁 {t("live.reveal")}
+                </button>
+              )}
+              <button className={mode === "observed" ? "on" : ""}
+                      onClick={() => setViewMode("observed")}>
+                {t("live.revealOff")}
+              </button>
+              {est && (
+                <button className={mode === "est" ? "on" : ""} title={t("live.estimateTitle")}
+                        onClick={() => setViewMode("est")}>
+                  🧮 {t("live.estimate")}
+                </button>
+              )}
+            </span>
           )}
         </div>
         {layout === "map" ? (
-          <MapDiagram topo={topo} latest={latest} batteryBuses={batteryBuses} onSelectBus={selectBus}
+          <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
-                      meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={reveal} />
+                      meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         ) : (
-          <GridDiagram topo={topo} latest={latest} showValues={showValues} batteryBuses={batteryBuses}
+          <GridDiagram topo={topo} latest={frame} showValues={showValues} batteryBuses={batteryBuses}
                        onSelectBus={selectBus} selectedBuses={selBuses}
                        onSelectLine={selectLine} selectedLines={selLines}
                        onSelectTrafo={selectTrafo} selectedTrafos={selTrafos}
-                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={reveal} />
+                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         )}
       </div>
 
@@ -290,11 +314,33 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           {latest && !latest.converged && <span className="note">{t("live.notConverged")}</span>}
         </div>
         <div className="muted" style={{ fontSize: "0.75rem", marginBottom: "0.2rem" }}>
-          {t("live.gridInfo", { name: topo.name, buses: topo.buses.length, ws: wsStatus })}
+          {t("live.gridInfo", { name: gridDisplayName(gridId, topo.name, t), buses: topo.buses.length, ws: wsStatus })}
         </div>
 
         <Section title={t("sec.overview")} open={ovOpen} onToggle={() => setOvOpen((v) => !v)}>
-          {reveal && s ? (
+          {mode === "est" && est ? (
+            // the operator's calculated view: aggregates over the WLS estimate
+            <>
+              <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
+                🧮 {t("live.estCaption")}
+              </div>
+              <Stat label={t("live.vminmax")}
+                    value={(() => { const v = est.buses.map((b) => b.vm_pu).filter((x): x is number => x != null);
+                                    return v.length ? `${fmt(Math.min(...v), 3)} / ${fmt(Math.max(...v), 3)} pu` : t("live.na"); })()} />
+              <Stat label={t("live.maxLine")}
+                    value={(() => { const v = est.lines.map((l) => l.loading_percent).filter((x): x is number => x != null);
+                                    return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
+                    color={loadingColor(Math.max(0, ...est.lines.map((l) => l.loading_percent ?? 0)))} />
+              <Stat label={t("live.maxTrafo")}
+                    value={(() => { const v = est.trafos.map((tr) => tr.loading_percent).filter((x): x is number => x != null);
+                                    return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
+                    color={loadingColor(Math.max(0, ...est.trafos.map((tr) => tr.loading_percent ?? 0)))} />
+              {est.error?.max_dv_pu != null && (
+                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * 1000, 2)} mpu`} />
+              )}
+              <Stat label={t("live.estSolve")} value={`${fmt(est.solve_ms, 0)} ms`} />
+            </>
+          ) : reveal && s ? (
             // ground truth (revealed): the true system-wide summary
             <>
               <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
