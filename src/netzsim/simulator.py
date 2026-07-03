@@ -166,6 +166,151 @@ class Simulator:
             return True
         return False
 
+    # -- runtime DER configuration (PV / EV per node) ---------------------- #
+    def _der_invalidate(self) -> None:
+        """Refresh everything derived from the load/sgen tables + profiles after
+        a runtime DER change (same hygiene as a battery add/remove)."""
+        self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
+        self._loads_at = {}
+        for i, li in enumerate(self.prof.load_idx):
+            self._loads_at.setdefault(int(self.net.load.at[li, "bus"]), []).append(i)
+        self._sgens_at = {}
+        for i, si in enumerate(self.prof.sgen_idx):
+            self._sgens_at.setdefault(int(self.net.sgen.at[si, "bus"]), []).append(i)
+        self._daily_by_day.clear()
+        self._sgen_day_mean_cache.clear()
+        self._estimator = None          # cached per-bus profile stats are stale
+        self._est_last = None
+
+    def node_der(self, bus: int) -> dict:
+        """The bus's configurable DERs. Parameters are derived from the profile
+        rows themselves (PV kWp = row peak; EV start/duration/power = the
+        nonzero charging window), so LoadStudio-assigned and runtime-added
+        systems are equally editable."""
+        if bus not in self.net.bus.index:
+            raise KeyError(bus)
+        mps = 1440 // self.steps_per_day            # minutes per step
+        pv = None
+        for i, si in enumerate(self.prof.sgen_idx):
+            if int(self.net.sgen.at[si, "bus"]) != bus:
+                continue
+            if "PV_" not in str(self.net.sgen.at[si, "name"] or ""):
+                continue
+            pv = {"sgen": int(si), "kwp": round(float(self.prof.sgen_p[i].max()) * 1000.0, 2)}
+            break
+        ev = None
+        for i, li in enumerate(self.prof.load_idx):
+            if int(self.net.load.at[li, "bus"]) != bus:
+                continue
+            if "EV_" not in str(self.net.load.at[li, "name"] or ""):
+                continue
+            row = self.prof.load_p[i]
+            on = np.flatnonzero(row > 1e-9)
+            start = int(on[0]) if on.size else 18 * 60 // mps
+            if on.size and on[0] == 0 and on[-1] == len(row) - 1:
+                gaps = np.flatnonzero(np.diff(on) > 1)   # window wraps midnight
+                if gaps.size:
+                    start = int(on[gaps[0] + 1])
+            ev = {"load": int(li),
+                  "kw": round(float(row.max()) * 1000.0, 2) if on.size else 11.0,
+                  "start_min": start * mps,
+                  "dur_min": int(on.size) * mps if on.size else 120}
+            break
+        return {"bus": int(bus), "pv": pv, "ev": ev}
+
+    def add_pv(self, bus: int, kwp: float = 5.0) -> dict:
+        """Add a rooftop-PV system (clear-sky shape × kWp) at a bus at runtime.
+        Like batteries, runtime DERs live in this simulator only (reset on swap)."""
+        if bus not in self.net.bus.index:
+            raise KeyError(bus)
+        from .loadgen.pv import PvPolicy, _clearsky
+        kwp = float(min(max(kwp, 0.5), 100.0))
+        pol = PvPolicy()
+        row = _clearsky(self.steps_per_day, pol.peak_hour, pol.width_hours) * (kwp / 1000.0)
+        si = int(pp.create_sgen(self.net, bus=bus, p_mw=0.0, q_mvar=0.0, name=f"PV_cfg_{bus}"))
+        self.prof.sgen_idx.append(si)
+        self.prof.sgen_p = np.vstack([self.prof.sgen_p, row[None, :]])
+        self.prof.sgen_q = np.vstack([self.prof.sgen_q, np.zeros((1, self.steps_per_day))])
+        self._der_invalidate()
+        return self.node_der(bus)
+
+    def set_pv_kwp(self, sgen: int, kwp: float) -> bool:
+        """Rescale a PV system to a new peak. Works in real-PV mode too — the
+        measured day shapes scale with ``sgen_peak``."""
+        if sgen not in self.prof.sgen_idx:
+            return False
+        i = self.prof.sgen_idx.index(sgen)
+        kwp = float(min(max(kwp, 0.5), 100.0))
+        row = self.prof.sgen_p[i]
+        peak = float(row.max())
+        if peak > 1e-9:
+            self.prof.sgen_p[i] = row * (kwp / 1000.0 / peak)
+        else:
+            from .loadgen.pv import PvPolicy, _clearsky
+            pol = PvPolicy()
+            self.prof.sgen_p[i] = _clearsky(self.steps_per_day, pol.peak_hour,
+                                            pol.width_hours) * (kwp / 1000.0)
+        self._der_invalidate()
+        return True
+
+    def add_ev(self, bus: int, kw: float = 11.0, start_min: int = 18 * 60,
+               dur_min: int = 120) -> dict:
+        """Add an EV home-charging load at a bus at runtime (wallbox kW held for
+        the charge window; duration clamped to 1-4 h; wraps past midnight)."""
+        if bus not in self.net.bus.index:
+            raise KeyError(bus)
+        li = int(pp.create_load(self.net, bus=bus, p_mw=0.0, q_mvar=0.0, name=f"EV_cfg_{bus}"))
+        self.prof.load_idx.append(li)
+        self.prof.load_p = np.vstack([self.prof.load_p, np.zeros((1, self.steps_per_day))])
+        self.prof.load_q = np.vstack([self.prof.load_q, np.zeros((1, self.steps_per_day))])
+        self._set_ev_row(len(self.prof.load_idx) - 1, kw, start_min, dur_min)
+        self._der_invalidate()
+        return self.node_der(bus)
+
+    def set_ev(self, load: int, start_min: int, dur_min: int) -> bool:
+        """Move an EV's charge window (start instant + 1-4 h duration); the
+        wallbox power is kept from the existing profile."""
+        if load not in self.prof.load_idx:
+            return False
+        i = self.prof.load_idx.index(load)
+        kw = float(self.prof.load_p[i].max()) * 1000.0
+        self._set_ev_row(i, kw if kw > 0.1 else 11.0, start_min, dur_min)
+        self._der_invalidate()
+        return True
+
+    def remove_pv(self, sgen: int) -> bool:
+        """Remove a PV system (LoadStudio-assigned or runtime-added)."""
+        if sgen not in self.prof.sgen_idx:
+            return False
+        i = self.prof.sgen_idx.index(sgen)
+        self.prof.sgen_idx.pop(i)
+        self.prof.sgen_p = np.delete(self.prof.sgen_p, i, axis=0)
+        self.prof.sgen_q = np.delete(self.prof.sgen_q, i, axis=0)
+        self.net.sgen.drop(sgen, inplace=True)
+        self._der_invalidate()
+        return True
+
+    def remove_ev(self, load: int) -> bool:
+        """Remove an EV charging load (LoadStudio-assigned or runtime-added)."""
+        if load not in self.prof.load_idx:
+            return False
+        i = self.prof.load_idx.index(load)
+        self.prof.load_idx.pop(i)
+        self.prof.load_p = np.delete(self.prof.load_p, i, axis=0)
+        self.prof.load_q = np.delete(self.prof.load_q, i, axis=0)
+        self.net.load.drop(load, inplace=True)
+        self._der_invalidate()
+        return True
+
+    def _set_ev_row(self, i: int, kw: float, start_min: int, dur_min: int) -> None:
+        from .loadgen.ev import _charge_profile
+        dur_min = int(min(max(dur_min, 60), 240))        # 1-4 h charging
+        start_min = int(start_min) % 1440
+        row = _charge_profile(self.steps_per_day, start_min / 60.0, dur_min / 60.0,
+                              max(kw, 0.1)) / 1000.0
+        self.prof.load_p[i] = row
+        self.prof.load_q[i] = row * math.tan(math.acos(0.98))
+
     def _rebuild_storage(self) -> None:
         """Recreate the pandapower storage table from ``self.batteries`` (keeps
         indices in sync after add/remove)."""
