@@ -15,3 +15,6 @@ cache/
 # extract into the pylpg package; data/lpg_library/ holds the cached profiles.
 European Archetpye Distribution Grid Models.zip
 LPG10.10.0_core.zip
+
+# User-drawn grids exported by the sibling gridedit editor (local user data)
+data/user_grids/

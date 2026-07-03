@@ -12,9 +12,9 @@ interface Props {
 }
 
 type Voltage = "MV" | "LV";
-type Character = "rural" | "suburban" | "urban";
+type Character = "rural" | "suburban" | "urban" | "user";
 
-const CHARACTER_IDS: Character[] = ["rural", "suburban", "urban"];
+const CHARACTER_IDS: Character[] = ["rural", "suburban", "urban", "user"];
 
 export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
   const { t } = useTranslation();

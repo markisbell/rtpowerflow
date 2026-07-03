@@ -72,7 +72,8 @@ async def lifespan(app: FastAPI):
         simulator, runtime.store, settings.step_interval_seconds
     )
     runtime.catalog = GridCatalog(ding0_dir=settings.ding0_dir,
-                                  library_manifest=settings.grid_library)
+                                  library_manifest=settings.grid_library,
+                                  user_dir=settings.user_grids_dir)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
     # Real multi-day PV (optional): when the cache is present, PV follows measured
