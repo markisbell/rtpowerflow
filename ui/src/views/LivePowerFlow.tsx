@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
-import { fmt, loadingColor, voltageColor } from "../scales";
+import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
 import NodeProfile from "../components/NodeProfile";
@@ -168,6 +168,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     else if (kind === "trafo") setPlacement(await api.removeTrafoMeter(id));
   };
   const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
+  const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -262,17 +263,13 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             <span style={{ marginLeft: 6, display: "inline-flex", gap: 2 }}>
               {canReveal && (
                 <button className={mode === "truth" ? "on" : ""} title={t("live.revealTitle")}
-                        onClick={() => setViewMode("truth")}>
-                  👁 {t("live.reveal")}
+                        onClick={() => setViewMode(mode === "truth" ? "observed" : "truth")}>
+                  👁 {mode === "truth" ? t("live.reveal") : t("live.revealOff")}
                 </button>
               )}
-              <button className={mode === "observed" ? "on" : ""}
-                      onClick={() => setViewMode("observed")}>
-                {t("live.revealOff")}
-              </button>
               {est && (
                 <button className={mode === "est" ? "on" : ""} title={t("live.estimateTitle")}
-                        onClick={() => setViewMode("est")}>
+                        onClick={() => setViewMode(mode === "est" ? (canReveal ? "truth" : "observed") : "est")}>
                   🧮 {t("live.estimate")}
                 </button>
               )}
@@ -326,7 +323,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               </div>
               <Stat label={t("live.vminmax")}
                     value={(() => { const v = est.buses.map((b) => b.vm_pu).filter((x): x is number => x != null);
-                                    return v.length ? `${fmt(Math.min(...v), 3)} / ${fmt(Math.max(...v), 3)} pu` : t("live.na"); })()} />
+                                    return v.length ? `${fmt(Math.min(...v) * V_BASE, 1)} / ${fmt(Math.max(...v) * V_BASE, 1)} V` : t("live.na"); })()} />
               <Stat label={t("live.maxLine")}
                     value={(() => { const v = est.lines.map((l) => l.loading_percent).filter((x): x is number => x != null);
                                     return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
@@ -336,7 +333,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
                                     return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
                     color={loadingColor(Math.max(0, ...est.trafos.map((tr) => tr.loading_percent ?? 0)))} />
               {est.error?.max_dv_pu != null && (
-                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * 1000, 2)} mpu`} />
+                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * V_BASE, 2)} V`} />
               )}
               <Stat label={t("live.estSolve")} value={`${fmt(est.solve_ms, 0)} ms`} />
             </>
@@ -346,7 +343,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
                 👁 {t("live.groundTruth")}
               </div>
-              <Stat label={t("live.vminmax")} value={`${fmt(s.vm_pu_min, 3)} / ${fmt(s.vm_pu_max, 3)} pu`} />
+              <Stat label={t("live.vminmax")} value={`${fmt(s.vm_pu_min * V_BASE, 1)} / ${fmt(s.vm_pu_max * V_BASE, 1)} V`} />
               <Stat label={t("live.maxLine")} value={`${fmt(s.max_line_loading_percent, 1)} %`} color={loadingColor(s.max_line_loading_percent)} />
               <Stat label={t("live.maxTrafo")} value={s.max_trafo_loading_percent != null ? `${fmt(s.max_trafo_loading_percent, 1)} %` : t("live.na")} color={loadingColor(s.max_trafo_loading_percent)} />
               <Stat label={t("live.totalLoad")} value={`${fmt(s.total_load_mw * 1000, 1)} kW`} />
@@ -358,7 +355,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             // observed only: aggregates over placed meters
             <>
               <Stat label={t("live.measuredVmm")}
-                    value={os?.vm_pu_min != null ? `${fmt(os.vm_pu_min, 3)} / ${fmt(os.vm_pu_max, 3)} pu` : t("live.na")} />
+                    value={os?.vm_pu_min != null && os?.vm_pu_max != null ? `${fmt(os.vm_pu_min * V_BASE, 1)} / ${fmt(os.vm_pu_max * V_BASE, 1)} V` : t("live.na")} />
               <Stat label={t("live.measuredTrafo")}
                     value={os?.max_trafo_loading_percent != null ? `${fmt(os.max_trafo_loading_percent, 1)} %` : t("live.na")}
                     color={loadingColor(os?.max_trafo_loading_percent)} />
@@ -379,7 +376,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         {placement && (
           <Section title={t("meas.heading")} open={measOpen} onToggle={() => setMeasOpen((v) => !v)}
                    badges={[`📟 ${placement.coverage.n_node_meter + placement.coverage.n_trafo_meter}`]}>
-            <MeasurementPanel placement={placement} onPreset={meterPreset} />
+            <MeasurementPanel placement={placement} onPreset={meterPreset} onMode={meterMode} />
           </Section>
         )}
 
@@ -411,7 +408,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
                   </div>
                   <div className="muted" style={{ fontSize: "0.74rem", fontVariantNumeric: "tabular-nums" }}>
                     {sec.kind === "bus" && (nm
-                      ? [nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu, 3) }) : null,
+                      ? [nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu * V_BASE, 1) }) : null,
                          nm.p_mw != null ? t("tip.meterP", { v: fmt(nm.p_mw * 1000, 1) }) : null,
                          nm.q_mvar != null ? t("tip.meterQ", { v: fmt(nm.q_mvar * 1000, 1) }) : null,
                          nm.i_ka != null ? t("tip.meterI", { v: fmt(nm.i_ka * 1000, 1) }) : null,

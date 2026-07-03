@@ -60,6 +60,33 @@ def test_sparse_metering_stays_sane(lv_sim):
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_standard_metering_p_only_degrades_estimate(lv_sim):
+    """Standard metering (Lastgang): meters deliver only the 15-min mean active
+    power — no voltage, no reactive power. The estimate must still work (from
+    P readings + pseudo knowledge), just with degraded quality."""
+    lv_sim.meters.clear()
+    lv_sim.meters.apply_preset("all_nodes", lv_sim.net)
+    lv_sim.meters.set_mode("standard")
+    try:
+        res = lv_sim.run_step(76)
+        assert res.converged
+        readings = [n for n in res.measurements["nodes"] if n["p_mw"] is not None]
+        assert readings, "standard meters delivered no P at all"
+        assert all(n["vm_pu"] is None and n["q_mvar"] is None
+                   for n in res.measurements["nodes"])
+        assert res.estimated is not None
+        err = res.estimated["error"]
+        assert err["max_dv_pu"] < 0.05, f"max dV = {err['max_dv_pu']}"
+
+        # full mode at the same placement is strictly more informative
+        lv_sim.meters.set_mode("full")
+        res_full = lv_sim.run_step(76)
+        assert res_full.estimated["error"]["max_dv_pu"] <= err["max_dv_pu"] + 1e-9
+    finally:
+        lv_sim.meters.set_mode("full")
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
 def test_daily_curves_include_estimate(lv_sim):
     """The daily sweep overlays the operator's estimate: under full metering it
     matches the true current; clearing the meters drops the estimated curve

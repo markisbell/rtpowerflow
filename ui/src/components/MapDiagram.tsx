@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { StepResult, Topology } from "../types";
-import { currentWidth, jetColor, voltageReds, JET_GRADIENT, REDS_GRADIENT, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
+import { currentWidth, lineLoadingColor, voltageReds, LOADING_GRADIENT, REDS_GRADIENT, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
 
 interface Props {
   topo: Topology;
@@ -58,6 +58,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   const trafoRef = useRef<Map<number, L.CircleMarker>>(new Map());
   const batteryRef = useRef<L.CircleMarker[]>([]);
   const meterRef = useRef<L.CircleMarker[]>([]);
+  const equipRef = useRef<L.Marker[]>([]);
   const [light, setLight] = useState(true);
   const batKey = batteryBuses.join(",");
   const meterKey = `${meterBuses.join(",")}|${meterTrafos.join(",")}`;
@@ -103,7 +104,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       const open = ln.in_service === false; // normally-open ring tie (suburban)
       const pl = L.polyline(latlngs, open
         ? { color: "#888", weight: 2, opacity: 0.85, dashArray: "5 7" }
-        : { color: jetColor(null), weight: 2, opacity: 0.95 }).addTo(map);
+        : { color: lineLoadingColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(open ? t("tip.line", { name: ln.name ?? ln.id }) + t("tip.normallyOpen")
                           : t("tip.lineMap", { name: ln.name ?? ln.id }));
       pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e), clickAt(e)));
@@ -146,18 +147,6 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       cm.bindTooltip(t("tip.trafoMap", { name: tr.name ?? tr.id, kva: (tr.sn_mva * 1000).toFixed(0) }));
       cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e), clickAt(e)));
       trafoRef.current.set(tr.id, cm);
-    }
-
-    // equipment icons: EV charging / rooftop PV at a bus (never intercept clicks)
-    const evs = new Set(topo.ev_buses ?? []);
-    const pvs = new Set(topo.pv_buses ?? []);
-    for (const bus of topo.buses) {
-      const p = pos.get(bus.id);
-      if (!p) continue;
-      const tags = (evs.has(bus.id) ? "\u{1F50C}" : "") + (pvs.has(bus.id) ? "\u2600\uFE0F" : "");
-      if (!tags) continue;
-      L.marker(p, { icon: L.divIcon({ className: "equip-icon", html: tags, iconAnchor: [-3, 14] }),
-                    interactive: false, keyboard: false }).addTo(map);
     }
 
     const pts = [...pos.values()];
@@ -205,7 +194,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       if (openLines.has(id)) continue; // keep normally-open ties dashed grey
       const live = revealTruth ? lineLive.get(id) : undefined;
       pl.setStyle(live
-        ? { color: jetColor(live.loading_percent), weight: currentWidth(live.i_ka, maxIka), opacity: 0.55 }
+        ? { color: lineLoadingColor(live.loading_percent), weight: currentWidth(live.i_ka, maxIka), opacity: 0.55 }
         : { color: UNOBSERVED_LINE, weight: 1.5, opacity: 0.8 });
     }
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
@@ -220,7 +209,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     }
     const measTr = new Map((latest.measurements?.trafos ?? []).map((tr) => [tr.trafo, tr.loading_percent]));
     for (const [id, cm] of trafoRef.current) {
-      if (meteredTrafo.has(id)) cm.setStyle({ fillColor: jetColor(measTr.get(id)), color: "#0b0d11" });
+      if (meteredTrafo.has(id)) cm.setStyle({ fillColor: lineLoadingColor(measTr.get(id)), color: "#0b0d11" });
       else cm.setStyle({ fillColor: STATION_COLOR, color: "#7a5400" });
     }
   }, [latest, topo, meterKey, revealTruth]);
@@ -274,6 +263,32 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topo, meterKey, i18n.language]);
 
+  // equipment icon row per bus (battery · meter · EV charging · PV) — the same
+  // glyph language as the side-panel section badges. Rebuilt when the placement
+  // changes; purely decorative, never intercepts clicks.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    equipRef.current.forEach((m) => map.removeLayer(m));
+    equipRef.current = [];
+    const bats = new Set(batteryBuses);
+    const mets = new Set(meterBuses);
+    const evs = new Set(topo.ev_buses ?? []);
+    const pvs = new Set(topo.pv_buses ?? []);
+    for (const b of topo.buses) {
+      if (!b.geo) continue;
+      const tags = (bats.has(b.id) ? "\u{1F50B}" : "") + (mets.has(b.id) ? "\u{1F4DF}" : "")
+                 + (evs.has(b.id) ? "\u{1F50C}" : "") + (pvs.has(b.id) ? "☀️" : "");
+      if (!tags) continue;
+      const m = L.marker([b.geo[1], b.geo[0]], {
+        icon: L.divIcon({ className: "equip-icon", html: tags, iconAnchor: [-3, 14] }),
+        interactive: false, keyboard: false,
+      }).addTo(map);
+      equipRef.current.push(m);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topo, batKey, meterKey, i18n.language]);
+
   // apply the voltage layer: hide/show buses + lines by level. Station (trafo)
   // markers stay visible in every layer — they anchor both grids. Runs after
   // every rebuild (topo / language) so visibility survives marker re-creation.
@@ -311,7 +326,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         </div>
       )}
       <div className="map-colorbars">
-        <Colorbar gradient={JET_GRADIENT} top="100%" bottom="0%" caption={t("map.lineLoading")} />
+        <Colorbar gradient={LOADING_GRADIENT} top="100%" bottom="0%" caption={t("map.lineLoading")} />
         <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption={t("map.busVolt")} />
       </div>
     </div>

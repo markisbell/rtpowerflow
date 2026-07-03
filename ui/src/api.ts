@@ -12,6 +12,7 @@ import type {
   LineProfiles,
   LoadgenPolicy,
   MeasurementsResponse,
+  MeterMode,
   MeterPreset,
   NodeProfiles,
   PvDays,
@@ -89,6 +90,8 @@ export const api = {
   removeTrafoMeter: (trafo: number) => del<MeasurementsResponse>(`/measurements/trafo/${trafo}`),
   meterPreset: (name: MeterPreset) =>
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
+  meterMode: (name: MeterMode) =>
+    post<MeasurementsResponse>(`/measurements/mode?name=${name}`),
 };
 
 export function wsUrl(): string {

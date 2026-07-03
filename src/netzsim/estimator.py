@@ -30,7 +30,7 @@ from typing import Any
 import numpy as np
 import pandapower as pp
 
-from .measurements import MeasurementSet, _r
+from .measurements import _r
 
 # standard deviations = the operator's trust in each information source
 STD_V_METER = 0.003      # smart-meter voltage, pu
@@ -64,14 +64,17 @@ class Estimator:
         self._q_mean = {b: float(prof.load_q[rows].mean(axis=1).sum()) for b, rows in loads_at.items()}
 
     # -- one estimation run ------------------------------------------------ #
-    def run(self, source_net, meters: MeasurementSet, sgen_day_mean: np.ndarray,
+    def run(self, source_net, observed: dict[str, Any], sgen_day_mean: np.ndarray,
             battery_buses: dict[int, float]) -> dict[str, Any] | None:
         """Estimate the grid state from the current meter readings.
 
-        ``source_net`` is the freshly solved net (supplies the readings and the
-        truth for the error metric); ``sgen_day_mean`` the per-sgen daily mean
-        generation of the active day; ``battery_buses`` maps a battery's bus to
-        its power rating (MW) — the operator's only knowledge about it.
+        ``observed`` is the meters' projection (``StepResult.measurements``) —
+        the estimator sees exactly what the devices deliver: full V/P/Q at every
+        step, or only the 15-min mean P in standard metering mode (missing
+        quantities fall back to profile knowledge with wide uncertainty).
+        ``source_net`` supplies the slack setpoints and the truth for the error
+        metric; ``battery_buses`` maps a battery's bus to its power rating (MW)
+        — the operator's only knowledge about it.
         """
         net = self._net
         net.measurement.drop(net.measurement.index, inplace=True)
@@ -82,30 +85,44 @@ class Estimator:
             pp.create_measurement(net, "v", "bus", float(row["vm_pu"]), STD_V_SLACK,
                                   element=int(row["bus"]))
 
-        # smart meters: V + P/Q injection readings at the metered buses
-        for b in meters.node_buses:
-            if b not in source_net.res_bus.index:
+        # node meters: whatever quantities the device delivered
+        metered: set[int] = set()
+        for nm in observed.get("nodes", []):
+            b = int(nm["bus"])
+            if b not in net.bus.index:
                 continue
-            pp.create_measurement(net, "v", "bus", float(source_net.res_bus.at[b, "vm_pu"]),
-                                  STD_V_METER, element=int(b))
-            pp.create_measurement(net, "p", "bus", float(source_net.res_bus.at[b, "p_mw"]),
-                                  STD_PQ_METER, element=int(b))
-            pp.create_measurement(net, "q", "bus", float(source_net.res_bus.at[b, "q_mvar"]),
-                                  STD_PQ_METER, element=int(b))
+            metered.add(b)
+            full = nm.get("q_mvar") is not None
+            if nm.get("vm_pu") is not None:
+                pp.create_measurement(net, "v", "bus", float(nm["vm_pu"]), STD_V_METER, element=b)
+            if nm.get("p_mw") is not None:
+                # a 15-min mean is stale within the window -> trust it less
+                std = STD_PQ_METER if full else max(abs(float(nm["p_mw"])) * 0.3, STD_PSEUDO_FLOOR)
+                pp.create_measurement(net, "p", "bus", float(nm["p_mw"]), std, element=b)
+            if full:
+                pp.create_measurement(net, "q", "bus", float(nm["q_mvar"]), STD_PQ_METER, element=b)
+            else:
+                # P-only meter: reactive power from profile knowledge instead
+                std_q = max(self._p_peak.get(b, 0.0) * PSEUDO_STD_FRAC, STD_PSEUDO_FLOOR)
+                pp.create_measurement(net, "q", "bus", self._q_mean.get(b, 0.0), std_q, element=b)
 
-        # transformer meters: HV-side P/Q flow readings
-        for tr in meters.trafo_idxs:
-            if tr not in source_net.res_trafo.index:
+        # transformer meters: HV-side flow readings the device delivered
+        for tm in observed.get("trafos", []):
+            tr = int(tm["trafo"])
+            if tr not in net.trafo.index:
                 continue
-            pp.create_measurement(net, "p", "trafo", float(source_net.res_trafo.at[tr, "p_hv_mw"]),
-                                  STD_PQ_TRAFO, element=int(tr), side="hv")
-            pp.create_measurement(net, "q", "trafo", float(source_net.res_trafo.at[tr, "q_hv_mvar"]),
-                                  STD_PQ_TRAFO, element=int(tr), side="hv")
+            full = tm.get("q_hv_mvar") is not None
+            if tm.get("p_hv_mw") is not None:
+                std = STD_PQ_TRAFO if full else max(abs(float(tm["p_hv_mw"])) * 0.3, STD_PSEUDO_FLOOR)
+                pp.create_measurement(net, "p", "trafo", float(tm["p_hv_mw"]), std, element=tr, side="hv")
+            if full:
+                pp.create_measurement(net, "q", "trafo", float(tm["q_hv_mvar"]),
+                                      STD_PQ_TRAFO, element=tr, side="hv")
 
         # unmetered buses: structural zero injection or profile-based pseudo load
         for b in net.bus.index:
             b = int(b)
-            if b in meters.node_buses or b in self._ext_buses:
+            if b in metered or b in self._ext_buses:
                 continue
             p = self._p_mean.get(b, 0.0)
             q = self._q_mean.get(b, 0.0)

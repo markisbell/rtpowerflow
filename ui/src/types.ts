@@ -219,10 +219,12 @@ export interface StepResult {
 }
 
 export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
+export type MeterMode = "full" | "standard";
 export interface MeasurementsResponse {
   node_buses: number[];
   trafo_idxs: number[];
   coverage: Coverage;
+  mode?: MeterMode;
   presets: MeterPreset[];
   expose_ground_truth: boolean;
 }

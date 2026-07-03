@@ -186,6 +186,11 @@ class Simulator:
     def apply_meter_preset(self, name: str) -> None:
         self.meters.apply_preset(name, self.net)
 
+    def set_meter_mode(self, name: str) -> None:
+        """Meter fidelity: "full" (V/P/Q/I per step) or "standard" (15-min mean
+        P only). The daily-sweep cache re-keys on it automatically."""
+        self.meters.set_mode(name)
+
     def _price_ctx(self, day: int, t: int) -> dict:
         if self.prices is None or not len(self.prices):
             return {}
@@ -276,7 +281,7 @@ class Simulator:
             now = time.monotonic()
             if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
-                est = self._estimator.run(self.net, self.meters,
+                est = self._estimator.run(self.net, res.measurements,
                                           self._sgen_day_mean(day), bats)
                 self._est_wall = time.monotonic()
                 if est is not None:
@@ -375,7 +380,7 @@ class Simulator:
         }
         # Observability projection: reduce the solved net to what the placed
         # measurement devices actually reveal, plus the operator-visible summary.
-        res.measurements = self.meters.observe(net)
+        res.measurements = self.meters.observe(net, t)
         res.observed_summary = self.meters.observed_summary(res.measurements)
         return res
 
@@ -463,7 +468,8 @@ class Simulator:
         more meters visibly locks the estimated curve onto the real one. The
         cache is keyed on the meter placement, so changing it re-sweeps."""
         d = self.day if day is None else day
-        sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs))
+        sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs),
+               self.meters.mode)
         cached = self._daily_by_day.get(d)
         if cached is not None and cached.get("_sig") == sig:
             return cached
@@ -499,6 +505,11 @@ class Simulator:
         est_i = {int(l): [] for l in net.line.index}
         est_p_hv = {int(t): [] for t in net.trafo.index}
         estimator = Estimator(net, prof, self._loads_at, self._sgens_at) if do_est else None
+        # the sweep gets its own MeasurementSet copy: standard-mode window
+        # accumulators must not disturb the live meters' state
+        sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),
+                                      trafo_idxs=set(self.meters.trafo_idxs),
+                                      mode=self.meters.mode) if do_est else None
         est_bats = {b.bus: b.power_mw for b in self.batteries}
         est_every, si = 1, -1           # decimation adapts to the first run's cost
         # "auto" (not "flat") so multi-voltage-level grids with a transformer
@@ -542,7 +553,8 @@ class Simulator:
                     tr_p_hv[int(tr)].append(_r(net.res_trafo.at[tr, "p_hv_mw"]))
                     tr_loading[int(tr)].append(_r(net.res_trafo.at[tr, "loading_percent"]))
                 if estimator is not None and si % est_every == 0:
-                    est = estimator.run(net, self.meters, self._sgen_day_mean(d), est_bats)
+                    est = estimator.run(net, sweep_meters.observe(net, t),
+                                        self._sgen_day_mean(d), est_bats)
                     if est is not None and est_every == 1 and est["solve_ms"] > 120:
                         # big net: one WLS run is expensive — sample the estimate
                         # coarser so a sweep stays interactive (~a dozen runs)

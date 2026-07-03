@@ -33,6 +33,11 @@ from typing import Any
 # endpoint. Kept here so the API and the set agree on the vocabulary.
 PRESETS = ("all_nodes", "all_trafos", "substation_trafos", "clear")
 
+# Meter fidelity. "full": every quantity (V, P, Q, I) every simulation step —
+# a research-grade device. "standard": German standard metering ("Lastgang"):
+# only the ACTIVE power, as the mean over each completed 15-minute window.
+METER_MODES = ("full", "standard")
+
 
 def _r(value, ndigits: int = 6):
     """Round to a JSON-safe float; non-finite → ``None`` (mirrors simulator._r)."""
@@ -50,6 +55,11 @@ class MeasurementSet:
 
     node_buses: set[int] = field(default_factory=set)
     trafo_idxs: set[int] = field(default_factory=set)
+    mode: str = "full"                    # see METER_MODES
+    # standard-mode window state: running accumulator + last completed window
+    _win: int = field(default=-1, repr=False)
+    _acc: dict = field(default_factory=dict, repr=False)   # key -> (sum, n)
+    _held: dict = field(default_factory=dict, repr=False)  # key -> window mean
 
     # -- placement mutators (all return True if the set actually changed) ----- #
     def add_node(self, bus: int) -> bool:
@@ -79,6 +89,14 @@ class MeasurementSet:
     def clear(self) -> None:
         self.node_buses.clear()
         self.trafo_idxs.clear()
+        self._win, self._acc, self._held = -1, {}, {}
+
+    def set_mode(self, name: str) -> None:
+        if name not in METER_MODES:
+            raise ValueError(f"unknown meter mode '{name}'")
+        if name != self.mode:
+            self.mode = name
+            self._win, self._acc, self._held = -1, {}, {}
 
     def apply_preset(self, name: str, net) -> None:
         """Bulk placement helper. ``net`` supplies the element indices."""
@@ -111,6 +129,7 @@ class MeasurementSet:
         return {
             "node_buses": sorted(self.node_buses),
             "trafo_idxs": sorted(self.trafo_idxs),
+            "mode": self.mode,
             "coverage": {
                 "n_bus": n_bus,
                 "n_node_meter": n_node_meter,
@@ -121,13 +140,16 @@ class MeasurementSet:
             },
         }
 
-    def observe(self, net) -> dict[str, Any]:
+    def observe(self, net, t: int = 0) -> dict[str, Any]:
         """Project the just-solved ``net`` down to what the meters can see.
 
         Returns ``{nodes, trafos, coverage}``. ``nodes`` / ``trafos`` are present
         only for placed devices; everything else is, by construction, unknown.
         Assumes the net has fresh ``res_*`` tables (call after a converged solve).
+        ``t`` is the step within the day — standard metering aggregates by it.
         """
+        if self.mode == "standard":
+            return self._observe_standard(net, t)
         nodes: list[dict[str, Any]] = []
         for bus in sorted(self.node_buses):
             if bus not in net.res_bus.index:
@@ -173,6 +195,46 @@ class MeasurementSet:
             "phases": 3,
             "balanced": True,
         }
+
+    def _observe_standard(self, net, t: int) -> dict[str, Any]:
+        """Standard metering ("Lastgang"): each device delivers only the ACTIVE
+        power as the mean over the last completed 15-minute window — no voltage,
+        no reactive power, no current, no intra-window updates. Until the first
+        window completes, the running mean so far is reported."""
+        w = t // 15
+        if w != self._win:                      # window boundary: publish means
+            if self._acc:
+                self._held = {k: s / n for k, (s, n) in self._acc.items()}
+            self._acc = {}
+            self._win = w
+
+        def tick(key, value: float):
+            s_, n_ = self._acc.get(key, (0.0, 0))
+            self._acc[key] = (s_ + value, n_ + 1)
+            held = self._held.get(key)
+            return held if held is not None else (s_ + value) / (n_ + 1)
+
+        nodes: list[dict[str, Any]] = []
+        for bus in sorted(self.node_buses):
+            if bus not in net.res_bus.index:
+                continue
+            p = tick(("n", bus), float(net.res_bus.at[bus, "p_mw"]))
+            nodes.append({"bus": int(bus), "name": str(net.bus.at[bus, "name"]),
+                          "vm_pu": None, "v_ll_kv": None, "p_mw": _r(p),
+                          "q_mvar": None, "s_mva": None, "i_ka": None})
+        trafos: list[dict[str, Any]] = []
+        for tr in sorted(self.trafo_idxs):
+            if tr not in net.res_trafo.index:
+                continue
+            p = tick(("t", tr), float(net.res_trafo.at[tr, "p_hv_mw"]))
+            trafos.append({"trafo": int(tr), "name": str(net.trafo.at[tr, "name"]),
+                           "hv_bus": int(net.trafo.at[tr, "hv_bus"]),
+                           "lv_bus": int(net.trafo.at[tr, "lv_bus"]),
+                           "loading_percent": None, "p_hv_mw": _r(p),
+                           "q_hv_mvar": None, "i_hv_ka": None, "pl_mw": None})
+        return {"nodes": nodes, "trafos": trafos,
+                "coverage": self.placement(net)["coverage"],
+                "phases": 3, "balanced": True}
 
     def observed_summary(self, observed: dict[str, Any]) -> dict[str, Any]:
         """Aggregate over *observed* elements only — the operator's view of the

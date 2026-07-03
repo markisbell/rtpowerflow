@@ -14,7 +14,7 @@ from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
 from .battery import MODES
 from .grid_catalog import GridCatalog, preview
-from .measurements import PRESETS
+from .measurements import METER_MODES, PRESETS
 from .realpv import load_prices, load_pv_days
 from .loadgen import (
     AssignPolicy,
@@ -317,6 +317,16 @@ async def place_trafo_meter(req: TrafoMeterRequest):
 @app.delete("/measurements/trafo/{trafo}")
 async def remove_trafo_meter(trafo: int):
     runtime.engine.sim.remove_trafo_meter(trafo)
+    return _measurements_response()
+
+
+@app.post("/measurements/mode")
+async def measurements_mode(name: str = Query(...)):
+    """Meter fidelity: 'full' (V/P/Q/I every step) or 'standard' (German
+    Lastgang metering: 15-minute mean active power only)."""
+    if name not in METER_MODES:
+        raise HTTPException(422, f"name must be one of {METER_MODES}")
+    runtime.engine.sim.set_meter_mode(name)
     return _measurements_response()
 
 

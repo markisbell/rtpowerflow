@@ -372,10 +372,11 @@ provisioned datasource + dashboard, all in compose.
   grid has geo, `/network` sets `has_geo: true` and per-bus `geo: [lon, lat]`, and
   the UI defaults to the **Map** view (`MapDiagram.tsx`, Leaflet + CARTO/OSM
   tiles). The map mimics ding0's `plot_mv_topology` aesthetic: **light** CARTO
-  basemap by default (Light/Dark toggle), lines on a **jet** colormap by loading,
-  buses on a **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
+  basemap by default (Light/Dark toggle), lines on a **green→amber→red** ramp by
+  loading (no blue — an idle line reads as healthy, not cold), buses on a
+  **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
   colorbars — all animating from live results. Colormaps live in `scales.ts`
-  (`jetColor`, `voltageReds`, `JET_GRADIENT`, `REDS_GRADIENT`). The default 5-bus
+  (`lineLoadingColor`, `voltageReds`, `LOADING_GRADIENT`, `REDS_GRADIENT`). The default 5-bus
   sample (no geo) falls back to the synthetic Geographic/Schematic SVG views
   (which keep the discrete traffic-light scales).
 - **Grids come from the separate `gridgen` project** (`../gridgen`), NOT from
