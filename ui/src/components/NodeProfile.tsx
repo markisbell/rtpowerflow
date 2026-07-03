@@ -55,7 +55,9 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
       )}
       {!err && data && mode === "voltage" && hasVoltage && (
         <ProfileGraph
-          series={[{ label: t("node.voltageSeries"), color: "#c586ff", data: data.voltage, colorData: data.voltage, colorFn: voltageColor }]}
+          series={[{ label: t("node.voltageSeries"), color: "#c586ff", data: data.voltage, colorData: data.voltage, colorFn: voltageColor },
+                   ...((data.est_voltage?.some((v) => v != null) ?? false)
+                     ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_voltage! }] : [])]}
           limits={VLIMIT} scale={1} unit="pu" dec={3} baseZero={false} now={now}
         />
       )}

@@ -262,6 +262,7 @@ export interface NodeProfiles {
   steps_per_day: number;
   series: { kind: NodeSeriesKind; p_mw: (number | null)[] }[];
   voltage: (number | null)[];
+  est_voltage?: (number | null)[] | null;   // state estimate (meters placed)
 }
 export interface LineProfiles {
   line: number;
@@ -272,6 +273,7 @@ export interface LineProfiles {
   rated_i_ka: number | null;
   current: (number | null)[];
   loading: (number | null)[];
+  est_current?: (number | null)[] | null;   // state estimate (meters placed)
 }
 export interface TrafoProfiles {
   trafo: number;
@@ -282,6 +284,7 @@ export interface TrafoProfiles {
   sn_mva: number | null;
   power: (number | null)[];
   loading: (number | null)[];
+  est_power?: (number | null)[] | null;     // state estimate (meters placed)
 }
 
 export interface EngineStatus {

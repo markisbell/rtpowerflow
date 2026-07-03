@@ -20,6 +20,7 @@ export default function LineProfile({ line, name, now, day, onClose, embedded = 
   }, [line, day]);
 
   const hasData = (data?.current?.length ?? 0) > 0 && data!.current.some((v) => v != null);
+  const hasEst = (data?.est_current?.length ?? 0) > 0 && data!.est_current!.some((v) => v != null);
 
   return (
     <div style={embedded ? {} : { marginTop: "0.7rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
@@ -34,7 +35,8 @@ export default function LineProfile({ line, name, now, day, onClose, embedded = 
       {!err && data && hasData && (
         <ProfileGraph
           series={[{ label: t("line.current"), color: "#4c8dff", data: data.current, fill: true,
-                     colorData: data.loading, colorFn: loadingColor }]}
+                     colorData: data.loading, colorFn: loadingColor },
+                   ...(hasEst ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_current! }] : [])]}
           limits={data.rated_i_ka != null
             ? [{ value: data.rated_i_ka, label: t("line.rated", { a: (data.rated_i_ka * 1000).toFixed(0) }), color: "#f85149" }]
             : []}

@@ -83,7 +83,7 @@ const en = {
     estSolve: "estimation time",
   },
 
-  graph: { uhr: "{{time}}" },
+  graph: { uhr: "{{time}}", est: "Estimate" },
 
   node: {
     title: "Node {{name}}", power: "Power", voltage: "Voltage",
@@ -242,7 +242,7 @@ const de: typeof en = {
     estSolve: "Rechenzeit Schätzung",
   },
 
-  graph: { uhr: "{{time}} Uhr" },
+  graph: { uhr: "{{time}} Uhr", est: "Schätzung" },
 
   node: {
     title: "Knoten {{name}}", power: "Leistung", voltage: "Spannung",

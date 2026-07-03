@@ -45,7 +45,9 @@ export default function TrafoProfile({ trafo, name, now, day, onClose, embedded 
       {!err && data && hasData && (
         <ProfileGraph
           series={[{ label: t("trafo.power"), color: "#f2ae00", data: power, fill: !hasExport,
-                     colorData: data.loading, colorFn: loadingColor }]}
+                     colorData: data.loading, colorFn: loadingColor },
+                   ...((data.est_power?.some((v) => v != null) ?? false)
+                     ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_power! }] : [])]}
           limits={limits} scale={1000} unit="kW" dec={1} baseZero={!hasExport} now={now}
         />
       )}

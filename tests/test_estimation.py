@@ -60,6 +60,24 @@ def test_sparse_metering_stays_sane(lv_sim):
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_daily_curves_include_estimate(lv_sim):
+    """The daily sweep overlays the operator's estimate: under full metering it
+    matches the true current; clearing the meters drops the estimated curve
+    (the sweep cache is keyed on the placement)."""
+    lv_sim.meters.clear()
+    lv_sim.meters.apply_preset("all_nodes", lv_sim.net)
+    lp = lv_sim.line_profiles(0)
+    assert lp["est_current"] is not None
+    pairs = [(a, b) for a, b in zip(lp["current"], lp["est_current"])
+             if a is not None and b is not None]
+    assert len(pairs) > 10, "estimate present at too few samples"
+    assert max(abs(a - b) for a, b in pairs) < 1e-4   # full metering ≈ truth
+
+    lv_sim.meters.clear()
+    assert lv_sim.line_profiles(0)["est_current"] is None
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
 def test_strict_mode_keeps_estimate_strips_error(lv_sim):
     lv_sim.meters.clear()
     lv_sim.meters.apply_preset("substation_trafos", lv_sim.net)
