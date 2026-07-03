@@ -229,6 +229,15 @@ export interface MeasurementsResponse {
   expose_ground_truth: boolean;
 }
 
+// Saved live-setup recipes (data/scenarios/*.json on the server)
+export interface Scenario {
+  id: string;
+  name: string;
+  description: string;
+  grid_id: string | null;
+  created: string | null;
+}
+
 // Runtime-configurable DERs at a bus (parameters derived from profile rows)
 export interface NodeDer {
   bus: number;

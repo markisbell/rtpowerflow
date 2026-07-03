@@ -132,6 +132,13 @@ const en = {
     removePv: "Remove PV system", removeEv: "Remove EV charging",
   },
 
+  scen: {
+    heading: "Scenarios", none: "No scenarios saved yet.",
+    save: "Save", load: "Load", delete: "Delete scenario",
+    name: "Name…", desc: "Description (optional)",
+    saveHint: "Save the current setup (grid, loads, batteries, meters, DERs, time) as a scenario:",
+  },
+
   der: {
     apply: "Apply", start: "Start", dur: "Duration",
     pvTitle: "PV system — drag to resize (kWp)",
@@ -300,6 +307,13 @@ const de: typeof en = {
     removeBattery: "Batterie entfernen",
     addPv: "PV-Anlage hinzufügen", addEv: "E-Auto-Ladung hinzufügen",
     removePv: "PV-Anlage entfernen", removeEv: "E-Auto-Ladung entfernen",
+  },
+
+  scen: {
+    heading: "Szenarien", none: "Noch keine Szenarien gespeichert.",
+    save: "Speichern", load: "Laden", delete: "Szenario löschen",
+    name: "Name…", desc: "Beschreibung (optional)",
+    saveHint: "Aktuelles Setup (Netz, Lasten, Batterien, Messungen, Anlagen, Zeitpunkt) als Szenario sichern:",
   },
 
   der: {

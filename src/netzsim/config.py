@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     grid_library: Path = Path("./data/grid_library.json")
 
     # Cached LPG household load library (served by /loadgen)
+    scenarios_dir: str = "./data/scenarios"  # saved live-setup recipes (JSON)
     lpg_library_dir: Path = Path("./data/lpg_library")
 
     # Cached real-PV daily shapes (see scripts/fetch_real_pv.py). When present,

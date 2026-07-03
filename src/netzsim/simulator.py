@@ -85,6 +85,10 @@ class Simulator:
         self._est_wall = 0.0            # monotonic time of the last estimation run
         self._est_ms = 0.0              # its duration (drives the adaptive spacing)
 
+        # bus-addressed journal of runtime DER changes — the delta a scenario
+        # file stores on top of the deterministic grid + loadgen recipe.
+        self.der_log: list[dict] = []
+
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
@@ -168,6 +172,39 @@ class Simulator:
         return False
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
+    def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
+        """Append a journal entry, dropping superseded ops for the same bus."""
+        self.der_log = [e for e in self.der_log
+                        if not (e["bus"] == entry["bus"] and e["op"] in replaces)]
+        self.der_log.append(entry)
+
+    def apply_der_op(self, op: dict) -> bool:
+        """Replay one bus-addressed DER op (scenario load). Tolerant: an op that
+        no longer applies (e.g. remove on an absent system) is a no-op."""
+        kind, bus = op.get("op"), int(op.get("bus", -1))
+        if bus not in self.net.bus.index:
+            return False
+        der = self.node_der(bus)
+        if kind == "add_pv" or kind == "set_pv":
+            if der["pv"] is None:
+                self.add_pv(bus, float(op.get("kwp", 5.0)))
+            else:
+                self.set_pv_kwp(der["pv"]["sgen"], float(op.get("kwp", 5.0)))
+            return True
+        if kind == "remove_pv":
+            return der["pv"] is not None and self.remove_pv(der["pv"]["sgen"])
+        if kind == "add_ev" or kind == "set_ev":
+            start = int(op.get("start_min", 18 * 60))
+            dur = int(op.get("dur_min", 120))
+            if der["ev"] is None:
+                self.add_ev(bus, float(op.get("kw", 11.0)), start, dur)
+            else:
+                self.set_ev(der["ev"]["load"], start, dur)
+            return True
+        if kind == "remove_ev":
+            return der["ev"] is not None and self.remove_ev(der["ev"]["load"])
+        return False
+
     def _der_invalidate(self) -> None:
         """Refresh everything derived from the load/sgen tables + profiles after
         a runtime DER change (same hygiene as a battery add/remove)."""
@@ -182,6 +219,7 @@ class Simulator:
         self._sgen_day_mean_cache.clear()
         self._estimator = None          # cached per-bus profile stats are stale
         self._est_last = None
+        self._solved_once = False       # element tables changed: solve cold next
 
     def node_der(self, bus: int) -> dict:
         """The bus's configurable DERs. Parameters are derived from the profile
@@ -232,6 +270,8 @@ class Simulator:
         self.prof.sgen_idx.append(si)
         self.prof.sgen_p = np.vstack([self.prof.sgen_p, row[None, :]])
         self.prof.sgen_q = np.vstack([self.prof.sgen_q, np.zeros((1, self.steps_per_day))])
+        self._der_log_put({"op": "add_pv", "bus": int(bus), "kwp": kwp},
+                          ("add_pv", "set_pv", "remove_pv"))
         self._der_invalidate()
         return self.node_der(bus)
 
@@ -251,6 +291,13 @@ class Simulator:
             pol = PvPolicy()
             self.prof.sgen_p[i] = _clearsky(self.steps_per_day, pol.peak_hour,
                                             pol.width_hours) * (kwp / 1000.0)
+        bus = int(self.net.sgen.at[sgen, "bus"])
+        # an earlier add_pv keeps its place in the log; only its size updates
+        if any(e["op"] == "add_pv" and e["bus"] == bus for e in self.der_log):
+            self._der_log_put({"op": "add_pv", "bus": bus, "kwp": kwp},
+                              ("add_pv", "set_pv"))
+        else:
+            self._der_log_put({"op": "set_pv", "bus": bus, "kwp": kwp}, ("set_pv",))
         self._der_invalidate()
         return True
 
@@ -265,6 +312,10 @@ class Simulator:
         self.prof.load_p = np.vstack([self.prof.load_p, np.zeros((1, self.steps_per_day))])
         self.prof.load_q = np.vstack([self.prof.load_q, np.zeros((1, self.steps_per_day))])
         self._set_ev_row(len(self.prof.load_idx) - 1, kw, start_min, dur_min)
+        self._der_log_put({"op": "add_ev", "bus": int(bus), "kw": float(kw),
+                           "start_min": int(start_min) % 1440,
+                           "dur_min": int(min(max(dur_min, 60), 240))},
+                          ("add_ev", "set_ev", "remove_ev"))
         self._der_invalidate()
         return self.node_der(bus)
 
@@ -276,6 +327,16 @@ class Simulator:
         i = self.prof.load_idx.index(load)
         kw = float(self.prof.load_p[i].max()) * 1000.0
         self._set_ev_row(i, kw if kw > 0.1 else 11.0, start_min, dur_min)
+        bus = int(self.net.load.at[load, "bus"])
+        clamped = int(min(max(dur_min, 60), 240))
+        if any(e["op"] == "add_ev" and e["bus"] == bus for e in self.der_log):
+            self._der_log_put({"op": "add_ev", "bus": bus, "kw": kw if kw > 0.1 else 11.0,
+                               "start_min": int(start_min) % 1440, "dur_min": clamped},
+                              ("add_ev", "set_ev"))
+        else:
+            self._der_log_put({"op": "set_ev", "bus": bus,
+                               "start_min": int(start_min) % 1440, "dur_min": clamped},
+                              ("set_ev",))
         self._der_invalidate()
         return True
 
@@ -283,6 +344,13 @@ class Simulator:
         """Remove a PV system (LoadStudio-assigned or runtime-added)."""
         if sgen not in self.prof.sgen_idx:
             return False
+        bus = int(self.net.sgen.at[sgen, "bus"])
+        was_added = any(e["op"] == "add_pv" and e["bus"] == bus for e in self.der_log)
+        self._der_log_put({"op": "remove_pv", "bus": bus},
+                          ("add_pv", "set_pv", "remove_pv"))
+        if was_added:                       # runtime add + remove = no delta
+            self.der_log = [e for e in self.der_log
+                            if not (e["op"] == "remove_pv" and e["bus"] == bus)]
         i = self.prof.sgen_idx.index(sgen)
         self.prof.sgen_idx.pop(i)
         self.prof.sgen_p = np.delete(self.prof.sgen_p, i, axis=0)
@@ -295,6 +363,13 @@ class Simulator:
         """Remove an EV charging load (LoadStudio-assigned or runtime-added)."""
         if load not in self.prof.load_idx:
             return False
+        bus = int(self.net.load.at[load, "bus"])
+        was_added = any(e["op"] == "add_ev" and e["bus"] == bus for e in self.der_log)
+        self._der_log_put({"op": "remove_ev", "bus": bus},
+                          ("add_ev", "set_ev", "remove_ev"))
+        if was_added:                       # runtime add + remove = no delta
+            self.der_log = [e for e in self.der_log
+                            if not (e["op"] == "remove_ev" and e["bus"] == bus)]
         i = self.prof.load_idx.index(load)
         self.prof.load_idx.pop(i)
         self.prof.load_p = np.delete(self.prof.load_p, i, axis=0)
@@ -315,6 +390,7 @@ class Simulator:
     def _rebuild_storage(self) -> None:
         """Recreate the pandapower storage table from ``self.batteries`` (keeps
         indices in sync after add/remove)."""
+        self._solved_once = False       # element tables changed: solve cold next
         self.net.storage.drop(self.net.storage.index, inplace=True)
         for b in self.batteries:
             b.storage_idx = int(pp.create_storage(
@@ -427,6 +503,14 @@ class Simulator:
                 break
             except pp.LoadflowNotConverged as exc:  # type: ignore[attr-defined]
                 error = f"Load flow did not converge: {exc}"
+            except Exception as exc:  # noqa: BLE001
+                # e.g. a runtime mutation (DER/battery via the API) racing this
+                # solve leaves pandapower's internals momentarily inconsistent.
+                # Never let a single step kill the engine loop — report the
+                # step as failed and start cold next time; the next solve
+                # rebuilds the internals and self-heals.
+                error = f"{type(exc).__name__}: {exc}"
+                self._solved_once = False
         if converged:
             error = None
         solve_ms = (time.perf_counter() - t0) * 1000.0
