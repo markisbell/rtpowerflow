@@ -247,6 +247,16 @@ async def add_battery(req: BatteryRequest):
     return _battery_dict(b)
 
 
+@app.post("/battery/{idx}/mode")
+async def battery_mode(idx: int, name: str = Query(...)):
+    """Switch a deployed battery's operating strategy (self | peak | price)."""
+    if name not in MODES:
+        raise HTTPException(422, f"name must be one of {MODES}")
+    if not runtime.engine.sim.set_battery_mode(idx, name):
+        raise HTTPException(404, f"no battery with index {idx}")
+    return batteries()
+
+
 @app.delete("/battery/{idx}")
 async def remove_battery(idx: int):
     if not runtime.engine.sim.remove_battery(idx):

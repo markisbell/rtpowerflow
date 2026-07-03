@@ -144,6 +144,19 @@ class Simulator:
         self._daily_by_day.clear()
         return b
 
+    def set_battery_mode(self, storage_idx: int, mode: str) -> bool:
+        """Switch a deployed battery's operating strategy in place. Clears the
+        daily-curve cache — the battery-aware sweeps change with the strategy."""
+        if mode not in MODES:
+            raise ValueError(f"unknown battery mode '{mode}'")
+        for b in self.batteries:
+            if b.storage_idx == storage_idx:
+                if b.mode != mode:
+                    b.mode = mode
+                    self._daily_by_day.clear()
+                return True
+        return False
+
     def remove_battery(self, storage_idx: int) -> bool:
         n = len(self.batteries)
         self.batteries = [b for b in self.batteries if b.storage_idx != storage_idx]

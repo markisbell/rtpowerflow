@@ -149,11 +149,18 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const selectTrafo = onElemClick("trafo");
 
   // ---- equipment actions (from the menu / the element sections) ------------ //
-  const addBatteryAt = async (kind: SelKind, id: number, mode: BatteryMode) => {
+  const addBatteryAt = async (kind: SelKind, id: number) => {
     const bus = busForElement(kind, id);
     if (bus == null) return;
-    try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode }); } finally { reloadBatteries(); }
+    // deploys with the default strategy; switched later in the node's section
+    try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode: "self" }); } finally { reloadBatteries(); }
     pinSection(kind, id);
+  };
+  const changeBatteryMode = async (index: number, mode: BatteryMode) => {
+    try {
+      const r = await api.setBatteryMode(index, mode);
+      setBatteries(r.batteries);
+    } catch { reloadBatteries(); }
   };
   const removeBattery = async (idx: number) => {
     try { await api.removeBattery(idx); } finally { reloadBatteries(); }
@@ -294,9 +301,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           target={menu}
           hasBattery={!!menuBattery}
           hasMeter={menuMetered}
-          modes={batModes.filter((m) => m !== "price" || batHasPrices)}
           onGraph={() => pinSection(menu.kind, menu.id)}
-          onAddBattery={(mode) => addBatteryAt(menu.kind, menu.id, mode)}
+          onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onRemoveBattery={() => menuBattery && removeBattery(menuBattery.index)}
           onPlaceMeter={() => placeMeterAt(menu.kind, menu.id)}
           onRemoveMeter={() => removeMeterAt(menu.kind, menu.id)}
@@ -423,15 +429,21 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
 
               {bat && (
                 <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem" }}>
-                    <span style={{ fontWeight: 600 }}>🔋 {t(`bat.${bat.mode}`)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>🔋</span>
+                    <select value={bat.mode} style={{ flex: 1, fontSize: "0.72rem" }}
+                            onChange={(e) => changeBatteryMode(bat.index, e.target.value as BatteryMode)}>
+                      {batModes.filter((m) => m !== "price" || batHasPrices).map((m) => (
+                        <option key={m} value={m}>{t(`bat.${m}`)}</option>
+                      ))}
+                    </select>
                     <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>
                       {bat.capacity_kwh} kWh · {bat.power_kw} kW
                     </span>
                   </div>
                   <Stat label={t("bat.soc")} value={`${fmt(live?.soc_percent ?? bat.soc_percent, 1)} %`} />
                   <Stat label={t("bat.pwr")} value={live ? `${fmt(live.p_mw * 1000, 2)} kW` : "—"} />
-                  <BatteryProfile embedded idx={bat.index} now={nowFrac} day={curDay} />
+                  <BatteryProfile embedded key={`${bat.index}-${bat.mode}`} idx={bat.index} now={nowFrac} day={curDay} />
                   <button className="ghost" style={{ fontSize: "0.68rem", padding: "1px 6px", marginTop: 4 }}
                           onClick={() => removeBattery(bat.index)}>{t("menu.removeBattery")}</button>
                 </div>

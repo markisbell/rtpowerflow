@@ -126,7 +126,7 @@ const en = {
 
   menu: {
     graph: "Daily profile", addMeter: "Place meter", removeMeter: "Remove meter",
-    addBattery: "Add battery:", addBatteryTrafo: "Battery @ LV busbar:",
+    addBattery: "Add battery", addBatteryTrafo: "Battery @ LV busbar",
     removeBattery: "Remove battery",
   },
 
@@ -288,7 +288,7 @@ const de: typeof en = {
 
   menu: {
     graph: "Tagesverlauf", addMeter: "Messung platzieren", removeMeter: "Messung entfernen",
-    addBattery: "Batterie hinzufügen:", addBatteryTrafo: "Batterie @ NS-Sammelschiene:",
+    addBattery: "Batterie hinzufügen", addBatteryTrafo: "Batterie @ NS-Sammelschiene",
     removeBattery: "Batterie entfernen",
   },
 
