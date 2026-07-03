@@ -229,6 +229,13 @@ export interface MeasurementsResponse {
   expose_ground_truth: boolean;
 }
 
+// Runtime-configurable DERs at a bus (parameters derived from profile rows)
+export interface NodeDer {
+  bus: number;
+  pv: { sgen: number; kwp: number } | null;
+  ev: { load: number; kw: number; start_min: number; dur_min: number } | null;
+}
+
 export type BatteryMode = "self" | "peak" | "price";
 export interface Battery {
   index: number;

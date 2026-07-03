@@ -23,6 +23,8 @@ interface Props {
   onSelectTrafo?: (trafo: number, additive: boolean, at?: { x: number; y: number }) => void;
   selectedTrafos?: number[];
   batteryBuses?: number[];
+  evBuses?: number[];          // runtime DER state (falls back to the topology)
+  pvBuses?: number[];
   // observability
   meterBuses?: number[];       // buses carrying a smart meter
   meterTrafos?: number[];      // transformers carrying a meter
@@ -37,7 +39,7 @@ interface Tip {
 
 type XY = { x: number; y: number };
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [], meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [], evBuses, pvBuses, meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
   const { t } = useTranslation();
   const meteredBus = useMemo(() => new Set(meterBuses), [meterBuses]);
   const meteredTrafo = useMemo(() => new Set(meterTrafos), [meterTrafos]);
@@ -394,8 +396,8 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           if (!p) return null;
           const tags = (batteryBuses.includes(bus.id) ? "\u{1F50B}" : "")
                      + (meteredBus.has(bus.id) ? "\u{1F4DF}" : "")
-                     + ((topo.ev_buses ?? []).includes(bus.id) ? "\u{1F50C}" : "")
-                     + ((topo.pv_buses ?? []).includes(bus.id) ? "\u2600\uFE0F" : "");
+                     + ((evBuses ?? topo.ev_buses ?? []).includes(bus.id) ? "\u{1F50C}" : "")
+                     + ((pvBuses ?? topo.pv_buses ?? []).includes(bus.id) ? "\u2600\uFE0F" : "");
           if (!tags) return null;
           return (
             <text key={"eq" + bus.id} x={p.x + 5} y={p.y + 13} fontSize="8" pointerEvents="none">

@@ -14,17 +14,24 @@ export interface MenuTarget {
  *  battery sits at its LV busbar) and place/remove a measurement. Lines only
  *  offer the profile. */
 export default function ElementMenu({
-  target, hasBattery, hasMeter,
-  onGraph, onAddBattery, onRemoveBattery, onPlaceMeter, onRemoveMeter, onClose,
+  target, hasBattery, hasMeter, hasPv, hasEv,
+  onGraph, onAddBattery, onRemoveBattery, onPlaceMeter, onRemoveMeter,
+  onAddPv, onAddEv, onRemovePv, onRemoveEv, onClose,
 }: {
   target: MenuTarget;
   hasBattery: boolean;
   hasMeter: boolean;
+  hasPv: boolean;
+  hasEv: boolean;
   onGraph: () => void;
   onAddBattery: () => void;
   onRemoveBattery: () => void;
   onPlaceMeter: () => void;
   onRemoveMeter: () => void;
+  onAddPv: () => void;
+  onAddEv: () => void;
+  onRemovePv: () => void;
+  onRemoveEv: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -54,6 +61,12 @@ export default function ElementMenu({
           ? item(`🔋 ${t("menu.removeBattery")}`, onRemoveBattery)
           : item(`🔋 ${target.kind === "trafo" ? t("menu.addBatteryTrafo") : t("menu.addBattery")}`,
                  onAddBattery))}
+        {target.kind === "bus" && (hasPv
+          ? item(`☀️ ${t("menu.removePv")}`, onRemovePv)
+          : item(`☀️ ${t("menu.addPv")}`, onAddPv))}
+        {target.kind === "bus" && (hasEv
+          ? item(`🔌 ${t("menu.removeEv")}`, onRemoveEv)
+          : item(`🔌 ${t("menu.addEv")}`, onAddEv))}
       </div>
     </>
   );

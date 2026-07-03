@@ -12,6 +12,7 @@ import TrafoProfile from "../components/TrafoProfile";
 import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
+import DerPanel from "../components/DerPanel";
 import Section from "../components/Section";
 import { gridDisplayName } from "../gridname";
 
@@ -41,6 +42,11 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
   const [gridId, setGridId] = useState<string | null>(null);   // active grid id -> localized name
+  // runtime DER state: which buses host EV charging / PV (seeded from the
+  // topology, extended live on add) + a stamp that refreshes graphs/panels
+  const [evBuses, setEvBuses] = useState<number[]>([]);
+  const [pvBuses, setPvBuses] = useState<number[]>([]);
+  const [derStamp, setDerStamp] = useState(0);
   // Three parallel views of the grid: ground truth (default, so a fresh session
   // sees a normal colored grid), the strict observed-only projection, and the
   // WLS state estimate computed from the placed meters (estimator.py).
@@ -68,6 +74,12 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
+
+  // seed the runtime DER state from the topology
+  useEffect(() => {
+    setEvBuses(topo?.ev_buses ?? []);
+    setPvBuses(topo?.pv_buses ?? []);
+  }, [topo]);
 
   // default to the real OSM map for grids that carry geo-coordinates, else schematic
   useEffect(() => {
@@ -155,6 +167,30 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     // deploys with the default strategy; switched later in the node's section
     try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode: "self" }); } finally { reloadBatteries(); }
     pinSection(kind, id);
+  };
+  const addPvAt = async (bus: number) => {
+    await api.addPv(bus, 5);
+    setPvBuses((prev) => (prev.includes(bus) ? prev : [...prev, bus]));
+    setDerStamp((v) => v + 1);
+    pinSection("bus", bus);
+  };
+  const addEvAt = async (bus: number) => {
+    await api.addEv(bus);
+    setEvBuses((prev) => (prev.includes(bus) ? prev : [...prev, bus]));
+    setDerStamp((v) => v + 1);
+    pinSection("bus", bus);
+  };
+  const removePvAt = async (bus: number) => {
+    const der = await api.nodeDer(bus);
+    if (der.pv) await api.removePv(der.pv.sgen);
+    setPvBuses((prev) => prev.filter((b) => b !== bus));
+    setDerStamp((v) => v + 1);
+  };
+  const removeEvAt = async (bus: number) => {
+    const der = await api.nodeDer(bus);
+    if (der.ev) await api.removeEv(der.ev.load);
+    setEvBuses((prev) => prev.filter((b) => b !== bus));
+    setDerStamp((v) => v + 1);
   };
   const changeBatteryMode = async (index: number, mode: BatteryMode) => {
     try {
@@ -286,12 +322,14 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         {layout === "map" ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
+                      evBuses={evBuses} pvBuses={pvBuses}
                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         ) : (
           <GridDiagram topo={topo} latest={frame} showValues={showValues} batteryBuses={batteryBuses}
                        onSelectBus={selectBus} selectedBuses={selBuses}
                        onSelectLine={selectLine} selectedLines={selLines}
                        onSelectTrafo={selectTrafo} selectedTrafos={selTrafos}
+                       evBuses={evBuses} pvBuses={pvBuses}
                        meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         )}
       </div>
@@ -301,8 +339,14 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           target={menu}
           hasBattery={!!menuBattery}
           hasMeter={menuMetered}
+          hasPv={menu.kind === "bus" && pvBuses.includes(menu.id)}
+          hasEv={menu.kind === "bus" && evBuses.includes(menu.id)}
           onGraph={() => pinSection(menu.kind, menu.id)}
           onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
+          onAddPv={() => { if (menu.kind === "bus") addPvAt(menu.id); }}
+          onAddEv={() => { if (menu.kind === "bus") addEvAt(menu.id); }}
+          onRemovePv={() => { if (menu.kind === "bus") removePvAt(menu.id); }}
+          onRemoveEv={() => { if (menu.kind === "bus") removeEvAt(menu.id); }}
           onRemoveBattery={() => menuBattery && removeBattery(menuBattery.index)}
           onPlaceMeter={() => placeMeterAt(menu.kind, menu.id)}
           onRemoveMeter={() => removeMeterAt(menu.kind, menu.id)}
@@ -397,13 +441,17 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           return (
             <Section key={key} title={elemTitle(sec.kind, sec.id)} open={sec.open}
                      badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : []),
-                              ...(sec.kind === "bus" && (topo.ev_buses ?? []).includes(sec.id) ? ["🔌"] : []),
-                              ...(sec.kind === "bus" && (topo.pv_buses ?? []).includes(sec.id) ? ["☀️"] : [])]}
+                              ...(sec.kind === "bus" && evBuses.includes(sec.id) ? ["🔌"] : []),
+                              ...(sec.kind === "bus" && pvBuses.includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
                      onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
-              {sec.kind === "bus" && <NodeProfile embedded bus={sec.id} name={name} now={nowFrac} day={curDay} />}
+              {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} />}
               {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} />}
               {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} />}
+
+              {sec.kind === "bus" && (evBuses.includes(sec.id) || pvBuses.includes(sec.id)) && (
+                <DerPanel bus={sec.id} stamp={derStamp} onChanged={() => setDerStamp((v) => v + 1)} />
+              )}
 
               {metered && (
                 <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>

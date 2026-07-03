@@ -274,6 +274,88 @@ def battery_profiles(idx: int):
 
 
 # --------------------------------------------------------------------------- #
+# Runtime-configurable DERs: PV size + EV charge window per node
+# --------------------------------------------------------------------------- #
+class PvRequest(BaseModel):
+    bus: int
+    kwp: float = 5.0
+
+
+class EvRequest(BaseModel):
+    bus: int
+    kw: float = 11.0
+    start_min: int = 18 * 60
+    dur_min: int = 120
+
+
+@app.get("/node/{bus}/der")
+def node_der(bus: int):
+    """The bus's configurable DERs (PV kWp, EV charge window), derived live
+    from the profile rows — LoadStudio-assigned systems are editable too."""
+    try:
+        return runtime.engine.sim.node_der(bus)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {bus}")
+
+
+@app.post("/pv")
+async def add_pv(req: PvRequest):
+    """Add a rooftop-PV system at a bus at runtime."""
+    try:
+        return runtime.engine.sim.add_pv(req.bus, req.kwp)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+
+
+@app.post("/pv/{sgen}")
+async def set_pv(sgen: int, kwp: float = Query(..., gt=0)):
+    """Rescale a PV system's peak power (kWp)."""
+    sim = runtime.engine.sim
+    if not sim.set_pv_kwp(sgen, kwp):
+        raise HTTPException(404, f"unknown PV system {sgen}")
+    return sim.node_der(int(sim.net.sgen.at[sgen, "bus"]))
+
+
+@app.delete("/pv/{sgen}")
+async def remove_pv(sgen: int):
+    """Remove a PV system."""
+    sim = runtime.engine.sim
+    bus = int(sim.net.sgen.at[sgen, "bus"]) if sgen in sim.net.sgen.index else None
+    if bus is None or not sim.remove_pv(sgen):
+        raise HTTPException(404, f"unknown PV system {sgen}")
+    return sim.node_der(bus)
+
+
+@app.delete("/ev/{load}")
+async def remove_ev(load: int):
+    """Remove an EV charging load."""
+    sim = runtime.engine.sim
+    bus = int(sim.net.load.at[load, "bus"]) if load in sim.net.load.index else None
+    if bus is None or not sim.remove_ev(load):
+        raise HTTPException(404, f"unknown EV load {load}")
+    return sim.node_der(bus)
+
+
+@app.post("/ev")
+async def add_ev(req: EvRequest):
+    """Add an EV home-charging load at a bus at runtime (1-4 h window)."""
+    try:
+        return runtime.engine.sim.add_ev(req.bus, req.kw, req.start_min, req.dur_min)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+
+
+@app.post("/ev/{load}")
+async def set_ev(load: int, start_min: int = Query(..., ge=0, lt=1440),
+                 dur_min: int = Query(..., ge=60, le=240)):
+    """Move an EV's charge window (start instant + 1-4 h duration)."""
+    sim = runtime.engine.sim
+    if not sim.set_ev(load, start_min, dur_min):
+        raise HTTPException(404, f"unknown EV load {load}")
+    return sim.node_der(int(sim.net.load.at[load, "bus"]))
+
+
+# --------------------------------------------------------------------------- #
 # Observability: measurement device placement (smart meters + transformer meters)
 # --------------------------------------------------------------------------- #
 def _measurements_response() -> dict:

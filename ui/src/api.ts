@@ -13,6 +13,7 @@ import type {
   LoadgenPolicy,
   MeasurementsResponse,
   MeterMode,
+  NodeDer,
   MeterPreset,
   NodeProfiles,
   PvDays,
@@ -88,6 +89,14 @@ export const api = {
   removeNodeMeter: (bus: number) => del<MeasurementsResponse>(`/measurements/node/${bus}`),
   placeTrafoMeter: (trafo: number) => post<MeasurementsResponse>("/measurements/trafo", { trafo }),
   removeTrafoMeter: (trafo: number) => del<MeasurementsResponse>(`/measurements/trafo/${trafo}`),
+  nodeDer: (bus: number) => get<NodeDer>(`/node/${bus}/der`),
+  addPv: (bus: number, kwp: number) => post<NodeDer>(`/pv`, { bus, kwp }),
+  setPv: (sgen: number, kwp: number) => post<NodeDer>(`/pv/${sgen}?kwp=${kwp}`),
+  addEv: (bus: number) => post<NodeDer>(`/ev`, { bus }),
+  setEv: (load: number, start_min: number, dur_min: number) =>
+    post<NodeDer>(`/ev/${load}?start_min=${start_min}&dur_min=${dur_min}`),
+  removePv: (sgen: number) => del<NodeDer>(`/pv/${sgen}`),
+  removeEv: (load: number) => del<NodeDer>(`/ev/${load}`),
   setBatteryMode: (index: number, mode: BatteryMode) =>
     post<BatteriesResponse>(`/battery/${index}/mode?name=${mode}`),
   meterPreset: (name: MeterPreset) =>
