@@ -149,6 +149,10 @@ button.ghost {
 .sec-head .sec-close { padding: 0 5px; font-size: 0.72rem; }
 .sec-body { padding: 2px 8px 8px; border-top: 1px solid var(--border); }
 
+/* EV / PV equipment icons on the map (pure decoration, never clickable) */
+.equip-icon { font-size: 11px; line-height: 1; white-space: nowrap; pointer-events: none;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+
 /* voltage-layer switch (MV / LV / both) below the basemap toggle */
 .map-layers { position: absolute; top: 46px; right: 10px; z-index: 650; display: flex; gap: 2px; }
 .map-layers button {

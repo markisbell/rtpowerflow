@@ -432,6 +432,11 @@ class Simulator:
             # bus indices hosting loads / PV — for the map underlay (houses, panels)
             "load_buses": sorted({int(b) for b in net.load["bus"].tolist()}),
             "sgen_buses": sorted({int(b) for b in net.sgen["bus"].tolist()}),
+            # equipment icons: buses with EV charging loads / rooftop-PV systems
+            "ev_buses": sorted({int(net.load.at[li, "bus"]) for li in net.load.index
+                                if "EV_" in str(net.load.at[li, "name"] or "")}),
+            "pv_buses": sorted({int(net.sgen.at[si, "bus"]) for si in net.sgen.index
+                                if "PV_" in str(net.sgen.at[si, "name"] or "")}),
             # LV cable cabinets (where service cables join the main line) → green circles
             "cabinet_buses": [i for i, b in enumerate(self.data.grid.buses)
                               if getattr(b, "kind", None) == "cabinet"],

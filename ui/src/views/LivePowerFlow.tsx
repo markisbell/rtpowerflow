@@ -393,7 +393,9 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           const live = bat ? batLive[bat.index] : undefined;
           return (
             <Section key={key} title={elemTitle(sec.kind, sec.id)} open={sec.open}
-                     badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : [])]}
+                     badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : []),
+                              ...(sec.kind === "bus" && (topo.ev_buses ?? []).includes(sec.id) ? ["🔌"] : []),
+                              ...(sec.kind === "bus" && (topo.pv_buses ?? []).includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
                      onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
               {sec.kind === "bus" && <NodeProfile embedded bus={sec.id} name={name} now={nowFrac} day={curDay} />}

@@ -148,6 +148,18 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       trafoRef.current.set(tr.id, cm);
     }
 
+    // equipment icons: EV charging / rooftop PV at a bus (never intercept clicks)
+    const evs = new Set(topo.ev_buses ?? []);
+    const pvs = new Set(topo.pv_buses ?? []);
+    for (const bus of topo.buses) {
+      const p = pos.get(bus.id);
+      if (!p) continue;
+      const tags = (evs.has(bus.id) ? "\u{1F50C}" : "") + (pvs.has(bus.id) ? "\u2600\uFE0F" : "");
+      if (!tags) continue;
+      L.marker(p, { icon: L.divIcon({ className: "equip-icon", html: tags, iconAnchor: [-3, 14] }),
+                    interactive: false, keyboard: false }).addTo(map);
+    }
+
     const pts = [...pos.values()];
     if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
     const timer = setTimeout(() => map.invalidateSize(), 80);
@@ -226,6 +238,8 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         radius: 6, color: "#0b0d11", weight: 1.5, fillColor: "#3fb950", fillOpacity: 1,
       }).addTo(map);
       m.bindTooltip(t("tip.battery", { bus: b.id }));
+      // the marker covers the bus — forward clicks so the node stays usable
+      m.on("click", (e) => onSelectRef.current?.(b.id, isAdditive(e), clickAt(e)));
       batteryRef.current.push(m);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,18 +253,23 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     meterRef.current = [];
     const busPos = new Map<number, [number, number]>();
     for (const b of topo.buses) if (b.geo) busPos.set(b.id, [b.geo[1], b.geo[0]]);
-    const ring = (at: [number, number], tip: string) => {
+    const ring = (at: [number, number], tip: string, onClick: (e: L.LeafletMouseEvent) => void) => {
       const m = L.circleMarker(at, {
         radius: 7, color: "#4c8dff", weight: 2, fill: false, opacity: 0.95,
       }).addTo(map);
       m.bindTooltip(tip);
+      // the ring covers its element — forward clicks so it stays usable
+      m.on("click", onClick);
       meterRef.current.push(m);
     };
-    for (const bus of meterBuses) { const p = busPos.get(bus); if (p) ring(p, t("tip.metered")); }
+    for (const bus of meterBuses) {
+      const p = busPos.get(bus);
+      if (p) ring(p, t("tip.metered"), (e) => onSelectRef.current?.(bus, isAdditive(e), clickAt(e)));
+    }
     for (const tr of topo.trafos) {
       if (!meterTrafos.includes(tr.id)) continue;
       const at = busPos.get(tr.lv_bus) ?? busPos.get(tr.hv_bus);
-      if (at) ring(at, t("tip.metered"));
+      if (at) ring(at, t("tip.metered"), (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e), clickAt(e)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topo, meterKey, i18n.language]);

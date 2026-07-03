@@ -394,6 +394,20 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           return <MeterBadge key={`mb${bid}`} x={p.x + 4} y={p.y - 11} />;
         })}
 
+        {/* equipment icons: EV charging / rooftop PV at a bus */}
+        {topo.buses.map((bus) => {
+          const p = pos.get(bus.id);
+          if (!p) return null;
+          const tags = ((topo.ev_buses ?? []).includes(bus.id) ? "\u{1F50C}" : "")
+                     + ((topo.pv_buses ?? []).includes(bus.id) ? "\u2600\uFE0F" : "");
+          if (!tags) return null;
+          return (
+            <text key={"eq" + bus.id} x={p.x + 5} y={p.y + 13} fontSize="8" pointerEvents="none">
+              {tags}
+            </text>
+          );
+        })}
+
         {/* battery markers (green cell to the upper-left of the bus) */}
         {[...new Set(batteryBuses)].map((bid) => {
           const p = pos.get(bid);
