@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { NodeProfiles, NodeSeriesKind } from "../types";
-import { voltageColor } from "../scales";
+import { voltageColor, V_BASE } from "../scales";
 import ProfileGraph, { type GSeries } from "./ProfileGraph";
 
 const COLOR: Record<NodeSeriesKind, string> = { residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950" };
 const VLIMIT = [
-  { value: 1.1, label: "1.10 pu", color: "#f85149" },
-  { value: 0.9, label: "0.90 pu", color: "#f85149" },
+  { value: 1.1, label: `${Math.round(1.1 * V_BASE)} V`, color: "#f85149" },
+  { value: 0.9, label: `${Math.round(0.9 * V_BASE)} V`, color: "#f85149" },
 ];
 
 // Per-node daily graph: power (residential/EV/PV load & generation) or voltage,
@@ -58,7 +58,7 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
           series={[{ label: t("node.voltageSeries"), color: "#c586ff", data: data.voltage, colorData: data.voltage, colorFn: voltageColor },
                    ...((data.est_voltage?.some((v) => v != null) ?? false)
                      ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_voltage! }] : [])]}
-          limits={VLIMIT} scale={1} unit="pu" dec={3} baseZero={false} now={now}
+          limits={VLIMIT} scale={V_BASE} unit="V" dec={1} baseZero={false} now={now}
         />
       )}
     </div>

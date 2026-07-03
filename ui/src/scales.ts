@@ -29,25 +29,28 @@ export function currentWidth(i_ka: number, maxIka: number): number {
   return 1 + 5 * Math.sqrt(Math.max(i_ka, 0) / maxIka);
 }
 
+/** Display base for voltages: 1.0 pu is shown as 230 V (German LV phase
+ *  voltage), so the EN 50160 band reads as the familiar 207...253 V. */
+export const V_BASE = 230;
+
 export function fmt(n: number | null | undefined, digits = 2): string {
   if (n == null) return "–";
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
-// ---- continuous colormaps matching ding0's plot_mv_topology -----------------
-// ding0 colors lines on matplotlib 'jet' by loading % (0..100) and nodes on
-// 'Reds' by voltage deviation. We reproduce both so the Map view looks like the
-// ding0 example plot while animating from live results.
+// ---- continuous colormaps for the map view ----------------------------------
+// Lines are colored green → amber → red by loading % (a continuous version of
+// the schematic's traffic-light scale — deliberately no blue, so an idle line
+// still reads as "healthy", not "cold"). Nodes use matplotlib 'Reds' by voltage
+// deviation, as in ding0's plot_mv_topology.
 
 type Stop = [number, [number, number, number]];
 
-const JET: Stop[] = [
-  [0.0, [0, 0, 143]],
-  [0.125, [0, 0, 255]],
-  [0.375, [0, 255, 255]],
-  [0.625, [255, 255, 0]],
-  [0.875, [255, 0, 0]],
-  [1.0, [128, 0, 0]],
+const LOADING: Stop[] = [
+  [0.0, [34, 197, 94]],     // idle .... green  (#22c55e)
+  [0.5, [245, 158, 11]],    // half .... amber  (#f59e0b)
+  [0.75, [249, 115, 22]],   // high .... orange (#f97316)
+  [1.0, [239, 68, 68]],     // full .... red    (#ef4444)
 ];
 
 const REDS: Stop[] = [
@@ -73,10 +76,10 @@ function ramp(stops: Stop[], t: number): string {
   return `rgb(${last[0]},${last[1]},${last[2]})`;
 }
 
-/** Line loading % -> 'jet' color (blue=idle … red=overload), as in ding0. */
-export function jetColor(pct: number | null | undefined): string {
+/** Line loading % -> green (idle) … amber … red (overload). */
+export function lineLoadingColor(pct: number | null | undefined): string {
   if (pct == null) return "rgb(120,120,120)";
-  return ramp(JET, pct / 100);
+  return ramp(LOADING, pct / 100);
 }
 
 /** Bus voltage [pu] -> 'Reds' by deviation from 1.0 (white=nominal, red=stressed). */
@@ -91,5 +94,5 @@ function gradientCss(stops: Stop[]): string {
   return `linear-gradient(to top, ${parts.join(", ")})`;
 }
 
-export const JET_GRADIENT = gradientCss(JET);
+export const LOADING_GRADIENT = gradientCss(LOADING);
 export const REDS_GRADIENT = gradientCss(REDS);

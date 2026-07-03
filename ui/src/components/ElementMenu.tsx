@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { BatteryMode } from "../types";
 
 export interface MenuTarget {
   kind: "bus" | "line" | "trafo";
@@ -11,18 +10,18 @@ export interface MenuTarget {
 }
 
 /** Context menu on a clicked grid element: view its daily profile, add/remove a
- *  battery (per strategy; a transformer's battery sits at its LV busbar) and
- *  place/remove a measurement. Lines only offer the profile. */
+ *  battery (strategy is switched later in the node's section; a transformer's
+ *  battery sits at its LV busbar) and place/remove a measurement. Lines only
+ *  offer the profile. */
 export default function ElementMenu({
-  target, hasBattery, hasMeter, modes,
+  target, hasBattery, hasMeter,
   onGraph, onAddBattery, onRemoveBattery, onPlaceMeter, onRemoveMeter, onClose,
 }: {
   target: MenuTarget;
   hasBattery: boolean;
   hasMeter: boolean;
-  modes: BatteryMode[];
   onGraph: () => void;
-  onAddBattery: (mode: BatteryMode) => void;
+  onAddBattery: () => void;
   onRemoveBattery: () => void;
   onPlaceMeter: () => void;
   onRemoveMeter: () => void;
@@ -53,14 +52,8 @@ export default function ElementMenu({
           : item(`📟 ${t("menu.addMeter")}`, onPlaceMeter))}
         {target.kind !== "line" && (hasBattery
           ? item(`🔋 ${t("menu.removeBattery")}`, onRemoveBattery)
-          : (
-            <>
-              <div className="menu-group">
-                {target.kind === "trafo" ? t("menu.addBatteryTrafo") : t("menu.addBattery")}
-              </div>
-              {modes.map((m) => item(`🔋 ${t(`bat.${m}`)}`, () => onAddBattery(m)))}
-            </>
-          ))}
+          : item(`🔋 ${target.kind === "trafo" ? t("menu.addBatteryTrafo") : t("menu.addBattery")}`,
+                 onAddBattery))}
       </div>
     </>
   );

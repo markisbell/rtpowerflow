@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
-import { fmt, loadingColor, voltageColor } from "../scales";
+import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
 import NodeProfile from "../components/NodeProfile";
@@ -149,11 +149,18 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const selectTrafo = onElemClick("trafo");
 
   // ---- equipment actions (from the menu / the element sections) ------------ //
-  const addBatteryAt = async (kind: SelKind, id: number, mode: BatteryMode) => {
+  const addBatteryAt = async (kind: SelKind, id: number) => {
     const bus = busForElement(kind, id);
     if (bus == null) return;
-    try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode }); } finally { reloadBatteries(); }
+    // deploys with the default strategy; switched later in the node's section
+    try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode: "self" }); } finally { reloadBatteries(); }
     pinSection(kind, id);
+  };
+  const changeBatteryMode = async (index: number, mode: BatteryMode) => {
+    try {
+      const r = await api.setBatteryMode(index, mode);
+      setBatteries(r.batteries);
+    } catch { reloadBatteries(); }
   };
   const removeBattery = async (idx: number) => {
     try { await api.removeBattery(idx); } finally { reloadBatteries(); }
@@ -168,6 +175,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     else if (kind === "trafo") setPlacement(await api.removeTrafoMeter(id));
   };
   const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
+  const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -262,17 +270,13 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             <span style={{ marginLeft: 6, display: "inline-flex", gap: 2 }}>
               {canReveal && (
                 <button className={mode === "truth" ? "on" : ""} title={t("live.revealTitle")}
-                        onClick={() => setViewMode("truth")}>
-                  👁 {t("live.reveal")}
+                        onClick={() => setViewMode(mode === "truth" ? "observed" : "truth")}>
+                  👁 {mode === "truth" ? t("live.reveal") : t("live.revealOff")}
                 </button>
               )}
-              <button className={mode === "observed" ? "on" : ""}
-                      onClick={() => setViewMode("observed")}>
-                {t("live.revealOff")}
-              </button>
               {est && (
                 <button className={mode === "est" ? "on" : ""} title={t("live.estimateTitle")}
-                        onClick={() => setViewMode("est")}>
+                        onClick={() => setViewMode(mode === "est" ? (canReveal ? "truth" : "observed") : "est")}>
                   🧮 {t("live.estimate")}
                 </button>
               )}
@@ -297,9 +301,8 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           target={menu}
           hasBattery={!!menuBattery}
           hasMeter={menuMetered}
-          modes={batModes.filter((m) => m !== "price" || batHasPrices)}
           onGraph={() => pinSection(menu.kind, menu.id)}
-          onAddBattery={(mode) => addBatteryAt(menu.kind, menu.id, mode)}
+          onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onRemoveBattery={() => menuBattery && removeBattery(menuBattery.index)}
           onPlaceMeter={() => placeMeterAt(menu.kind, menu.id)}
           onRemoveMeter={() => removeMeterAt(menu.kind, menu.id)}
@@ -326,7 +329,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               </div>
               <Stat label={t("live.vminmax")}
                     value={(() => { const v = est.buses.map((b) => b.vm_pu).filter((x): x is number => x != null);
-                                    return v.length ? `${fmt(Math.min(...v), 3)} / ${fmt(Math.max(...v), 3)} pu` : t("live.na"); })()} />
+                                    return v.length ? `${fmt(Math.min(...v) * V_BASE, 1)} / ${fmt(Math.max(...v) * V_BASE, 1)} V` : t("live.na"); })()} />
               <Stat label={t("live.maxLine")}
                     value={(() => { const v = est.lines.map((l) => l.loading_percent).filter((x): x is number => x != null);
                                     return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
@@ -336,7 +339,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
                                     return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
                     color={loadingColor(Math.max(0, ...est.trafos.map((tr) => tr.loading_percent ?? 0)))} />
               {est.error?.max_dv_pu != null && (
-                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * 1000, 2)} mpu`} />
+                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * V_BASE, 2)} V`} />
               )}
               <Stat label={t("live.estSolve")} value={`${fmt(est.solve_ms, 0)} ms`} />
             </>
@@ -346,7 +349,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
               <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
                 👁 {t("live.groundTruth")}
               </div>
-              <Stat label={t("live.vminmax")} value={`${fmt(s.vm_pu_min, 3)} / ${fmt(s.vm_pu_max, 3)} pu`} />
+              <Stat label={t("live.vminmax")} value={`${fmt(s.vm_pu_min * V_BASE, 1)} / ${fmt(s.vm_pu_max * V_BASE, 1)} V`} />
               <Stat label={t("live.maxLine")} value={`${fmt(s.max_line_loading_percent, 1)} %`} color={loadingColor(s.max_line_loading_percent)} />
               <Stat label={t("live.maxTrafo")} value={s.max_trafo_loading_percent != null ? `${fmt(s.max_trafo_loading_percent, 1)} %` : t("live.na")} color={loadingColor(s.max_trafo_loading_percent)} />
               <Stat label={t("live.totalLoad")} value={`${fmt(s.total_load_mw * 1000, 1)} kW`} />
@@ -358,7 +361,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             // observed only: aggregates over placed meters
             <>
               <Stat label={t("live.measuredVmm")}
-                    value={os?.vm_pu_min != null ? `${fmt(os.vm_pu_min, 3)} / ${fmt(os.vm_pu_max, 3)} pu` : t("live.na")} />
+                    value={os?.vm_pu_min != null && os?.vm_pu_max != null ? `${fmt(os.vm_pu_min * V_BASE, 1)} / ${fmt(os.vm_pu_max * V_BASE, 1)} V` : t("live.na")} />
               <Stat label={t("live.measuredTrafo")}
                     value={os?.max_trafo_loading_percent != null ? `${fmt(os.max_trafo_loading_percent, 1)} %` : t("live.na")}
                     color={loadingColor(os?.max_trafo_loading_percent)} />
@@ -379,7 +382,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
         {placement && (
           <Section title={t("meas.heading")} open={measOpen} onToggle={() => setMeasOpen((v) => !v)}
                    badges={[`📟 ${placement.coverage.n_node_meter + placement.coverage.n_trafo_meter}`]}>
-            <MeasurementPanel placement={placement} onPreset={meterPreset} />
+            <MeasurementPanel placement={placement} onPreset={meterPreset} onMode={meterMode} />
           </Section>
         )}
 
@@ -393,7 +396,9 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           const live = bat ? batLive[bat.index] : undefined;
           return (
             <Section key={key} title={elemTitle(sec.kind, sec.id)} open={sec.open}
-                     badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : [])]}
+                     badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : []),
+                              ...(sec.kind === "bus" && (topo.ev_buses ?? []).includes(sec.id) ? ["🔌"] : []),
+                              ...(sec.kind === "bus" && (topo.pv_buses ?? []).includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
                      onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
               {sec.kind === "bus" && <NodeProfile embedded bus={sec.id} name={name} now={nowFrac} day={curDay} />}
@@ -409,7 +414,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
                   </div>
                   <div className="muted" style={{ fontSize: "0.74rem", fontVariantNumeric: "tabular-nums" }}>
                     {sec.kind === "bus" && (nm
-                      ? [nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu, 3) }) : null,
+                      ? [nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu * V_BASE, 1) }) : null,
                          nm.p_mw != null ? t("tip.meterP", { v: fmt(nm.p_mw * 1000, 1) }) : null,
                          nm.q_mvar != null ? t("tip.meterQ", { v: fmt(nm.q_mvar * 1000, 1) }) : null,
                          nm.i_ka != null ? t("tip.meterI", { v: fmt(nm.i_ka * 1000, 1) }) : null,
@@ -424,15 +429,21 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
 
               {bat && (
                 <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem" }}>
-                    <span style={{ fontWeight: 600 }}>🔋 {t(`bat.${bat.mode}`)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>🔋</span>
+                    <select value={bat.mode} style={{ flex: 1, fontSize: "0.72rem" }}
+                            onChange={(e) => changeBatteryMode(bat.index, e.target.value as BatteryMode)}>
+                      {batModes.filter((m) => m !== "price" || batHasPrices).map((m) => (
+                        <option key={m} value={m}>{t(`bat.${m}`)}</option>
+                      ))}
+                    </select>
                     <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>
                       {bat.capacity_kwh} kWh · {bat.power_kw} kW
                     </span>
                   </div>
                   <Stat label={t("bat.soc")} value={`${fmt(live?.soc_percent ?? bat.soc_percent, 1)} %`} />
                   <Stat label={t("bat.pwr")} value={live ? `${fmt(live.p_mw * 1000, 2)} kW` : "—"} />
-                  <BatteryProfile embedded idx={bat.index} now={nowFrac} day={curDay} />
+                  <BatteryProfile embedded key={`${bat.index}-${bat.mode}`} idx={bat.index} now={nowFrac} day={curDay} />
                   <button className="ghost" style={{ fontSize: "0.68rem", padding: "1px 6px", marginTop: 4 }}
                           onClick={() => removeBattery(bat.index)}>{t("menu.removeBattery")}</button>
                 </div>

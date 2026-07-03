@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NodeMeasurement, StepResult, Topology, TrafoMeasurement } from "../types";
-import { currentWidth, loadingColor, voltageColor, fmt, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
+import { currentWidth, loadingColor, voltageColor, fmt, UNOBSERVED, UNOBSERVED_LINE, V_BASE } from "../scales";
 
 // stacked-feeder layout spacing (user units): horizontal per depth level, and the
 // vertical room for a feeder track + each leaf-load stub fanned below its node.
@@ -378,7 +378,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
                   isExt ? t("tip.slack", { name: bus.name }) : t("tip.bus", { name: bus.name }),
                   t("tip.kv", { v: bus.vn_kv }),
                   metered ? t("tip.metered") : isExt ? "" : vm == null ? t("tip.noMeter") : "",
-                  vm != null ? t("tip.vmPu", { v: fmt(vm, 4) }) : "",
+                  vm != null ? t("tip.vmPu", { v: fmt(vm * V_BASE, 1) }) : "",
                   metered && meas && meas.i_ka != null ? t("tip.meterI", { v: fmt(meas.i_ka * 1000, 1) }) : "",
                   t("tip.clickNode"),
                 ].filter(Boolean))
@@ -387,22 +387,20 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           );
         })}
 
-        {/* smart-meter badges at metered buses */}
-        {[...meteredBus].map((bid) => {
-          const p = pos.get(bid);
+        {/* equipment icon row per bus: battery \u00B7 meter \u00B7 EV charging \u00B7 PV \u2014
+            the same glyph language as the side-panel section badges */}
+        {topo.buses.map((bus) => {
+          const p = pos.get(bus.id);
           if (!p) return null;
-          return <MeterBadge key={`mb${bid}`} x={p.x + 4} y={p.y - 11} />;
-        })}
-
-        {/* battery markers (green cell to the upper-left of the bus) */}
-        {[...new Set(batteryBuses)].map((bid) => {
-          const p = pos.get(bid);
-          if (!p) return null;
+          const tags = (batteryBuses.includes(bus.id) ? "\u{1F50B}" : "")
+                     + (meteredBus.has(bus.id) ? "\u{1F4DF}" : "")
+                     + ((topo.ev_buses ?? []).includes(bus.id) ? "\u{1F50C}" : "")
+                     + ((topo.pv_buses ?? []).includes(bus.id) ? "\u2600\uFE0F" : "");
+          if (!tags) return null;
           return (
-            <g key={`bat${bid}`} pointerEvents="none">
-              <rect x={p.x - 12} y={p.y - 12} width={8} height={5} rx={1} fill="#3fb950" stroke="#0b0d11" strokeWidth={0.5} />
-              <rect x={p.x - 4.3} y={p.y - 10.5} width={1.3} height={2} fill="#3fb950" />
-            </g>
+            <text key={"eq" + bus.id} x={p.x + 5} y={p.y + 13} fontSize="8" pointerEvents="none">
+              {tags}
+            </text>
           );
         })}
 
@@ -424,13 +422,13 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
               if (!p) return null;
               const meas = measBus.get(bus.id);
               if (meteredBus.has(bus.id) && meas) {
-                const rows = [`${fmt(meas.vm_pu, 3)} pu`];
+                const rows = [meas.vm_pu != null ? `${fmt(meas.vm_pu * V_BASE, 0)} V` : "–"];
                 if (meas.p_mw != null && Math.abs(meas.p_mw) > 1e-4) rows.push(`${fmt(meas.p_mw * 1000, 0)} kW`);
                 return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} accent />;
               }
               const lb = revealTruth ? liveBusFull.get(bus.id) : undefined;
               if (!lb) return null;
-              const rows = [`${fmt(lb.vm_pu, 3)} pu`];
+              const rows = [`${fmt(lb.vm_pu * V_BASE, 0)} V`];
               if (Math.abs(lb.p_mw) > 1e-4) rows.push(`${fmt(lb.p_mw * 1000, 0)} kW`);
               return <ValueBox key={`vb${bus.id}`} x={p.x + 7} y={p.y} rows={rows} faded />;
             })}

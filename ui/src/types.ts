@@ -119,6 +119,8 @@ export interface Topology {
   load_buses: number[];
   sgen_buses: number[];
   cabinet_buses?: number[];
+  ev_buses?: number[];          // buses with EV charging loads
+  pv_buses?: number[];          // buses with rooftop-PV systems
   n_load: number;
   n_sgen: number;
   n_trafo: number;
@@ -217,10 +219,12 @@ export interface StepResult {
 }
 
 export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
+export type MeterMode = "full" | "standard";
 export interface MeasurementsResponse {
   node_buses: number[];
   trafo_idxs: number[];
   coverage: Coverage;
+  mode?: MeterMode;
   presets: MeterPreset[];
   expose_ground_truth: boolean;
 }

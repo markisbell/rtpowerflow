@@ -137,13 +137,13 @@ export default function ProfileGraph({
           return (
             <g key={"l" + s.label}>
               {/* whole day, faded when a "now" split is active (this is the future part) */}
-              <path d={full} fill="none" stroke={s.color} strokeWidth={1.5} opacity={nowF != null ? 0.25 : 0.92} />
+              <path d={full} fill="none" stroke={s.color} strokeWidth={0.75} opacity={nowF != null ? 0.25 : 0.92} />
               {/* opaque past overlay up to the current time, severity-colored if provided */}
               {nowF != null && (s.colorFn
                 ? pastSegs(s, nowF).map((sg, k) => (
-                    <path key={k} d={sg.d} fill="none" stroke={sg.col} strokeWidth={2} strokeLinejoin="round" />
+                    <path key={k} d={sg.d} fill="none" stroke={sg.col} strokeWidth={1} strokeLinejoin="round" />
                   ))
-                : <path d={pastPath(s, nowF)} fill="none" stroke={s.color} strokeWidth={2} />)}
+                : <path d={pastPath(s, nowF)} fill="none" stroke={s.color} strokeWidth={1} />)}
             </g>
           );
         })}
