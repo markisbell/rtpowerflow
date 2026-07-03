@@ -19,24 +19,25 @@ from .grid_inputs import GridInputs, _daily
 # first. The substation transformer is auto-sized to the smallest rating that
 # covers ~1.25x the grid's daily peak load (capped at the largest standard unit).
 MV_KV = 20.0
-_TRAFO_LADDER = [
-    (0.25, "0.25 MVA 20/0.4 kV"),
-    (0.40, "0.4 MVA 20/0.4 kV"),
-    (0.63, "0.63 MVA 20/0.4 kV"),
-]
+_TRAFO_SIZES = [0.25, 0.40, 0.63]     # pandapower ships these for 10 and 20 kV
 
 
-def _pick_trafo(peak_mw: float) -> tuple[str, float, int]:
+def _ladder(hv_kv: float) -> list[tuple[float, str]]:
+    hv = 10 if abs(hv_kv - 10.0) < 1e-6 else 20
+    return [(sn, f"{sn:g} MVA {hv}/0.4 kV") for sn in _TRAFO_SIZES]
+
+
+def _pick_trafo(need_mva: float, hv_kv: float = MV_KV) -> tuple[str, float, int]:
     """Return (std_type, total sn_mva, parallel count). Pick the smallest single
-    standard unit that covers ~1.25x the peak; if the peak exceeds the largest
-    standard distribution transformer, use parallel units of it (a dense grid
-    would in reality be fed by several substations)."""
-    need = peak_mw * 1.25
-    for sn, std in _TRAFO_LADDER:
-        if sn >= need:
+    standard unit that covers ``need_mva``; past the largest standard
+    distribution transformer, use parallel units of it (a dense grid would in
+    reality be fed by several substations)."""
+    ladder = _ladder(hv_kv)
+    for sn, std in ladder:
+        if sn >= need_mva:
             return std, sn, 1
-    sn, std = _TRAFO_LADDER[-1][0], _TRAFO_LADDER[-1][1]
-    parallel = max(1, math.ceil(need / sn))
+    sn, std = ladder[-1]
+    parallel = max(1, math.ceil(need_mva / sn))
     return std, sn * parallel, parallel
 
 
@@ -78,13 +79,20 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
     # Model the MV/LV substation transformer explicitly: the existing 0.4 kV
     # busbar (the grid's original slack) becomes the transformer's LV side, and a
     # new MV busbar (appended so existing bus indices are unchanged) is fed by the
-    # slack. The transformer is auto-sized to the coincident daily peak load.
+    # slack. Rating: an explicit `trafo` field (user-drawn gridedit grids carry
+    # the chosen unit) wins; otherwise auto-size to ~1.25x the coincident peak,
+    # in both cases snapped to the standard pandapower distribution units.
     lv_busbar = int(g["slack_bus"])
     peak_load_mw = max(total_p) if total_p else 0.0
-    std_type, sn_mva, parallel = _pick_trafo(peak_load_mw)
+    trafo_cfg = g.get("trafo") or {}
+    hv_kv = float(trafo_cfg.get("hv_kv", MV_KV))
+    if trafo_cfg.get("sn_kva"):
+        std_type, sn_mva, parallel = _pick_trafo(float(trafo_cfg["sn_kva"]) / 1000.0, hv_kv)
+    else:
+        std_type, sn_mva, parallel = _pick_trafo(peak_load_mw * 1.25, hv_kv)
     station_geo = g.get("station") or g["buses"][lv_busbar]["geo"]
     mv_bus = len(buses)
-    buses.append({"name": "MV_station", "vn_kv": MV_KV, "type": "b", "zone": "MV",
+    buses.append({"name": "MV_station", "vn_kv": hv_kv, "type": "b", "zone": "MV",
                   "in_service": True, "geo": station_geo, "kind": None})
     trafo_specs = [{"name": "MV/LV substation", "hv_bus": mv_bus, "lv_bus": lv_busbar,
                     "std_type": std_type, "parallel": parallel}]
@@ -95,10 +103,12 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
                                 "vm_pu": [1.0] * steps, "va_degree": [0.0] * steps}]}
 
     unit = f"{parallel}x {std_type}" if parallel > 1 else std_type
+    sizing = (f"rated {float(trafo_cfg['sn_kva']):.0f} kVA by the grid file"
+              if trafo_cfg.get("sn_kva")
+              else f"auto-sized to {peak_load_mw * 1000:.0f} kW coincident peak")
     notes = [f"OSM-routed LV grid '{name}': {len(buses)} buses, {len(line_specs)} "
              f"lines, {len(load_specs)} loads; cables follow real streets",
-             f"MV/LV substation transformer {unit} = {sn_mva * 1000:.0f} kVA "
-             f"(auto-sized to {peak_load_mw * 1000:.0f} kW coincident peak)"]
+             f"MV/LV substation transformer {unit} = {sn_mva * 1000:.0f} kVA ({sizing})"]
     return GridInputs(
         grid_structure={"name": name, "f_hz": 50.0, "buses": buses},
         lines=lines_doc, load=load_doc, generation=gen_doc,

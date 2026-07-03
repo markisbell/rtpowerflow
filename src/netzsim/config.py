@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ding0_dir: Path = Path("./data/ding0_grids")
     # Curated grid library manifest (MV/LV · size · rural/suburban/urban)
     grid_library: Path = Path("./data/grid_library.json")
+    # User-drawn grids (gridformat JSON exported by the sibling gridedit tool);
+    # scanned on every /grids listing, so new exports appear without a restart
+    user_grids_dir: Path = Path("./data/user_grids")
 
     # Cached LPG household load library (served by /loadgen)
     scenarios_dir: str = "./data/scenarios"  # saved live-setup recipes (JSON)

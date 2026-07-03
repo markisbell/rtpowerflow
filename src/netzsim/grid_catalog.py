@@ -39,15 +39,18 @@ class GridCatalog:
     """Lists importable grids and converts a chosen one to netzsim inputs on demand."""
 
     def __init__(self, ding0_dir: str | Path | None = None,
-                 library_manifest: str | Path | None = None):
+                 library_manifest: str | Path | None = None,
+                 user_dir: str | Path | None = None):
         self.ding0_dir = Path(ding0_dir) if ding0_dir else None
         self.manifest = Path(library_manifest) if library_manifest else None
+        self.user_dir = Path(user_dir) if user_dir else None
         self._entries: dict[str, GridEntry] = {}
         self._cache: dict[tuple[str, int], GridInputs] = {}
         if self.manifest and self.manifest.exists():
             self._load_manifest()
         elif self.ding0_dir and self.ding0_dir.exists():
             self._scan_ding0()
+        self._scan_user()
 
     def _load_manifest(self) -> None:
         data = json.loads(self.manifest.read_text())
@@ -87,15 +90,44 @@ class GridCatalog:
                     member=str(sub), source="ding0",
                 )
 
+    def _scan_user(self) -> None:
+        """User-drawn grids (gridformat JSON from the gridedit editor). Rescanned
+        on every listing so a fresh export appears without restarting netzsim;
+        entries whose file vanished are dropped."""
+        if not self.user_dir:
+            return
+        seen: set[str] = set()
+        if self.user_dir.exists():
+            for f in sorted(self.user_dir.glob("*.json")):
+                gid = f"user_{f.stem}"
+                seen.add(gid)
+                try:
+                    doc = json.loads(f.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                self._entries[gid] = GridEntry(
+                    id=gid, name=doc.get("name", f.stem),
+                    category="user · LV", member=str(f), source="user",
+                    voltage="LV", character="user",
+                    nodes=len(doc.get("buses", [])), osm_grid=str(f),
+                )
+        for gid in [g for g, e in self._entries.items()
+                    if e.source == "user" and g not in seen]:
+            del self._entries[gid]
+            self._cache = {k: v for k, v in self._cache.items() if k[0] != gid}
+
     @property
     def available(self) -> bool:
         return bool(self._entries)
 
     def has(self, grid_id: str) -> bool:
+        if grid_id not in self._entries and grid_id.startswith("user_"):
+            self._scan_user()
         return grid_id in self._entries
 
     def list(self) -> list[dict]:
         """Lightweight listing (counts filled in only once a grid is cached)."""
+        self._scan_user()
         out: list[dict] = []
         for e in self._entries.values():
             item: dict = {
@@ -106,7 +138,7 @@ class GridCatalog:
                 "voltage": e.voltage,
                 "character": e.character,
                 "nodes": e.nodes,
-                "geo": e.source in ("library", "ding0"),  # real lat/lon → map-capable
+                "geo": e.source in ("library", "ding0", "user"),  # real lat/lon → map-capable
                 "thumbnail": None,
             }
             cached = next((g for (gid, _), g in self._cache.items() if gid == e.id), None)
@@ -116,6 +148,8 @@ class GridCatalog:
         return out
 
     def get_inputs(self, grid_id: str, *, steps: int = 1440) -> GridInputs:
+        if grid_id not in self._entries and grid_id.startswith("user_"):
+            self._scan_user()
         if grid_id not in self._entries:
             raise KeyError(grid_id)
         key = (grid_id, steps)
