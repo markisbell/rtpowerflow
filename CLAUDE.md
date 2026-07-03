@@ -448,6 +448,21 @@ state estimation.
   bypass the observability layer; gate them too if strict end-to-end hiding is
   needed.
 
+### Scenarios (saved live setups for education/demos)
+
+A scenario is a **recipe, not a snapshot** (`scenarios.py`, files under
+`data/scenarios/*.json`, hand-editable): grid_id + the seeded loadgen policy
+(remembered in `runtime.active` since apply) + bus-addressed runtime DER ops
+(`Simulator.der_log`, coalesced; add+remove cancels) + battery/meter snapshots +
+the engine clock. `POST /scenarios` saves the current setup, `POST
+/scenarios/{id}/load` replays the chain (apply → `apply_der_op` per entry,
+tolerant → batteries → meters → seek day/step → run), `GET/DELETE /scenarios…`
+manage. UI: "Szenarien" section in the Live side panel. SOC is not captured
+(demos start at 50 %). Robustness note: runtime mutations can race the engine's
+solve (no locks by user decision) — `run_step`'s ladder therefore catches ANY
+exception (a poisoned step = one non-converged frame, `_solved_once=False`,
+self-heals next step) instead of letting the engine task die.
+
 ### State estimation (the operator's *calculated* view)
 
 `estimator.py` adds the third layer beside reality and observation: **WLS state

@@ -13,6 +13,7 @@ import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import DerPanel from "../components/DerPanel";
+import ScenarioPanel from "../components/ScenarioPanel";
 import Section from "../components/Section";
 import { gridDisplayName } from "../gridname";
 
@@ -34,6 +35,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [ovOpen, setOvOpen] = useState(true);          // "Overview" section
   const [measOpen, setMeasOpen] = useState(false);     // bulk "Measurements" section
+  const [scenOpen, setScenOpen] = useState(false);     // "Scenarios" section
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
@@ -212,6 +214,18 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   };
   const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
   const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
+  // a scenario load swaps the whole setup server-side: refetch everything
+  const scenarioLoaded = () => {
+    setSections([]);
+    setMenu(null);
+    loadTopo();
+    loadStatus();
+    reloadBatteries();
+    reloadMeasurements();
+    api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
+    setDerStamp((v) => v + 1);
+    onActive();
+  };
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -429,6 +443,10 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             <MeasurementPanel placement={placement} onPreset={meterPreset} onMode={meterMode} />
           </Section>
         )}
+
+        <Section title={t("scen.heading")} open={scenOpen} onToggle={() => setScenOpen((v) => !v)}>
+          <ScenarioPanel onLoaded={scenarioLoaded} />
+        </Section>
 
         {sections.map((sec) => {
           const key = `${sec.kind}${sec.id}`;

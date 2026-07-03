@@ -14,6 +14,7 @@ import type {
   MeasurementsResponse,
   MeterMode,
   NodeDer,
+  Scenario,
   MeterPreset,
   NodeProfiles,
   PvDays,
@@ -89,6 +90,12 @@ export const api = {
   removeNodeMeter: (bus: number) => del<MeasurementsResponse>(`/measurements/node/${bus}`),
   placeTrafoMeter: (trafo: number) => post<MeasurementsResponse>("/measurements/trafo", { trafo }),
   removeTrafoMeter: (trafo: number) => del<MeasurementsResponse>(`/measurements/trafo/${trafo}`),
+  scenarios: () => get<{ scenarios: Scenario[] }>("/scenarios"),
+  saveScenario: (name: string, description: string) =>
+    post<{ id: string }>("/scenarios", { name, description }),
+  loadScenario: (id: string) =>
+    post<{ status: EngineStatus; active: ActiveGrid; network: Topology }>(`/scenarios/${id}/load`),
+  deleteScenario: (id: string) => del<{ deleted: string }>(`/scenarios/${id}`),
   nodeDer: (bus: number) => get<NodeDer>(`/node/${bus}/der`),
   addPv: (bus: number, kwp: number) => post<NodeDer>(`/pv`, { bus, kwp }),
   setPv: (sgen: number, kwp: number) => post<NodeDer>(`/pv/${sgen}?kwp=${kwp}`),

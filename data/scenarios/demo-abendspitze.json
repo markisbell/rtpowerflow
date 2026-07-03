@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "created": "2026-07-03T21:08:03",
+  "name": "Demo Abendspitze",
+  "description": "PV 15 kWp, EV 21:30, Batterie peak",
+  "grid_id": "lv_rural_3150_300266",
+  "loadgen": {
+    "archetypes": null,
+    "mode": "round_robin",
+    "seed": 0,
+    "scale": 1.0,
+    "power_factor": 0.95,
+    "jitter_minutes": 0,
+    "ev_penetration": 0.3,
+    "ev_charger_kw": 11.0,
+    "ev_daily_kwh": 8.0,
+    "pv_penetration": 0.3,
+    "pv_kwp": 5.0
+  },
+  "der_ops": [
+    {
+      "op": "add_pv",
+      "bus": 5,
+      "kwp": 15.0
+    },
+    {
+      "op": "add_ev",
+      "bus": 7,
+      "kw": 11.0,
+      "start_min": 1290,
+      "dur_min": 210
+    }
+  ],
+  "batteries": [
+    {
+      "bus": 5,
+      "capacity_kwh": 20.0,
+      "power_kw": 8.0,
+      "mode": "peak"
+    }
+  ],
+  "measurements": {
+    "node_buses": [
+      0
+    ],
+    "trafo_idxs": [
+      0
+    ],
+    "mode": "standard"
+  },
+  "engine": {
+    "day": 0,
+    "step": 1171,
+    "interval_seconds": 1.0
+  }
+}

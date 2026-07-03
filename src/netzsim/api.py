@@ -16,6 +16,7 @@ from .battery import MODES
 from .grid_catalog import GridCatalog, preview
 from .measurements import METER_MODES, PRESETS
 from .realpv import load_prices, load_pv_days
+from .scenarios import ScenarioStore
 from .loadgen import (
     AssignPolicy,
     EvPolicy,
@@ -271,6 +272,142 @@ def battery_profiles(idx: int):
     if prof is None:
         raise HTTPException(404, f"no battery with index {idx}")
     return prof
+
+
+# --------------------------------------------------------------------------- #
+# Scenarios: save the configured live setup as a recipe file; load it back
+# --------------------------------------------------------------------------- #
+class ScenarioSaveRequest(BaseModel):
+    name: str
+    description: str = ""
+
+
+def _scenario_store() -> ScenarioStore:
+    return ScenarioStore(settings.scenarios_dir)
+
+
+@app.get("/scenarios")
+def scenarios_list():
+    """Saved scenarios (name, description, grid, created)."""
+    return {"scenarios": _scenario_store().list()}
+
+
+@app.post("/scenarios")
+async def scenarios_save(req: ScenarioSaveRequest):
+    """Save the CURRENT live setup as a scenario recipe: grid + loadgen policy
+    + runtime DER ops + batteries + meters + the engine clock."""
+    if not req.name.strip():
+        raise HTTPException(422, "scenario name must not be empty")
+    sim = runtime.engine.sim
+    st = runtime.engine.status
+    doc = {
+        "name": req.name.strip(),
+        "description": req.description.strip(),
+        "grid_id": runtime.active.get("grid_id"),
+        "loadgen": runtime.active.get("loadgen"),
+        "der_ops": list(sim.der_log),
+        "batteries": [{"bus": b.bus, "capacity_kwh": round(b.capacity_mwh * 1000, 3),
+                       "power_kw": round(b.power_mw * 1000, 3), "mode": b.mode}
+                      for b in sim.batteries],
+        "measurements": {"node_buses": sorted(sim.meters.node_buses),
+                         "trafo_idxs": sorted(sim.meters.trafo_idxs),
+                         "mode": sim.meters.mode},
+        "engine": {"day": st["day"], "step": st["step"],
+                   "interval_seconds": st["interval_seconds"]},
+    }
+    sid = _scenario_store().write(doc)
+    return {"id": sid, **{k: doc[k] for k in ("name", "description", "grid_id")}}
+
+
+@app.delete("/scenarios/{sid}")
+async def scenarios_delete(sid: str):
+    if not _scenario_store().delete(sid):
+        raise HTTPException(404, f"unknown scenario '{sid}'")
+    return {"deleted": sid}
+
+
+@app.post("/scenarios/{sid}/load")
+async def scenarios_load(sid: str):
+    """Replay a scenario recipe: apply grid + loads, then the runtime layers
+    (DER ops, batteries, meters), seek to the stored clock and run."""
+    doc = _scenario_store().read(sid)
+    if doc is None:
+        raise HTTPException(404, f"unknown scenario '{sid}'")
+
+    # 1) grid + load configuration (the deterministic base)
+    gid = doc.get("grid_id")
+    n_ev = n_pv = 0
+    load_source = "placeholder"
+    notes: list = []
+    try:
+        if gid:
+            if not runtime.catalog.has(gid):
+                raise HTTPException(409, f"scenario references unknown grid '{gid}'")
+            g = runtime.catalog.get_inputs(gid, steps=settings.steps_per_day)
+            notes = g.notes
+            gen_doc = g.generation
+            policy = LoadgenPolicy(**doc["loadgen"]) if doc.get("loadgen") else None
+            if policy is not None:
+                assigned = _assigned_load_doc(g, policy)
+                load_doc = {k: assigned[k] for k in ("resolution_minutes", "steps", "loads")}
+                load_source = "lpg"
+                n_ev = assigned["n_ev"]
+                pv = _pv_gen_doc(g, policy)
+                if pv is not None:
+                    gen_doc = pv
+                    n_pv = len(pv["generation"])
+            else:
+                load_doc = g.load
+            data = input_data_from_dicts(g.grid_structure, g.lines, load_doc,
+                                         gen_doc, g.substation)
+        else:
+            data = load_inputs(settings.data_dir)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(400, f"failed to load scenario '{sid}': {exc}")
+
+    await runtime.engine.reconfigure(data, autostart=False)
+    sim = runtime.engine.sim
+
+    # 2) runtime layers, tolerant per entry (a hand-edited file may not match)
+    for op in doc.get("der_ops", []):
+        try:
+            sim.apply_der_op(op)
+        except Exception:  # noqa: BLE001
+            log.warning("scenario '%s': skipped DER op %s", sid, op)
+    for b in doc.get("batteries", []):
+        try:
+            sim.add_battery(int(b["bus"]), float(b.get("capacity_kwh", 10.0)),
+                            float(b.get("power_kw", 5.0)), b.get("mode", "self"))
+        except Exception:  # noqa: BLE001
+            log.warning("scenario '%s': skipped battery %s", sid, b)
+    m = doc.get("measurements") or {}
+    sim.meters.clear()
+    for bus in m.get("node_buses", []):
+        sim.meters.add_node(int(bus))
+    for tr in m.get("trafo_idxs", []):
+        sim.meters.add_trafo(int(tr))
+    sim.meters.prune(sim.net)
+    if m.get("mode") in ("full", "standard"):
+        sim.meters.set_mode(m["mode"])
+
+    # 3) the engine clock, then run
+    eng = doc.get("engine") or {}
+    if eng.get("interval_seconds"):
+        runtime.engine.set_interval(min(max(float(eng["interval_seconds"]), 0.1), 1.0))
+    runtime.engine.seek_day(int(eng.get("day", 0)))
+    runtime.engine.seek(int(eng.get("step", 0)))
+    runtime.engine.start_loop()
+
+    topo = sim.topology()
+    runtime.active = _active_meta(
+        topo, grid_id=gid, source="scenario",
+        category=runtime.catalog._entries[gid].category if gid and runtime.catalog.has(gid) else None,
+        notes=notes)
+    runtime.active.update(load_source=load_source, n_ev=n_ev, n_pv=n_pv,
+                          loadgen=doc.get("loadgen"), scenario=doc.get("name"))
+    return {"status": runtime.engine.status, "active": runtime.active, "network": topo}
 
 
 # --------------------------------------------------------------------------- #
@@ -612,7 +749,8 @@ async def config_apply(req: ApplyGridRequest):
         topo, grid_id=req.grid_id, source="catalog",
         category=runtime.catalog._entries[req.grid_id].category, notes=g.notes,
     )
-    runtime.active.update(load_source=load_source, n_ev=n_ev, n_pv=n_pv)
+    runtime.active.update(load_source=load_source, n_ev=n_ev, n_pv=n_pv,
+                          loadgen=req.loadgen.model_dump() if req.loadgen else None)
     return {"status": runtime.engine.status, "active": runtime.active, "network": topo}
 
 
