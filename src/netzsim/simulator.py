@@ -1,6 +1,7 @@
 """The core: apply one time step's profiles to the net and solve the power flow."""
 from __future__ import annotations
 
+import copy
 import math
 import time
 from dataclasses import dataclass, field
@@ -631,7 +632,13 @@ class Simulator:
         cached = self._daily_by_day.get(d)
         if cached is not None and cached.get("_sig") == sig:
             return cached
-        net, prof = build_network(self.data)          # isolated from self.net
+        # Snapshot the LIVE net (not a rebuild from the input data): runtime
+        # DER changes — added/resized PV, EV windows, removals — exist only on
+        # the live net/profiles, and self._loads_at/_sgens_at row indices refer
+        # to self.prof. The sweep only reads prof and re-solves on its copy.
+        net = copy.deepcopy(self.net)
+        net.storage.drop(net.storage.index, inplace=True)  # batteries recreated fresh below
+        prof = self.prof
         sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
         spd = self.steps_per_day
         n = max(2, min(samples, spd))

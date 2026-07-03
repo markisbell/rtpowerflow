@@ -67,6 +67,27 @@ def test_remove_pv_and_ev():
     assert not sim.remove_pv(9999) and not sim.remove_ev(9999)
 
 
+def test_daily_graphs_survive_runtime_der_changes():
+    """Regression: the daily sweep used to rebuild its net from the ORIGINAL
+    input data, so runtime-added DERs made the rebuilt bus-row maps point past
+    the sweep's smaller profile arrays (IndexError -> 500 on /line/{}/profiles).
+    The sweep must snapshot the live net and include runtime DERs."""
+    sim = _sim()
+    sim.add_ev(2, kw=11.0, start_min=20 * 60, dur_min=120)
+    sim.add_pv(3, kwp=8.0)
+    sim.meters.apply_preset("all_nodes", sim.net)   # meters -> sweep runs the estimator
+    lp = sim.line_profiles(1)                       # crashed before the fix
+    assert lp["current"] and lp["est_current"] is not None
+    # the sweep sees the runtime EV: its bus load peaks during the charge window
+    np_ = sim.node_profiles(2)
+    ev_series = [srs for srs in np_["series"] if srs["kind"] == "ev"]
+    assert ev_series and max(v for v in ev_series[0]["p_mw"] if v is not None) > 0.01
+    # removal keeps the sweep consistent too
+    ev = sim.node_der(2)["ev"]
+    sim.remove_ev(ev["load"])
+    assert sim.line_profiles(1)["current"]
+
+
 def test_der_mutation_invalidates_caches():
     sim = _sim()
     sim.daily_curves(0)
