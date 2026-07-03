@@ -94,3 +94,31 @@ def test_district_solves_within_limits(district):
     assert s["vm_pu_max"] <= 1.10, f"vmax={s['vm_pu_max']:.3f}"
     assert s["max_trafo_loading_percent"] is not None
     assert s["n_bus"] == len(district.grid_structure["buses"])
+
+
+def test_district_2279_lpg_step2_converges(catalog):
+    """Regression: district 2279 + LPG loads stalled plain Newton-Raphson on a
+    healthy operating point (zero-impedance ding0 busbar links + dc-based init
+    oscillate at certain 1-min load patterns; hundreds of steps/day failed).
+    run_step's retry ladder (warm → flat → Iwamoto) must converge it."""
+    lpg_dir = ROOT / "data" / "lpg_library"
+    if not (lpg_dir / "index.json").exists():
+        pytest.skip("no LPG library in the dataset")
+    from netzsim.loadgen import AssignPolicy, LoadLibrary, assign_to_loads
+
+    g = catalog.get_inputs("mv_suburban_2279", steps=1440)
+    lib = LoadLibrary(lpg_dir)
+    hh = [ld for ld in g.load["loads"] if ld.get("household", True)]
+    fx = [ld for ld in g.load["loads"] if not ld.get("household", True)]
+    doc = assign_to_loads(hh, lib, AssignPolicy(seed=0), steps=1440)
+    loads = doc["loads"] + [{k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar") if k in ld} for ld in fx]
+    data = input_data_from_dicts(
+        g.grid_structure, g.lines,
+        {"resolution_minutes": 1, "steps": 1440, "loads": loads},
+        g.generation, g.substation)
+
+    sim = Simulator(data)
+    for step in (2, 3, 4, 11, 14):                # previously non-converging
+        res = sim.run_step(step)
+        assert res.converged, f"step {step} did not converge"
+        assert res.summary["vm_pu_min"] >= 0.90

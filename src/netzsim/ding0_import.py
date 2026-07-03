@@ -218,12 +218,19 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
             continue  # unknown bus or self-loop (from a merged switch)
         length = max(_num(r["length"]), 1.0e-4)
         s_nom = _num(r.get("s_nom"))
+        rr, xx = _num(r["r"]), _num(r["x"])
+        # ding0 exports logical busbar links as (near-)zero-impedance lines
+        # (down to ~1e-8 Ω). One such branch ruins the Ybus conditioning and
+        # Newton-Raphson then stalls on perfectly healthy operating points.
+        # Give them ~1 mΩ — a metre of busbar, electrically negligible.
+        if math.hypot(rr, xx) < 1.0e-3:
+            rr = xx = 1.0e-3
         line_specs.append({
             "name": str(r["name"]),
             "from_bus": bus_index[b0], "to_bus": bus_index[b1],
             "length_km": round(length, 6),
-            "r_ohm_per_km": round(_num(r["r"]) / length, 6),
-            "x_ohm_per_km": round(_num(r["x"]) / length, 6),
+            "r_ohm_per_km": round(rr / length, 6),
+            "x_ohm_per_km": round(xx / length, 6),
             "c_nf_per_km": 0.0,
             "max_i_ka": round(s_nom / (math.sqrt(3) * vn[b0]), 6) if s_nom > 0 and vn[b0] else 1.0,
             "parallel": int(_num(r.get("num_parallel"), 1)) or 1,
