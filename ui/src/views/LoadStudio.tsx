@@ -4,6 +4,7 @@ import { api } from "../api";
 import type { ActiveGrid, Archetype, AssignResponse, LoadgenPolicy } from "../types";
 import { fmt } from "../scales";
 import Sparkline from "../components/Sparkline";
+import { gridDisplayName } from "../gridname";
 
 interface Props {
   gridId: string;
@@ -86,7 +87,7 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
       <div className="controls">
         <h2 style={{ marginTop: 0 }}>{t("loads.title")}</h2>
         <p className="muted" style={{ fontSize: "0.82rem" }}>
-          {t("loads.subtitle", { grid: gridId })}
+          {t("loads.subtitle", { grid: gridDisplayName(gridId, gridId, t) })}
         </p>
 
         {!available && <p className="note">{t("loads.noLpg")}</p>}
@@ -98,7 +99,7 @@ export default function LoadStudio({ gridId, onApplied }: Props) {
               {archetypes.map((a) => (
                 <label className="arch-row" key={a.id}>
                   <input type="checkbox" checked={chosen.has(a.id)} onChange={() => toggle(a.id)} />
-                  <span style={{ flex: 1 }}>{a.label}</span>
+                  <span style={{ flex: 1 }}>{t(`arch.${a.id}`, { defaultValue: a.label })}</span>
                   <span className="muted">{t("loads.kwhYr", { kwh: fmt(a.annual_kwh, 0) })}</span>
                 </label>
               ))}

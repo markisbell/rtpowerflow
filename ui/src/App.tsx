@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "./api";
 import type { ActiveGrid } from "./types";
+import { gridDisplayName } from "./gridname";
 import GridBrowser from "./views/GridBrowser";
 import LoadStudio from "./views/LoadStudio";
 import LivePowerFlow from "./views/LivePowerFlow";
@@ -40,7 +41,7 @@ export default function App() {
         <div className="active-chip">
           {active?.grid_id ? (
             <>
-              <span className="dot" /> {active.name}
+              <span className="dot" /> {gridDisplayName(active.grid_id, active.name, t)}
               <span className="muted">
                 {" "}
                 · {active.n_bus} {t("app.busShort")} · {active.load_source ?? "—"} {t("app.loadsShort")}

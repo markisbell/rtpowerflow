@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { GridListItem, GridPreview, GridsResponse } from "../types";
 import { fmt } from "../scales";
+import { gridDisplayName } from "../gridname";
 
 interface Props {
   selected: string | null;
@@ -133,7 +134,7 @@ export default function GridBrowser({ selected, onSelect, onContinue }: Props) {
         {loadingPreview && <div className="spinner">{t("grid.building")}</div>}
         {preview && (
           <>
-            <h3 style={{ marginTop: 0 }}>{preview.name}</h3>
+            <h3 style={{ marginTop: 0 }}>{gridDisplayName(selected, preview.name, t)}</h3>
             <div className="kpis">
               <Kpi k={t("grid.kBuses")} v={preview.n_bus} />
               <Kpi k={t("grid.kLines")} v={preview.n_line} />
@@ -170,7 +171,7 @@ function GridCard({ g, selected, onClick }: { g: GridListItem; selected: boolean
   return (
     <div className={`card grid-card${selected ? " sel" : ""}`} onClick={onClick}>
       <div className="meta">
-        <div className="title">{g.name}</div>
+        <div className="title">{gridDisplayName(g.id, g.name, t)}</div>
         <div className="sub">
           <span className="tag">{g.voltage}</span>
           <span className="tag">{g.character ? t(`grid.${g.character}`) : ""}</span>

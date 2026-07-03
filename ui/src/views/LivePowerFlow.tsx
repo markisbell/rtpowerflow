@@ -13,6 +13,7 @@ import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import Section from "../components/Section";
+import { gridDisplayName } from "../gridname";
 
 type Layout = "map" | "tree";
 type SelKind = "bus" | "line" | "trafo";
@@ -39,6 +40,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
+  const [gridId, setGridId] = useState<string | null>(null);   // active grid id -> localized name
   // Ground truth is shown by default so a fresh session sees a normal, colored
   // grid; the strict observed-only view (grey unmetered elements) is opt-in via
   // the eye toggle — otherwise the app boots into a near-invisible grid.
@@ -60,6 +62,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
     loadStatus();
     onActive();
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
+    api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadBatteries();
     reloadMeasurements();
     const t = setInterval(loadStatus, 2000);
@@ -290,7 +293,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
           {latest && !latest.converged && <span className="note">{t("live.notConverged")}</span>}
         </div>
         <div className="muted" style={{ fontSize: "0.75rem", marginBottom: "0.2rem" }}>
-          {t("live.gridInfo", { name: topo.name, buses: topo.buses.length, ws: wsStatus })}
+          {t("live.gridInfo", { name: gridDisplayName(gridId, topo.name, t), buses: topo.buses.length, ws: wsStatus })}
         </div>
 
         <Section title={t("sec.overview")} open={ovOpen} onToggle={() => setOvOpen((v) => !v)}>
