@@ -81,7 +81,11 @@ def test_grid_library_catalog_lists_and_converts_scopes():
     g = cat.get_inputs(mv["id"], steps=96)
     p = preview(g)
     assert p["n_bus"] >= 1 and len(p["buses"]) == p["n_bus"]
-    assert all(b["vn_kv"] > 1.0 for b in p["buses"])  # MV scope keeps only MV buses
+    # an MV entry builds the interconnected district: the 20 kV ring plus the
+    # street-routed 0.4 kV subgrids spliced at their station transformers
+    assert any(b["vn_kv"] > 1.0 for b in p["buses"])
+    assert any(b["vn_kv"] <= 1.0 for b in p["buses"])
+    assert p["n_trafo"] >= 1
 
     lv = next((it for it in listing if it["voltage"] == "LV"), None)
     if lv is not None:
