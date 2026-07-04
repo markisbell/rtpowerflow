@@ -109,6 +109,11 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
     notes = [f"OSM-routed LV grid '{name}': {len(buses)} buses, {len(line_specs)} "
              f"lines, {len(load_specs)} loads; cables follow real streets",
              f"MV/LV substation transformer {unit} = {sn_mva * 1000:.0f} kVA ({sizing})"]
+    # user-drawn grids carry their E-Check verdict — surface a failed one
+    echeck = g.get("echeck")
+    if echeck and not echeck.get("ok", True):
+        fails = ", ".join(echeck.get("failures", [])) or "unknown"
+        notes.append(f"E-Check FAIL: {fails}")
     return GridInputs(
         grid_structure={"name": name, "f_hz": 50.0, "buses": buses},
         lines=lines_doc, load=load_doc, generation=gen_doc,

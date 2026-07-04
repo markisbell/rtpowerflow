@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .config import settings
 from .data_loader import input_data_from_dicts, load_inputs
@@ -224,10 +224,10 @@ def _battery_dict(b) -> dict:
 
 class BatteryRequest(BaseModel):
     bus: int
-    capacity_kwh: float = 10.0
-    power_kw: float = 5.0
+    capacity_kwh: float = Field(10.0, gt=0, le=1000)
+    power_kw: float = Field(5.0, gt=0, le=500)
     mode: str = "self"
-    soc0: float = 0.5
+    soc0: float = Field(0.5, ge=0, le=1)
 
 
 @app.get("/batteries")
@@ -416,14 +416,14 @@ async def scenarios_load(sid: str):
 # --------------------------------------------------------------------------- #
 class PvRequest(BaseModel):
     bus: int
-    kwp: float = 5.0
+    kwp: float = Field(5.0, gt=0, le=100)
 
 
 class EvRequest(BaseModel):
     bus: int
-    kw: float = 11.0
-    start_min: int = 18 * 60
-    dur_min: int = 120
+    kw: float = Field(11.0, gt=0, le=50)
+    start_min: int = Field(18 * 60, ge=0, lt=1440)
+    dur_min: int = Field(120, ge=60, le=240)
 
 
 @app.get("/node/{bus}/der")
@@ -594,15 +594,15 @@ def grid_preview(grid_id: str):
 class LoadgenPolicy(BaseModel):
     archetypes: list[str] | None = None
     mode: str = "round_robin"          # "round_robin" | "random"
-    seed: int = 0
-    scale: float = 1.0
-    power_factor: float = 0.95
-    jitter_minutes: int = 0
-    ev_penetration: float = 0.0        # fraction of homes with an EV (synthetic)
-    ev_charger_kw: float = 11.0        # wallbox power
-    ev_daily_kwh: float = 8.0          # mean energy charged per day
-    pv_penetration: float = 0.0        # fraction of load buses with rooftop PV
-    pv_kwp: float = 5.0                # peak kW per PV system
+    seed: int = Field(0, ge=0)
+    scale: float = Field(1.0, gt=0, le=10)
+    power_factor: float = Field(0.95, ge=0.5, le=1.0)
+    jitter_minutes: int = Field(0, ge=0, le=120)
+    ev_penetration: float = Field(0.0, ge=0, le=1)   # fraction of homes with an EV
+    ev_charger_kw: float = Field(11.0, gt=0, le=50)  # wallbox power
+    ev_daily_kwh: float = Field(8.0, gt=0, le=100)   # mean energy charged per day
+    pv_penetration: float = Field(0.0, ge=0, le=1)   # fraction of load buses with PV
+    pv_kwp: float = Field(5.0, gt=0, le=100)         # peak kW per PV system
 
 
 def _assign_policy(p: LoadgenPolicy) -> AssignPolicy:
@@ -644,6 +644,7 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     n_ev = 0
+    ev_buses: set[int] = set()
     if policy.ev_penetration > 0:
         ev = assign_ev(
             households,
@@ -653,6 +654,10 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
         )
         doc["loads"] = doc["loads"] + ev["loads"]
         n_ev = len(ev["loads"])
+        ev_buses = {int(ld["bus"]) for ld in ev["loads"]}
+    # flag each household assignment that got an EV (the UI contract carries it)
+    doc["assignments"] = [dict(a, ev=int(a["bus"]) in ev_buses)
+                          for a in doc["assignments"]]
     fixed = [ld for ld in g.load["loads"] if not ld.get("household", True)]
     doc["loads"] = doc["loads"] + [
         {k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar") if k in ld} for ld in fixed]
