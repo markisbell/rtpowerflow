@@ -321,11 +321,16 @@ provisioned datasource + dashboard, all in compose.
   `/state` payload (sample: 11 points/step = 1 summary + 5 bus + 4 line +
   1 ext_grid; **+1 `trafo` point per transformer** on grids that have one).
 - ✅ All YAML + dashboard JSON parse.
+- ✅ All three **Docker images build** (locally on Docker 29 and in CI: the
+  `docker` GitHub Actions workflow builds netzsim/ui/collector on every push/PR,
+  runs the backend pytest suite first, and publishes to GHCR on master/tags).
+  A standalone `docker run` of the netzsim image was smoke-tested (`/health`,
+  converged `/state`; the image defaults `NETZSIM_HOST=0.0.0.0`).
 
 **NOT yet verified (do this first when resuming):**
-- ⚠️ **Full `docker compose up --build` has never been run** (no Docker in the build
-  env). Image builds and the InfluxDB↔collector↔Grafana wiring are unproven
-  end-to-end. **This is the #1 thing to validate.**
+- ⚠️ **The full `docker compose up --build` stack has never been run end-to-end**:
+  the InfluxDB↔collector↔Grafana wiring is unproven (images build, but the
+  services have not been observed talking to each other).
 - ⚠️ Grafana dashboard panels not visually confirmed against real InfluxDB data.
 
 ---
