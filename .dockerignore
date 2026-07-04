@@ -1,0 +1,19 @@
+# Keep the netzsim build context minimal: the root Dockerfile only needs
+# requirements.txt, pyproject.toml, src/ and scripts/.
+.git
+.github
+.claude
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.env
+data/
+docs/
+tests/
+ui/
+visualization/
+*.md
+docker-compose.yml
