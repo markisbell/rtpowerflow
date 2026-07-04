@@ -5,7 +5,10 @@ import type { NodeProfiles, NodeSeriesKind } from "../types";
 import { voltageColor, V_BASE } from "../scales";
 import ProfileGraph, { type GSeries } from "./ProfileGraph";
 
-const COLOR: Record<NodeSeriesKind, string> = { residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950" };
+const COLOR: Record<NodeSeriesKind, string> = {
+  residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950",
+  wind: "#39c5cf", biogas: "#b08968", gen: "#8b949e",
+};
 const VLIMIT = [
   { value: 1.1, label: `${Math.round(1.1 * V_BASE)} V`, color: "#f85149" },
   { value: 0.9, label: `${Math.round(0.9 * V_BASE)} V`, color: "#f85149" },

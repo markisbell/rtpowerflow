@@ -133,6 +133,10 @@ class LoadProfile(_Profile):
 class GenProfile(_Profile):
     p_mw: List[float]
     q_mvar: Optional[List[float]] = None
+    # generation technology ("pv" | "wind" | "biogas" | ...). None = PV
+    # (legacy LV grids). Non-PV sgens keep their built-in profile even when
+    # the real measured PV day shapes are active (see Simulator._sgen_p_col).
+    kind: Optional[str] = None
 
 
 class SubstationProfile(_Profile):

@@ -52,6 +52,20 @@ def _hhmm(step: int, steps_per_day: int) -> str:
     return f"{total // 60:02d}:{total % 60:02d}"
 
 
+def _gen_kind(kind: str | None) -> str:
+    """Normalize a generation spec's ``kind``. ``None`` -> "pv" (legacy LV
+    grids: every sgen is rooftop PV); recognizes wind/biogas (gridedit MV
+    grids, ding0 MV generators); anything else -> "gen"."""
+    k = (kind or "pv").lower()
+    if "pv" in k or "solar" in k:
+        return "pv"
+    if "wind" in k:
+        return "wind"
+    if "bio" in k:
+        return "biogas"
+    return "gen"
+
+
 class Simulator:
     """Holds the pandapower net + profiles and solves any single step on demand."""
 
@@ -67,6 +81,10 @@ class Simulator:
         self.day = 0
         self.pv_days: np.ndarray | None = None
         self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
+        # per-sgen kind ("pv" | "wind" | "biogas" | "gen"): only PV systems
+        # follow the real measured solar day; wind/biogas keep their profiles
+        self.sgen_kind = [_gen_kind(g.kind) for g in data.generation.gens]
+        self._sgen_is_pv = np.array([k == "pv" for k in self.sgen_kind], dtype=bool)
         self._daily_by_day: dict[int, dict] = {}
 
         # Observability: which buses / transformers carry a measurement device.
@@ -105,8 +123,10 @@ class Simulator:
 
     def set_pv_days(self, shapes: np.ndarray | None) -> None:
         """Attach per-day PV shapes ([n_days, steps], 0..1). Applied only if the
-        grid actually has PV sgens; clears the per-day graph cache."""
-        self.pv_days = shapes if (shapes is not None and len(shapes) and self.sgen_peak.size) else None
+        grid actually has PV sgens (wind/biogas-only grids stay on their built-in
+        profiles); clears the per-day graph cache."""
+        self.pv_days = shapes if (shapes is not None and len(shapes)
+                                  and bool(self._sgen_is_pv.any())) else None
         self._daily_by_day.clear()
 
     @property
@@ -114,10 +134,14 @@ class Simulator:
         return int(self.pv_days.shape[0]) if self.pv_days is not None else 1
 
     def _sgen_p_col(self, day: int, t: int) -> "np.ndarray":
-        """PV/sgen active power at step ``t`` — the real day's shape × each
-        system's peak when real PV is loaded, else the built-in profile."""
+        """sgen active power at step ``t`` — PV systems get the real day's shape
+        × their peak when real PV is loaded; everything else (wind, biogas)
+        always keeps its built-in profile."""
         if self.pv_days is not None:
-            return self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
+            col = self.prof.sgen_p[:, t].copy()
+            real = self.sgen_peak * self.pv_days[day % self.pv_days.shape[0], t]
+            col[self._sgen_is_pv] = real[self._sgen_is_pv]
+            return col
         return self.prof.sgen_p[:, t]
 
     def _sgen_day_mean(self, day: int) -> "np.ndarray":
@@ -128,7 +152,10 @@ class Simulator:
             if not self.prof.sgen_p.size:
                 self._sgen_day_mean_cache[d] = np.zeros(0)
             elif self.pv_days is not None:
-                self._sgen_day_mean_cache[d] = self.sgen_peak * float(self.pv_days[d].mean())
+                m = self.prof.sgen_p.mean(axis=1)
+                m[self._sgen_is_pv] = (self.sgen_peak[self._sgen_is_pv]
+                                       * float(self.pv_days[d].mean()))
+                self._sgen_day_mean_cache[d] = m
             else:
                 self._sgen_day_mean_cache[d] = self.prof.sgen_p.mean(axis=1)
         return self._sgen_day_mean_cache[d]
@@ -209,6 +236,7 @@ class Simulator:
         """Refresh everything derived from the load/sgen tables + profiles after
         a runtime DER change (same hygiene as a battery add/remove)."""
         self.sgen_peak = self.prof.sgen_p.max(axis=1) if self.prof.sgen_p.size else np.zeros(0)
+        self._sgen_is_pv = np.array([k == "pv" for k in self.sgen_kind], dtype=bool)
         self._loads_at = {}
         for i, li in enumerate(self.prof.load_idx):
             self._loads_at.setdefault(int(self.net.load.at[li, "bus"]), []).append(i)
@@ -270,6 +298,7 @@ class Simulator:
         self.prof.sgen_idx.append(si)
         self.prof.sgen_p = np.vstack([self.prof.sgen_p, row[None, :]])
         self.prof.sgen_q = np.vstack([self.prof.sgen_q, np.zeros((1, self.steps_per_day))])
+        self.sgen_kind.append("pv")
         self._der_log_put({"op": "add_pv", "bus": int(bus), "kwp": kwp},
                           ("add_pv", "set_pv", "remove_pv"))
         self._der_invalidate()
@@ -355,6 +384,8 @@ class Simulator:
         self.prof.sgen_idx.pop(i)
         self.prof.sgen_p = np.delete(self.prof.sgen_p, i, axis=0)
         self.prof.sgen_q = np.delete(self.prof.sgen_q, i, axis=0)
+        if i < len(self.sgen_kind):
+            self.sgen_kind.pop(i)
         self.net.sgen.drop(sgen, inplace=True)
         self._der_invalidate()
         return True
@@ -739,8 +770,12 @@ class Simulator:
               for b in self.batteries]
 
         def sgen_col_at(t):
-            return (sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
-                    if self.pv_days is not None else prof.sgen_p[:, t])
+            col = prof.sgen_p[:, t]
+            if self.pv_days is not None:
+                col = col.copy()
+                real = sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
+                col[self._sgen_is_pv] = real[self._sgen_is_pv]
+            return col
 
         vm = {int(b): [] for b in net.bus.index}
         i_ka = {int(l): [] for l in net.line.index}
@@ -849,11 +884,13 @@ class Simulator:
         for i, si in enumerate(p.sgen_idx):
             if int(net.sgen.at[si, "bus"]) != bus:
                 continue
-            # real-PV day → this system's peak × the day's shape; else built-in
+            kind = self.sgen_kind[i] if i < len(self.sgen_kind) else "pv"
+            # real-PV day → a PV system's peak × the day's shape; wind/biogas
+            # (and any other kind) always keep their built-in profile
             row = (self.sgen_peak[i] * self.pv_days[self.day % self.pv_days.shape[0]]
-                   if self.pv_days is not None else p.sgen_p[i])
-            add("pv", row)
-        order = ["residential", "ev", "pv"]
+                   if self.pv_days is not None and kind == "pv" else p.sgen_p[i])
+            add(kind, row)
+        order = ["residential", "ev", "pv", "wind", "biogas", "gen"]
         series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
                   for k in order if cats.get(k) is not None]
         name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)

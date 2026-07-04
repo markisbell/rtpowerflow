@@ -275,7 +275,7 @@ export interface BatteryProfiles {
   price_hi: number | null;
 }
 
-export type NodeSeriesKind = "residential" | "ev" | "pv";
+export type NodeSeriesKind = "residential" | "ev" | "pv" | "wind" | "biogas" | "gen";
 export interface NodeProfiles {
   bus: number;
   name: string;
