@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     environment:
       NETZSIM_DATA_DIR: /app/data
+      # inside the container the API must be reachable from the other services
+      NETZSIM_HOST: 0.0.0.0
       NETZSIM_STEP_INTERVAL_SECONDS: "1.0"
       NETZSIM_STEPS_PER_DAY: "1440"
       NETZSIM_AUTOSTART: "true"

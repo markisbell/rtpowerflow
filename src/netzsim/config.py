@@ -58,8 +58,9 @@ class Settings(BaseSettings):
     # strict observability on the wire.
     expose_ground_truth: bool = True
 
-    # API
-    host: str = "0.0.0.0"
+    # API — bind loopback by default (there are write/control endpoints and no
+    # auth); Docker / LAN demos opt in explicitly via NETZSIM_HOST=0.0.0.0.
+    host: str = "127.0.0.1"
     port: int = 8000
     log_level: str = "info"
 

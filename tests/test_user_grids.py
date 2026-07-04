@@ -85,6 +85,21 @@ def test_trafo_rating_from_file_wins(tmp_path):
     assert any("rated 400 kVA" in n for n in g.notes)
 
 
+def test_echeck_stamp_surfaces_in_notes(tmp_path):
+    """gridedit stamps its E-Check verdict into the export; a failed one must
+    show up in the converted grid's notes (visible in /grids/{id} preview)."""
+    doc = dict(DOC, echeck={"ok": False, "failures": ["laterals short"]})
+    d = tmp_path / "user_grids"
+    d.mkdir()
+    (d / "mangelhaft.json").write_text(json.dumps(doc), encoding="utf-8")
+    g = convert_osm_lv(d / "mangelhaft.json", steps=96)
+    assert any("E-Check FAIL: laterals short" in n for n in g.notes)
+    # a passing stamp (or none) adds no note
+    ok_doc = dict(DOC, echeck={"ok": True, "failures": []})
+    (d / "gut.json").write_text(json.dumps(ok_doc), encoding="utf-8")
+    assert not any("E-Check" in n for n in convert_osm_lv(d / "gut.json", steps=96).notes)
+
+
 def test_trafo_hv_10kv_and_parallel_for_1mva(tmp_path):
     doc = dict(DOC, trafo={"sn_kva": 1000, "hv_kv": 10})
     d = tmp_path / "user_grids"
