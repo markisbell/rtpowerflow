@@ -351,6 +351,7 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
         p_nom = _num(r.get("p_nom"))
         subtype = str(r.get("subtype") or r.get("type") or "")
         gen_specs.append({"name": str(r["name"]), "bus": bus_index[b],
+                          "kind": subtype or None,
                           "p_mw": _solarish(steps, p_nom, subtype), "q_mvar": [0.0] * steps})
     generation_doc = {"resolution_minutes": 1440 // steps, "steps": steps,
                       "generation": gen_specs}

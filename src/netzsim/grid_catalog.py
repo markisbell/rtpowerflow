@@ -31,6 +31,7 @@ class GridEntry:
     scope: str = "full"               # convert_ding0_csv scope: full | mv | lv
     lv_grid_id: str | None = None
     osm_grid: str | None = None        # path to an OSM-routed LV grid JSON (overrides scope)
+    mv_grid: str | None = None         # path to a gridedit MV-layer JSON (format "gridedit-mv")
     lv_subgrids: list[dict] | None = None  # MV only: OSM LV grids of the same district
                                            # -> build the interconnected MV+LV network
 
@@ -105,12 +106,20 @@ class GridCatalog:
                     doc = json.loads(f.read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
                     continue
-                self._entries[gid] = GridEntry(
-                    id=gid, name=doc.get("name", f.stem),
-                    category="user · LV", member=str(f), source="user",
-                    voltage="LV", character="user",
-                    nodes=len(doc.get("buses", [])), osm_grid=str(f),
-                )
+                if doc.get("format") == "gridedit-mv":
+                    self._entries[gid] = GridEntry(
+                        id=gid, name=doc.get("name", f.stem),
+                        category="user · MV", member=str(f), source="user",
+                        voltage="MV", character="user",
+                        nodes=len(doc.get("buses", [])), mv_grid=str(f),
+                    )
+                else:
+                    self._entries[gid] = GridEntry(
+                        id=gid, name=doc.get("name", f.stem),
+                        category="user · LV", member=str(f), source="user",
+                        voltage="LV", character="user",
+                        nodes=len(doc.get("buses", [])), osm_grid=str(f),
+                    )
         for gid in [g for g, e in self._entries.items()
                     if e.source == "user" and g not in seen]:
             del self._entries[gid]
@@ -155,7 +164,10 @@ class GridCatalog:
         key = (grid_id, steps)
         if key not in self._cache:
             e = self._entries[grid_id]
-            if e.osm_grid:
+            if e.mv_grid:
+                from .gridedit_mv_import import convert_gridedit_mv
+                self._cache[key] = convert_gridedit_mv(e.mv_grid, name=e.name, steps=steps)
+            elif e.osm_grid:
                 from .osm_lv_import import convert_osm_lv
                 self._cache[key] = convert_osm_lv(e.osm_grid, name=e.name, steps=steps)
             elif e.lv_subgrids:

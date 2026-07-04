@@ -70,9 +70,10 @@ EchtzeitNetzSimulator/
 │   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip)
 │   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + measurements + monitor
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
-│   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM)
+│   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user)
 │   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
 │   ├── osm_lv_import.py      # street-routed LV grid JSON (gridformat) -> inputs
+│   ├── gridedit_mv_import.py # gridedit MS-layer export (format "gridedit-mv") -> inputs
 │   ├── layout.py             # bus coords: length-aware geographic (x,y) + tidy tree (tx,ty)
 │   ├── loadgen/              # cached LPG library reader + assignment (runtime, no pylpg)
 │   │   ├── library.py        # LoadLibrary: read data/lpg_library/{index,*}.json
@@ -398,6 +399,15 @@ provisioned datasource + dashboard, all in compose.
   (`library_manifest`, config `grid_library`); with no manifest it falls back to
   listing raw ding0 dirs under `ding0_dir`. (The old European-Archetype xlsx
   archetypes are gone — that converter moved out with the rest of generation.)
+- **User-drawn grids** (gridedit) land in `data/user_grids/` (gitignored) and are
+  rescanned per `/grids` listing. LV files are gridformat (→ `convert_osm_lv`);
+  MV files carry `format: "gridedit-mv"` (→ `gridedit_mv_import.convert_gridedit_mv`:
+  appended 110-kV bus + standard HV/MV trafo, stations as lumped loads with
+  `household: false`, per-type profiles — mall/HPC `_daily` variants, wind gusty
+  deterministic, biogas flat, PV bell). `GenProfile.kind` ("pv"|"wind"|"biogas")
+  gates the real-PV day slider: only PV sgens follow the measured day shapes
+  (`Simulator._sgen_is_pv`); wind/biogas keep their built-in profiles, and a grid
+  without PV doesn't attach the day slider at all (`n_days` stays 1).
 - **netzsim's importers** translate the dataset to `GridInputs`:
   `ding0_import.convert_ding0_csv` has a `scope` — `"mv"` keeps the MV graph and
   folds each LV grid into one lumped load at its feeding MV bus; `"lv"` extracts a
