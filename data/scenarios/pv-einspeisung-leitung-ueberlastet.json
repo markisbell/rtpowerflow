@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "created": "2026-07-04T19:48:40",
+  "name": "PV-Einspeisung überlastet Leitung",
+  "description": "",
+  "grid_id": "user_beispiel-backup",
+  "loadgen": {
+    "archetypes": [
+      "CHR01",
+      "CHR03",
+      "CHR05",
+      "CHR07",
+      "CHR16",
+      "CHR30",
+      "CHR22",
+      "CHR52"
+    ],
+    "mode": "round_robin",
+    "seed": 0,
+    "scale": 1.0,
+    "power_factor": 0.95,
+    "jitter_minutes": 0,
+    "ev_penetration": 1.0,
+    "ev_charger_kw": 22.0,
+    "ev_daily_kwh": 8.0,
+    "pv_penetration": 1.0,
+    "pv_kwp": 10.0
+  },
+  "der_ops": [],
+  "batteries": [],
+  "measurements": {
+    "node_buses": [],
+    "trafo_idxs": [],
+    "mode": "full"
+  },
+  "engine": {
+    "day": 0,
+    "step": 1166,
+    "interval_seconds": 0.1
+  }
+}
