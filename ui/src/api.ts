@@ -48,7 +48,18 @@ async function del<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+export interface EstimationConfig {
+  pv_pseudo: boolean;
+  ev_pseudo: boolean;
+  load_basis: "profile" | "slp";
+  slp_annual_kwh: number;
+  pseudo_std_pct: number;
+  zero_injection: boolean;
+}
+
 export const api = {
+  estConfig: () => get<EstimationConfig>("/estimation/config"),
+  setEstConfig: (cfg: EstimationConfig) => post<EstimationConfig>("/estimation/config", cfg),
   grids: () => get<GridsResponse>("/grids"),
   gridPreview: (id: string) => get<GridPreview>(`/grids/${encodeURIComponent(id)}`),
   thumbnailUrl: (id: string) => `${API}/grids/${encodeURIComponent(id)}/thumbnail`,

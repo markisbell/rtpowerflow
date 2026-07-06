@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import math
 import time
 from dataclasses import dataclass, field
@@ -13,7 +14,7 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .data_loader import InputData
-from .estimator import Estimator
+from .estimator import EstConfig, Estimator
 from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
@@ -102,6 +103,14 @@ class Simulator:
         self._est_last: dict | None = None
         self._est_wall = 0.0            # monotonic time of the last estimation run
         self._est_ms = 0.0              # its duration (drives the adaptive spacing)
+        # daily-sweep estimate decimation (1=15 min, 2=30 min, 4=1 h, 8=2 h):
+        # decided ONCE per grid from a robust cost measurement, then pinned, so
+        # the estimated curves keep one consistent resolution for the session
+        self._est_sweep_every: int | None = None
+        # estimation policy (config tab); which load rows are real households
+        self.est_config = EstConfig()
+        self._load_household: list[bool] = [
+            getattr(ld, "household", None) is not False for ld in data.load.loads]
 
         # bus-addressed journal of runtime DER changes — the delta a scenario
         # file stores on top of the deterministic grid + loadgen recipe.
@@ -120,6 +129,27 @@ class Simulator:
         if trafo_r <= 0:  # no transformer → reference the grid's peak load for peak-shaving
             trafo_r = float(self.prof.load_p.sum(axis=0).max()) if self.prof.load_p.size else 1.0
         self._peak_ref_mw = trafo_r
+
+    def set_est_config(self, cfg: EstConfig) -> None:
+        """Swap the estimation policy (config tab); the estimator is rebuilt
+        with fresh per-bus profile knowledge on the next solved step, and the
+        daily-curve cache is dropped so the day graphs re-sweep under the new
+        policy (the sweep cache is also keyed on it, this is belt & braces)."""
+        self.est_config = cfg
+        self._estimator = None
+        self._est_last = None
+        self._est_wall = 0.0
+        self._daily_by_day.clear()
+
+    def _est_row_sets(self) -> tuple[set[int], set[int]]:
+        """Which load-profile rows are EV charging / real households — the
+        row-level knowledge the estimation policy filters on."""
+        ev_rows = {i for i, li in enumerate(self.prof.load_idx)
+                   if "EV_" in str(self.net.load.at[li, "name"] or "")}
+        household_rows = {i for i in range(len(self.prof.load_idx))
+                          if i >= len(self._load_household)     # runtime rows
+                          or self._load_household[i]}
+        return ev_rows, household_rows
 
     def set_pv_days(self, shapes: np.ndarray | None) -> None:
         """Attach per-day PV shapes ([n_days, steps], 0..1). Applied only if the
@@ -340,6 +370,7 @@ class Simulator:
         self.prof.load_idx.append(li)
         self.prof.load_p = np.vstack([self.prof.load_p, np.zeros((1, self.steps_per_day))])
         self.prof.load_q = np.vstack([self.prof.load_q, np.zeros((1, self.steps_per_day))])
+        self._load_household.append(False)     # EV charging is not a household
         self._set_ev_row(len(self.prof.load_idx) - 1, kw, start_min, dur_min)
         self._der_log_put({"op": "add_ev", "bus": int(bus), "kw": float(kw),
                            "start_min": int(start_min) % 1440,
@@ -405,6 +436,8 @@ class Simulator:
         self.prof.load_idx.pop(i)
         self.prof.load_p = np.delete(self.prof.load_p, i, axis=0)
         self.prof.load_q = np.delete(self.prof.load_q, i, axis=0)
+        if i < len(self._load_household):
+            self._load_household.pop(i)
         self.net.load.drop(load, inplace=True)
         self._der_invalidate()
         return True
@@ -551,7 +584,11 @@ class Simulator:
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
             if self._estimator is None:
-                self._estimator = Estimator(self.net, self.prof, self._loads_at, self._sgens_at)
+                ev_rows, household_rows = self._est_row_sets()
+                self._estimator = Estimator(
+                    self.net, self.prof, self._loads_at, self._sgens_at,
+                    ev_rows=ev_rows, household_rows=household_rows,
+                    config=self.est_config)
             now = time.monotonic()
             if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
@@ -737,13 +774,18 @@ class Simulator:
         differ; a grid without real PV only ever uses day 0.
 
         While meters are placed the sweep also runs the state estimator at the
-        samples (decimated on big nets, where one WLS run costs ~1 s), so the
-        daily graphs can overlay the operator's estimate on the truth — placing
-        more meters visibly locks the estimated curve onto the real one. The
-        cache is keyed on the meter placement, so changing it re-sweeps."""
+        samples — decimated on big nets (one WLS run costs ~1 s there) to a
+        per-grid PINNED tier of clean resolutions (15/30/60/120 min), so the
+        estimated curve keeps one consistent granularity instead of flipping
+        with measurement noise. The daily graphs overlay the operator's
+        estimate on the truth — placing more meters visibly locks the estimated
+        curve onto the real one. The cache is keyed on the meter placement AND
+        the estimation policy, so changing either re-sweeps."""
         d = self.day if day is None else day
+        # keyed on everything the estimated overlay depends on: the meter
+        # placement/mode AND the estimation policy (config tab)
         sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs),
-               self.meters.mode)
+               self.meters.mode, dataclasses.astuple(self.est_config))
         cached = self._daily_by_day.get(d)
         if cached is not None and cached.get("_sig") == sig:
             return cached
@@ -788,14 +830,22 @@ class Simulator:
         est_vm = {int(b): [] for b in net.bus.index}
         est_i = {int(l): [] for l in net.line.index}
         est_p_hv = {int(t): [] for t in net.trafo.index}
-        estimator = Estimator(net, prof, self._loads_at, self._sgens_at) if do_est else None
+        if do_est:
+            ev_rows, household_rows = self._est_row_sets()
+            estimator = Estimator(net, prof, self._loads_at, self._sgens_at,
+                                  ev_rows=ev_rows, household_rows=household_rows,
+                                  config=self.est_config)
+        else:
+            estimator = None
         # the sweep gets its own MeasurementSet copy: standard-mode window
         # accumulators must not disturb the live meters' state
         sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),
                                       trafo_idxs=set(self.meters.trafo_idxs),
                                       mode=self.meters.mode) if do_est else None
         est_bats = {b.bus: b.power_mw for b in self.batteries}
-        est_every, si = 1, -1           # decimation adapts to the first run's cost
+        # estimate decimation: reuse the pinned per-grid tier; a fresh grid
+        # decides after its first WLS run (see below)
+        est_every, si = self._est_sweep_every or 1, -1
         # "auto" (not "flat") so multi-voltage-level grids with a transformer
         # converge on the first solve, matching the live engine; then warm-start.
         init = "auto"
@@ -839,10 +889,18 @@ class Simulator:
                 if estimator is not None and si % est_every == 0:
                     est = estimator.run(net, sweep_meters.observe(net, t),
                                         self._sgen_day_mean(d), est_bats)
-                    if est is not None and est_every == 1 and est["solve_ms"] > 120:
-                        # big net: one WLS run is expensive — sample the estimate
-                        # coarser so a sweep stays interactive (~a dozen runs)
-                        est_every = max(1, round(est["solve_ms"] / 120))
+                    if est is not None and self._est_sweep_every is None:
+                        # decide the tier ONCE per grid: big nets sample the
+                        # estimate coarser so a sweep stays interactive. Use
+                        # the cheaper of this run and the live loop's smoothed
+                        # cost (the first run may be a cold-start outlier), and
+                        # snap to clean resolutions: 15/30/60/120 min.
+                        ms = est["solve_ms"]
+                        if self._est_ms > 0:
+                            ms = min(ms, self._est_ms)
+                        self._est_sweep_every = est_every = (
+                            1 if ms <= 120 else 2 if ms <= 240
+                            else 4 if ms <= 480 else 8)
             else:  # non-convergence at this step → gaps
                 init = "auto"
                 for b in net.bus.index:

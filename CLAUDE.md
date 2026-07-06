@@ -198,6 +198,7 @@ default to zeros if omitted.
 | POST | `/measurements/trafo` | Body `{trafo}` → install a transformer meter |
 | DELETE | `/measurements/trafo/{trafo}` | Remove a transformer meter |
 | POST | `/measurements/preset?name=` | Bulk: `all_nodes` \| `all_trafos` \| `substation_trafos` \| `clear` |
+| GET/POST | `/estimation/config` | Estimation policy (PV/EV pseudo, load basis, std %, zero injection) |
 | WS | `/ws` | Live stream: one JSON `StepResult` per solved step |
 
 **`StepResult`** (see `simulator.py`): `step, day, time_of_day ("HH:MM"),
@@ -492,3 +493,23 @@ feeds the estimated arrays through the diagrams' truth path); the Übersicht
 shows estimate aggregates + the error metric. Tests: `tests/test_estimation.py`.
 Quality on the 30-bus LV grid: exact under full metering; < 10 mpu with only the
 station trafo meter + pseudo-loads.
+
+**Estimation policy** (customer feedback 2026-07-06, `EstConfig` in
+`estimator.py`, UI top tab "🧮 Schätzung", `GET/POST /estimation/config`,
+re-applied on grid swap by the engine): what the estimation may use. Defaults
+mirror DSO practice — **no PV pseudo** (plants differ in orientation; the
+plant size still widens the pseudo std), **no EV pseudo** (stochastic),
+`load_basis` "profile" (idealized per-customer daily means) vs **"slp"**
+(every household the same `slp_annual_kwh`, applies to household rows only —
+RLM customers keep true means; `LoadProfile.household` carries the flag),
+`pseudo_std_pct`, `zero_injection` toggleable. The daily sweep uses the SAME
+policy and its cache is keyed on it (config change → re-sweep); the sweep's
+estimate decimation is **pinned per grid** to clean 15/30/60/120-min tiers
+(decided once from a robust cost measurement) so the estimated day curve keeps
+one consistent resolution. Honesty tripwire:
+`test_estimation_honesty_pv_rise_unknowable` — rural feeder, strong midday PV,
+5 % metering, no PV knowledge → the estimator MUST miss > 60 % of the voltage
+rise (fails = truth is leaking). Demo scenario:
+`data/scenarios/pv-berh-hung-unsichtbar-f-r-den-vnb.json` (240 V real vs
+231 V estimated at the feeder end). Note: the policy is an operator setting —
+deliberately NOT part of scenario recipes.
