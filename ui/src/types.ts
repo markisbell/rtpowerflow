@@ -61,6 +61,7 @@ export interface LoadgenPolicy {
   jitter_minutes?: number;
   ev_penetration?: number;
   ev_charger_kw?: number;
+  ev_charger_mix?: boolean;   // random 3.7/11/22 kW per EV
   ev_daily_kwh?: number;
   pv_penetration?: number;
   pv_kwp?: number;

@@ -695,6 +695,7 @@ class LoadgenPolicy(BaseModel):
     jitter_minutes: int = Field(0, ge=0, le=120)
     ev_penetration: float = Field(0.0, ge=0, le=1)   # fraction of homes with an EV
     ev_charger_kw: float = Field(11.0, gt=0, le=50)  # wallbox power
+    ev_charger_mix: bool = False                     # random 3.7/11/22 kW per EV
     ev_daily_kwh: float = Field(8.0, gt=0, le=100)   # mean energy charged per day
     pv_penetration: float = Field(0.0, ge=0, le=1)   # fraction of load buses with PV
     pv_kwp: float = Field(5.0, gt=0, le=100)         # peak kW per PV system
@@ -764,6 +765,7 @@ def _assigned_load_doc(g, policy: LoadgenPolicy, character: str | None = None) -
         ev = assign_ev(
             households,
             EvPolicy(penetration=policy.ev_penetration, charger_kw=policy.ev_charger_kw,
+                     charger_mix=policy.ev_charger_mix,
                      daily_kwh=policy.ev_daily_kwh, seed=policy.seed),
             steps=settings.steps_per_day,
         )

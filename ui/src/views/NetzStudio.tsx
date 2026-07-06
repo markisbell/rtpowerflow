@@ -33,7 +33,7 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
   const [scale, setScale] = useState(1);
   const [pf, setPf] = useState(0.95);
   const [evPen, setEvPen] = useState(0);
-  const [evKw, setEvKw] = useState(11);
+  const [evKw, setEvKw] = useState<number | "mix">(11);
   const [pvPen, setPvPen] = useState(0);
   const [pvKwp, setPvKwp] = useState(5);
   const [mfh, setMfh] = useState(true);            // 3-6 households per building
@@ -67,7 +67,8 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
     mode, seed, scale,
     power_factor: pf,
     ev_penetration: evPen,
-    ev_charger_kw: evKw,
+    ev_charger_kw: evKw === "mix" ? 11 : evKw,
+    ev_charger_mix: evKw === "mix",
     pv_penetration: pvPen,
     pv_kwp: pvKwp,
     mfh: mfh ? "auto" : "off",
@@ -215,10 +216,12 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
             {evPen > 0 && (
               <div className="field">
                 <label>{t("loads.wallbox")}</label>
-                <select value={evKw} onChange={(e) => setEvKw(+e.target.value)}>
-                  <option value={3.7}>{t("loads.ev37")}</option>
-                  <option value={11}>{t("loads.ev11")}</option>
-                  <option value={22}>{t("loads.ev22")}</option>
+                <select value={String(evKw)}
+                        onChange={(e) => setEvKw(e.target.value === "mix" ? "mix" : +e.target.value)}>
+                  <option value="3.7">{t("loads.ev37")}</option>
+                  <option value="11">{t("loads.ev11")}</option>
+                  <option value="22">{t("loads.ev22")}</option>
+                  <option value="mix">{t("loads.evMix")}</option>
                 </select>
               </div>
             )}

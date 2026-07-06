@@ -139,6 +139,22 @@ def test_ev_charger_power_scales():
     assert max(big["loads"][0]["p_mw"]) <= 22.0 / 1000 + 1e-9
 
 
+def test_ev_charger_mix_draws_standard_ratings():
+    """Mix mode: every wallbox is one of 3.7/11/22 kW, deterministic by seed,
+    and the fixed-rating path stays bit-identical to a non-mix run."""
+    loads = [{"name": f"L{i}", "bus": i + 1} for i in range(30)]
+    a = assign_ev(loads, EvPolicy(penetration=1.0, charger_mix=True, seed=3), steps=1440)
+    ratings = {round(max(ld["p_mw"]) * 1000, 1) for ld in a["loads"]}
+    assert ratings <= {3.7, 11.0, 22.0}
+    assert len(ratings) > 1                       # actually mixed
+    b = assign_ev(loads, EvPolicy(penetration=1.0, charger_mix=True, seed=3), steps=1440)
+    assert a["loads"] == b["loads"]               # deterministic under the seed
+    fixed = assign_ev(loads, EvPolicy(penetration=1.0, charger_kw=11.0, seed=3), steps=1440)
+    assert all(round(max(ld["p_mw"]) * 1000, 1) == 11.0 for ld in fixed["loads"])
+    # the mix only changes ratings — the same homes get an EV
+    assert [ld["bus"] for ld in a["loads"]] == [ld["bus"] for ld in fixed["loads"]]
+
+
 def test_pv_assignment_generates_solar():
     loads = [{"name": f"L{i}", "bus": i + 1} for i in range(8)]
     doc = assign_pv(loads, PvPolicy(penetration=1.0, kwp=5.0, seed=1), steps=24)
