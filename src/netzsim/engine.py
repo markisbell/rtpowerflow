@@ -30,6 +30,7 @@ class RealtimeEngine:
         self.steps_per_day = simulator.steps_per_day
         self.pv_days = None  # real multi-day PV shapes, re-applied on reconfigure
         self.prices = None   # hourly price days (battery "price" mode), re-applied too
+        self.est_config = None  # estimation policy (config tab), re-applied too
 
         self.step = 0
         self.day = 0
@@ -75,6 +76,8 @@ class RealtimeEngine:
         )
         self.sim.set_pv_days(self.pv_days)   # real PV re-applies to the new grid
         self.sim.set_prices(self.prices)     # (batteries themselves reset with the grid)
+        if self.est_config is not None:      # estimation policy survives the swap
+            self.sim.set_est_config(self.est_config)
         self.steps_per_day = self.sim.steps_per_day
         self.step = 0
         self.day = 0
@@ -101,6 +104,12 @@ class RealtimeEngine:
         reconfigure)."""
         self.prices = prices
         self.sim.set_prices(prices)
+
+    def set_est_config(self, cfg) -> None:
+        """Hold the estimation policy and apply it to the current sim; it is an
+        operator setting, so it survives grid swaps (re-applied on reconfigure)."""
+        self.est_config = cfg
+        self.sim.set_est_config(cfg)
 
     def seek_day(self, day: int) -> None:
         """Jump to a specific (real PV) day; wraps within the available days."""

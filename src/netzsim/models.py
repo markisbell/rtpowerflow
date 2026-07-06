@@ -128,6 +128,10 @@ class _Profile(BaseModel):
 class LoadProfile(_Profile):
     p_mw: List[float]
     q_mvar: Optional[List[float]] = None
+    # real household (default) vs lumped station / large consumer. Districts
+    # and gridedit MV imports set this; the estimator's SLP pseudo basis
+    # applies only to households (big customers are RLM-metered in reality).
+    household: Optional[bool] = None
 
 
 class GenProfile(_Profile):

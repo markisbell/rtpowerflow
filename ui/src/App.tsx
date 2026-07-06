@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "./api";
 import type { ActiveGrid } from "./types";
 import { gridDisplayName } from "./gridname";
+import EstimationMenu from "./components/EstimationMenu";
 import GridBrowser from "./views/GridBrowser";
 import LoadStudio from "./views/LoadStudio";
 import LivePowerFlow from "./views/LivePowerFlow";
@@ -37,6 +38,7 @@ export default function App() {
           <button className={tab === "live" ? "on" : ""} onClick={() => setTab("live")}>
             {t("nav.live")}
           </button>
+          <EstimationMenu />
         </nav>
         <div className="active-chip">
           {active?.grid_id ? (

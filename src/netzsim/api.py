@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field
 from .config import settings
 from .data_loader import input_data_from_dicts, load_inputs
 from .engine import RealtimeEngine
+from .estimator import EstConfig
 from .battery import MODES
 from .grid_catalog import GridCatalog, preview
 from .measurements import METER_MODES, PRESETS
@@ -42,6 +44,7 @@ class App:
     active: dict
     pv_dates: list
     pv_peak_w: float
+    est_config: "EstimationConfigModel"
 
 
 runtime = App()
@@ -76,6 +79,7 @@ async def lifespan(app: FastAPI):
                                   user_dir=settings.user_grids_dir)
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
+    runtime.est_config = EstimationConfigModel()   # DSO-style defaults
     # Real multi-day PV (optional): when the cache is present, PV follows measured
     # days and the UI offers a day slider.
     pv = load_pv_days(settings.real_pv_file, steps=settings.steps_per_day)
@@ -509,6 +513,34 @@ class NodeMeterRequest(BaseModel):
 
 class TrafoMeterRequest(BaseModel):
     trafo: int
+
+
+# --------------------------------------------------------------------------- #
+# State-estimation policy (UI tab "Schätzung"): what the WLS estimator may use.
+# Defaults mirror real DSO practice — no PV / EV pseudo-measurements.
+# --------------------------------------------------------------------------- #
+class EstimationConfigModel(BaseModel):
+    pv_pseudo: bool = False
+    ev_pseudo: bool = False
+    load_basis: Literal["profile", "slp"] = "profile"
+    slp_annual_kwh: float = Field(4000.0, ge=500, le=20000)
+    pseudo_std_pct: float = Field(50.0, ge=5, le=300)
+    zero_injection: bool = True
+
+
+@app.get("/estimation/config")
+def estimation_config():
+    """The active estimation policy (an operator setting: survives grid swaps)."""
+    return runtime.est_config.model_dump()
+
+
+@app.post("/estimation/config")
+async def set_estimation_config(cfg: EstimationConfigModel):
+    """Swap the estimation policy; the estimator rebuilds its profile knowledge
+    on the next solved step, so the effect is visible within seconds."""
+    runtime.est_config = cfg
+    runtime.engine.set_est_config(EstConfig(**cfg.model_dump()))
+    return cfg.model_dump()
 
 
 @app.get("/measurements")

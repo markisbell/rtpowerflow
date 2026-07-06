@@ -6,7 +6,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from netzsim.api import BatteryRequest, EvRequest, LoadgenPolicy, PvRequest
+from netzsim.api import (
+    BatteryRequest,
+    EstimationConfigModel,
+    EvRequest,
+    LoadgenPolicy,
+    PvRequest,
+)
 
 
 def test_loadgen_policy_rejects_nonsense():
@@ -38,3 +44,16 @@ def test_der_requests_rejects_nonsense():
     with pytest.raises(ValidationError):
         BatteryRequest(bus=0, soc0=1.5)
     assert EvRequest(bus=0).dur_min == 120
+
+
+def test_estimation_config_rejects_nonsense():
+    with pytest.raises(ValidationError):
+        EstimationConfigModel(load_basis="magic")
+    with pytest.raises(ValidationError):
+        EstimationConfigModel(slp_annual_kwh=100)          # below any household
+    with pytest.raises(ValidationError):
+        EstimationConfigModel(pseudo_std_pct=0)
+    # documented DSO-practice defaults
+    cfg = EstimationConfigModel()
+    assert cfg.pv_pseudo is False and cfg.ev_pseudo is False
+    assert cfg.load_basis == "profile" and cfg.slp_annual_kwh == 4000.0

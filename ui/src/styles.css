@@ -45,6 +45,43 @@ body { background: var(--bg); color: var(--text); }
 }
 .lang-switch button.on { background: var(--accent-2); color: #fff; border-color: transparent; }
 
+/* Top tab "Schätzung" with dropdown config panel */
+.est-menu { position: relative; }
+.est-menu > button {
+  background: transparent; color: var(--muted); border: 1px solid transparent;
+  padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer;
+  font-size: 1.02rem; font-weight: 600; letter-spacing: 0.01em;
+}
+.est-menu > button:hover { background: var(--panel-2); color: var(--text); }
+.est-menu > button.on { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+.est-overlay { position: fixed; inset: 0; z-index: 1190; }
+.est-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 1200;
+  width: 340px; padding: 12px 14px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 0.85rem; text-align: left;
+}
+.est-head { font-weight: 700; font-size: 0.95rem; }
+.est-note { color: var(--muted); font-size: 0.78rem; margin-bottom: 2px; }
+.est-group {
+  margin-top: 8px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.est-row { display: flex; align-items: center; gap: 8px; }
+.est-row input[type="number"] {
+  width: 90px; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px;
+}
+.est-row input[type="range"] { flex: 1; }
+.est-row select {
+  flex: 1; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px;
+}
+.est-hint { color: var(--muted); font-size: 0.72rem; margin: -2px 0 4px 24px; }
+.est-err { color: var(--bad, #f85149); font-size: 0.75rem; }
+
 .content { flex: 1; min-height: 0; overflow: hidden; }
 
 /* ---- generic ---- */
