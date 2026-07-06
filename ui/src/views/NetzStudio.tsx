@@ -129,14 +129,16 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
       return n;
     });
 
-  // transformer loading from the net curve: S = P/cosphi vs. rated sn
-  const netKw = preview ? preview.net_p_mw.map((p) => p * 1000) : [];
-  const grossKw = preview ? preview.total_load_p_mw.map((p) => p * 1000) : [];
+  // the check column compares against the trafo's kVA rating, so everything is
+  // plotted as APPARENT power: S = P / cosphi with the policy's power factor
+  const netKva = preview ? preview.net_p_mw.map((p) => (p * 1000) / pf) : [];
+  const grossKva = preview ? preview.total_load_p_mw.map((p) => (p * 1000) / pf) : [];
   const hasPv = !!preview && preview.n_pv > 0;
   const sn = preview?.trafo_sn_mva ?? null;
   const peakAbsMw = preview ? Math.max(preview.peak_net_mw, -preview.min_net_mw) : 0;
+  const peakKva = (peakAbsMw / pf) * 1000;
   const trafoPct = preview && sn ? (peakAbsMw / pf / sn) * 100 : null;
-  const ratingKw = sn ? sn * pf * 1000 : undefined;   // P-equivalent chart line
+  const ratingKva = sn ? sn * 1000 : undefined;       // the rating line, in kVA
 
   if (error && !grids) return <div className="empty">{t("grid.failed")}<br />{error}</div>;
   if (!grids) return <div className="spinner">{t("grid.loadingLib")}</div>;
@@ -301,16 +303,16 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
                 <Kpi k={t("netz.kHouseholds")} v={`${preview.n_households}`} />
                 <Kpi k={t("loads.kEvs")} v={`${preview.n_ev}`} />
                 <Kpi k={t("loads.kPv")} v={`${preview.n_pv}`} />
-                <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakAbsMw * 1000, 1)} kW`} />
+                <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakKva, 1)} kVA`} />
                 {trafoPct != null && (
                   <Kpi k={t("netz.kTrafoPeak")} v={`${fmt(trafoPct, 0)} %`}
                        tone={trafoPct >= 100 ? "bad" : trafoPct >= 80 ? "warn" : "ok"} />
                 )}
               </div>
               <div className="ns-chart">
-                <Sparkline values={netKw} overlay={hasPv ? grossKw : undefined}
-                           width={760} height={350} marker={ratingKw} step fluid
-                           xTitle={t("axis.time")} yTitle={t("axis.power")} />
+                <Sparkline values={netKva} overlay={hasPv ? grossKva : undefined}
+                           width={760} height={350} marker={ratingKva} step fluid
+                           xTitle={t("axis.time")} yTitle={t("axis.apparent")} />
               </div>
             </div>
             {preview.n_mfh > 0 && (
