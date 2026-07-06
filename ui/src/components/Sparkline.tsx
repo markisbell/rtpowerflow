@@ -8,6 +8,19 @@ interface Props {
   overlayColor?: string;
   hourAxis?: boolean;
   marker?: number;    // horizontal limit line at ±marker (e.g. trafo rating)
+  step?: boolean;     // sample-and-hold steps instead of linear interpolation
+  fluid?: boolean;    // scale to the container width (width/height = viewBox)
+}
+
+/** Y-axis extent of the chart: all plotted series plus headroom for the
+ *  marker line. Pure — must NEVER mutate the series (a marker pushed into the
+ *  data array would be drawn as a phantom peak at the end of the day). */
+export function chartExtent(
+  main: number[], over: number[] | null, marker?: number,
+): { min: number; max: number } {
+  const ext = over ? [...main, ...over] : [...main];
+  if (marker && marker > 0) ext.push(marker * 1.05);   // keep the limit in view
+  return { max: Math.max(...ext, 1e-9), min: Math.min(...ext, 0) };
 }
 
 /** A compact area/line chart for a daily profile. Handles negative values
@@ -22,6 +35,8 @@ export default function Sparkline({
   overlayColor = "#8a93a3",
   hourAxis = true,
   marker,
+  step = false,
+  fluid = false,
 }: Props) {
   if (!values.length) return null;
   const pad = 26;
@@ -37,22 +52,33 @@ export default function Sparkline({
   const main = ds(values);
   const over = overlay ? ds(overlay) : null;
 
-  const all = over ? [...main, ...over] : main;
-  if (marker && marker > 0) all.push(marker * 1.05);   // keep the limit in view
-  const max = Math.max(...all, 1e-9);
-  const min = Math.min(...all, 0);
+  const { min, max } = chartExtent(main, over, marker);
   const span = max - min || 1e-9;
 
   const x = (i: number, n: number) => pad + (i / (n - 1)) * w;
   const y = (v: number) => pad + h - ((v - min) / span) * h;
   const y0 = y(0);
 
-  const path = (arr: number[]) =>
-    arr.map((v, i) => `${i === 0 ? "M" : "L"}${x(i, arr.length).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  // step = sample-and-hold: each value holds until the next sample (the natural
+  // look for discrete per-minute load profiles); otherwise linear segments
+  const path = (arr: number[]) => {
+    if (!step) {
+      return arr.map((v, i) =>
+        `${i === 0 ? "M" : "L"}${x(i, arr.length).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    }
+    let d = `M${x(0, arr.length).toFixed(1)},${y(arr[0]).toFixed(1)}`;
+    for (let i = 1; i < arr.length; i++) {
+      d += ` H${x(i, arr.length).toFixed(1)} V${y(arr[i]).toFixed(1)}`;
+    }
+    return d;
+  };
   const area = `${path(main)} L${x(main.length - 1, main.length).toFixed(1)},${y0} L${pad},${y0} Z`;
 
   return (
-    <svg width={width} height={height} role="img" aria-label="daily load profile">
+    <svg width={fluid ? undefined : width} height={fluid ? undefined : height}
+         viewBox={`0 0 ${width} ${height}`}
+         style={fluid ? { width: "100%", height: "auto", display: "block" } : undefined}
+         role="img" aria-label="daily load profile">
       <line x1={pad} y1={y0} x2={pad + w} y2={y0} stroke="#3a4250" strokeWidth={1} />
       <path d={area} fill={fill} stroke="none" />
       <path d={path(main)} fill="none" stroke={color} strokeWidth={1.8} />

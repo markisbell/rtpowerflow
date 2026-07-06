@@ -174,6 +174,11 @@ button.ghost {
 .ns-row .title { font-size: 0.82rem; font-weight: 600; }
 .ns-row .sub { font-size: 0.72rem; color: var(--muted); display: flex; gap: 0.35rem; align-items: center; }
 .ns-empty { font-size: 0.75rem; padding: 0.2rem 0.1rem; }
+.ns-chartrow { display: flex; gap: 0.8rem; align-items: stretch; }
+.ns-chartrow .kpis.col { flex-direction: column; flex-wrap: nowrap; margin: 0;
+                         flex: 0 0 auto; justify-content: space-between; }
+.ns-chartrow .kpis.col .kpi { min-width: 108px; }
+.ns-chart { flex: 1; min-width: 0; }
 .field { margin-bottom: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .field label { font-size: 0.8rem; color: var(--muted); }
 .field input[type="number"], .field select {
