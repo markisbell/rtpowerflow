@@ -37,6 +37,20 @@ def test_der_journal_records_and_coalesces():
     assert not any(e["bus"] == 4 for e in sim.der_log)
 
 
+def test_battery_resize_in_place():
+    """A deployed battery is resizable (energy + power); the SOC keeps its
+    fraction, the storage table follows, and a scenario saved afterwards
+    carries the new size."""
+    sim = _sim()
+    b = sim.add_battery(4, 10.0, 5.0, "self", soc0=0.8)
+    assert sim.set_battery_size(b.storage_idx, 100.0, 50.0)
+    b = sim.batteries[0]
+    assert b.capacity_mwh == 0.1 and b.power_mw == 0.05
+    assert abs(b.soc_frac() - 0.8) < 1e-9                 # fraction preserved
+    assert float(sim.net.storage.iloc[0]["max_e_mwh"]) == 0.1
+    assert sim.set_battery_size(999, 5.0, 2.5) is False   # unknown index
+
+
 def test_scenario_roundtrip_reproduces_setup():
     a = _sim()
     a.add_pv(3, kwp=8.0)

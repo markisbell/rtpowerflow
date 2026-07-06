@@ -275,6 +275,17 @@ async def battery_mode(idx: int, name: str = Query(...)):
     return batteries()
 
 
+@app.post("/battery/{idx}/size")
+async def battery_size(idx: int,
+                       capacity_kwh: float = Query(..., gt=0, le=10_000),
+                       power_kw: float = Query(..., gt=0, le=5_000)):
+    """Resize a deployed battery — standard home units at a node, freely
+    chosen energy/power for a large battery at the substation busbar."""
+    if not runtime.engine.sim.set_battery_size(idx, capacity_kwh, power_kw):
+        raise HTTPException(404, f"no battery with index {idx}")
+    return batteries()
+
+
 @app.delete("/battery/{idx}")
 async def remove_battery(idx: int):
     if not runtime.engine.sim.remove_battery(idx):

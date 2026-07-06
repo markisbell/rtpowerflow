@@ -120,6 +120,8 @@ export const api = {
   removeEv: (load: number) => del<NodeDer>(`/ev/${load}`),
   setBatteryMode: (index: number, mode: BatteryMode) =>
     post<BatteriesResponse>(`/battery/${index}/mode?name=${mode}`),
+  setBatterySize: (index: number, capacity_kwh: number, power_kw: number) =>
+    post<BatteriesResponse>(`/battery/${index}/size?capacity_kwh=${capacity_kwh}&power_kw=${power_kw}`),
   meterPreset: (name: MeterPreset) =>
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
   meterMode: (name: MeterMode) =>
