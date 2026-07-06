@@ -36,6 +36,7 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
   const [evKw, setEvKw] = useState<number | "mix">(11);
   const [pvPen, setPvPen] = useState(0);
   const [pvKwp, setPvKwp] = useState(5);
+  const [pvMix, setPvMix] = useState(false);
   const [mfh, setMfh] = useState(true);            // 3-6 households per building
   const [preview, setPreview] = useState<AssignResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,8 +72,9 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
     ev_charger_mix: evKw === "mix",
     pv_penetration: pvPen,
     pv_kwp: pvKwp,
+    pv_mix: pvMix,
     mfh: mfh ? "auto" : "off",
-  }), [chosen, mode, seed, scale, pf, evPen, evKw, pvPen, pvKwp, mfh]);
+  }), [chosen, mode, seed, scale, pf, evPen, evKw, pvPen, pvKwp, pvMix, mfh]);
 
   // topology preview of the selected grid (stale responses ignored)
   const reqRef = useRef(0);
@@ -231,11 +233,21 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
                      onChange={(e) => setPvPen(+e.target.value)} />
             </div>
             {pvPen > 0 && (
-              <div className="field">
-                <label>{t("loads.pvSize", { kwp: pvKwp.toFixed(1) })}</label>
-                <input type="range" min={1} max={15} step={0.5} value={pvKwp}
-                       onChange={(e) => setPvKwp(+e.target.value)} />
-              </div>
+              <>
+                <div className="field">
+                  <label>{t("loads.pvSize", { kwp: pvKwp.toFixed(1) })}</label>
+                  <input type="range" min={1} max={15} step={0.5} value={pvKwp}
+                         onChange={(e) => setPvKwp(+e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>{t("loads.pvSizing")}</label>
+                  <select value={pvMix ? "mix" : "equal"}
+                          onChange={(e) => setPvMix(e.target.value === "mix")}>
+                    <option value="equal">{t("loads.pvEqual")}</option>
+                    <option value="mix">{t("loads.pvMix")}</option>
+                  </select>
+                </div>
+              </>
             )}
             <div className="field">
               <label className="arch-row" style={{ padding: 0 }}>

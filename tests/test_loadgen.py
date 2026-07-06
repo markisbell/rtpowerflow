@@ -165,6 +165,25 @@ def test_pv_assignment_generates_solar():
     assert assign_pv(loads, PvPolicy(penetration=0.0), steps=24)["generation"] == []
 
 
+def test_pv_mix_varies_size_and_orientation():
+    """PV mix: sizes spread around the chosen kWp, midday peaks shift per
+    system (east/west roofs), the same buses get PV, deterministic by seed."""
+    import numpy as np
+    loads = [{"name": f"L{i}", "bus": i + 1} for i in range(20)]
+    eq = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, seed=5), steps=1440)
+    mx = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, mix=True, seed=5), steps=1440)
+    # same selection, only the systems differ
+    assert [g["bus"] for g in mx["generation"]] == [g["bus"] for g in eq["generation"]]
+    sizes = [max(g["p_mw"]) * 1000 for g in mx["generation"]]
+    assert all(4.0 <= s <= 16.0 for s in sizes)          # 0.5–1.5x 10 kWp (+rounding)
+    assert max(sizes) - min(sizes) > 2.0                  # actually spread
+    peaks = [int(np.argmax(g["p_mw"])) for g in mx["generation"]]
+    assert max(peaks) - min(peaks) > 30                   # orientations shift the peak
+    assert all(max(g["p_mw"]) * 1000 <= 10.0 for g in eq["generation"])  # equal mode intact
+    mx2 = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, mix=True, seed=5), steps=1440)
+    assert mx["generation"] == mx2["generation"]          # deterministic
+
+
 def test_pv_offsets_load_in_a_solved_net(tmp_path):
     lib = _make_library(tmp_path, steps=24)
     grid = {"name": "g", "buses": [{"name": "b0", "vn_kv": 0.4},

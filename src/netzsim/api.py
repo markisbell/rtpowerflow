@@ -699,6 +699,7 @@ class LoadgenPolicy(BaseModel):
     ev_daily_kwh: float = Field(8.0, gt=0, le=100)   # mean energy charged per day
     pv_penetration: float = Field(0.0, ge=0, le=1)   # fraction of load buses with PV
     pv_kwp: float = Field(5.0, gt=0, le=100)         # peak kW per PV system
+    pv_mix: bool = False                             # random size + orientation per system
     # multi-family buildings: sum mfh_min..mfh_max household profiles per load.
     # "auto" applies it to suburban/urban grids only; default "off" keeps
     # existing recipes (saved scenarios) bit-identical.
@@ -788,7 +789,8 @@ def _pv_gen_doc(g, policy: LoadgenPolicy) -> dict | None:
         return None
     return assign_pv(
         _household_loads(g), PvPolicy(penetration=policy.pv_penetration,
-                                      kwp=policy.pv_kwp, seed=policy.seed),
+                                      kwp=policy.pv_kwp, mix=policy.pv_mix,
+                                      seed=policy.seed),
         steps=settings.steps_per_day,
     )
 

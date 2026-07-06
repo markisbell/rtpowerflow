@@ -65,6 +65,7 @@ export interface LoadgenPolicy {
   ev_daily_kwh?: number;
   pv_penetration?: number;
   pv_kwp?: number;
+  pv_mix?: boolean;           // random size + orientation per system
   // multi-family buildings: sum mfh_min..mfh_max household profiles per load.
   // "auto" applies to suburban/urban grids; the backend default is "off".
   mfh?: "auto" | "off" | "on";
