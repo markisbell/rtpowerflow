@@ -96,7 +96,8 @@ export default function ProfileGraph({
   return (
     <>
       <div style={{ fontSize: "0.72rem", color: "var(--muted)", height: 13 }}>
-        {hover != null ? hhmm(hover) : nowF != null ? t("graph.uhr", { time: hhmm(nowF) }) : ""}
+        {hover != null ? t("graph.uhr", { time: hhmm(hover) })
+          : nowF != null ? t("graph.uhr", { time: hhmm(nowF) }) : ""}
       </div>
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", cursor: "crosshair" }}
            onMouseMove={onMove} onMouseLeave={() => setHover(null)}>

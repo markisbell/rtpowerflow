@@ -88,6 +88,7 @@ const en = {
   axis: {
     time: "Time / h",
     power: "Power / kW",
+    apparent: "Power / kVA",
     voltage: "Voltage / V",
     current: "Current / A",
     soc: "State of charge / %",
@@ -167,7 +168,7 @@ const en = {
   },
   line: { title: "Line {{name}}", current: "Current", rated: "rated {{a}} A",
           none: "No current (line out of service?)." },
-  trafo: { title: "Transformer {{name}}", power: "P exchange",
+  trafo: { title: "Transformer {{name}}", power: "apparent power S",
            rated: "rated {{kva}} kVA", ratedNeg: "−{{kva}} kVA",
            none: "No power data (transformer out of service?)." },
 
@@ -340,6 +341,7 @@ const de: typeof en = {
   axis: {
     time: "Zeit / h",
     power: "Leistung / kW",
+    apparent: "Leistung / kVA",
     voltage: "Spannung / V",
     current: "Strom / A",
     soc: "Ladezustand / %",
@@ -419,7 +421,7 @@ const de: typeof en = {
   },
   line: { title: "Leitung {{name}}", current: "Strom", rated: "Nenn {{a}} A",
           none: "Kein Strom (Leitung außer Betrieb?)." },
-  trafo: { title: "Transformator {{name}}", power: "P-Austausch",
+  trafo: { title: "Transformator {{name}}", power: "Scheinleistung S",
            rated: "Nenn {{kva}} kVA", ratedNeg: "−{{kva}} kVA",
            none: "Keine Leistungsdaten (Transformator außer Betrieb?)." },
 

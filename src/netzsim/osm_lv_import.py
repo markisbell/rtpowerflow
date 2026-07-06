@@ -92,14 +92,14 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
         std_type, sn_mva, parallel = _pick_trafo(peak_load_mw * 1.25, hv_kv)
     station_geo = g.get("station") or g["buses"][lv_busbar]["geo"]
     mv_bus = len(buses)
-    buses.append({"name": "MV_station", "vn_kv": hv_kv, "type": "b", "zone": "MV",
+    buses.append({"name": "MS-Netz", "vn_kv": hv_kv, "type": "b", "zone": "MV",
                   "in_service": True, "geo": station_geo, "kind": None})
-    trafo_specs = [{"name": "MV/LV substation", "hv_bus": mv_bus, "lv_bus": lv_busbar,
+    trafo_specs = [{"name": "MS/NS-Station", "hv_bus": mv_bus, "lv_bus": lv_busbar,
                     "std_type": std_type, "parallel": parallel}]
     lines_doc = {"lines": line_specs, "transformers": trafo_specs}
 
     sub_doc = {"resolution_minutes": 1440 // steps, "steps": steps,
-               "substations": [{"name": "MV_station", "bus": mv_bus,
+               "substations": [{"name": "MS-Netz", "bus": mv_bus,
                                 "vm_pu": [1.0] * steps, "va_degree": [0.0] * steps}]}
 
     unit = f"{parallel}x {std_type}" if parallel > 1 else std_type

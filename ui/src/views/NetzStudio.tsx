@@ -179,14 +179,28 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
         {selected && (
           <>
             {gridPrev && (
-              <div className="kpis">
-                <Kpi k={t("grid.kBuses")} v={`${gridPrev.n_bus}`} />
-                <Kpi k={t("grid.kLines")} v={`${gridPrev.n_line}`} />
-                <Kpi k={t("grid.kLoads")} v={`${gridPrev.n_load}`} />
-                {gridPrev.trafos[0] && gridPrev.trafos[0].sn_mva > 0 && (
-                  <Kpi k={t("netz.kTrafo")} v={`${fmt(gridPrev.trafos[0].sn_mva * 1000, 0)} kVA`} />
+              <>
+                <div className="kpis">
+                  <Kpi k={t("grid.kBuses")} v={`${gridPrev.n_bus}`} />
+                  <Kpi k={t("grid.kLines")} v={`${gridPrev.n_line}`} />
+                  <Kpi k={t("grid.kLoads")} v={`${gridPrev.n_load}`} />
+                  {gridPrev.trafos[0] && gridPrev.trafos[0].sn_mva > 0 && (
+                    <Kpi k={t("netz.kTrafo")} v={`${fmt(gridPrev.trafos[0].sn_mva * 1000, 0)} kVA`} />
+                  )}
+                </div>
+                {gridPrev.notes.length > 0 && (
+                  <details style={{ marginBottom: "0.7rem" }}>
+                    <summary className="note" style={{ cursor: "pointer" }}>
+                      {t("grid.notes", { count: gridPrev.notes.length })}
+                    </summary>
+                    <ul style={{ fontSize: "0.75rem", color: "var(--muted)", margin: "0.3rem 0" }}>
+                      {gridPrev.notes.map((n, i) => (
+                        <li key={i}>{n}</li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
-              </div>
+              </>
             )}
             {!available && <p className="note">{t("loads.noLpg")}</p>}
 

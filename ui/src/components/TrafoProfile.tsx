@@ -5,8 +5,10 @@ import type { TrafoProfiles } from "../types";
 import { loadingColor } from "../scales";
 import ProfileGraph, { type GLimit } from "./ProfileGraph";
 
-// Per-transformer daily power-exchange graph (HV-side P) with the transformer's
-// rated apparent power as the capacity limit. When the flow reverses (PV export),
+// Per-transformer daily power-exchange graph with the transformer's rated
+// apparent power as the capacity limit. Plotted is the APPARENT power S in kVA
+// (|S| = loading% x rated, signed by the direction of P) so the curve and the
+// ±rated limit lines live on the same axis. When the flow reverses (PV export),
 // the axis spans ±rated; otherwise it's an import-only 0..rated view.
 // `embedded`: rendered inside an accordion Section, which owns title + close.
 export default function TrafoProfile({ trafo, name, now, day, onClose, embedded = false }: { trafo: number; name: string; now: number | null; day: number; onClose?: () => void; embedded?: boolean }) {
@@ -22,9 +24,17 @@ export default function TrafoProfile({ trafo, name, now, day, onClose, embedded 
   }, [trafo, day]);
 
   const power = data?.power ?? [];
-  const hasData = power.length > 0 && power.some((v) => v != null);
-  const hasExport = power.some((v) => v != null && v < 0);
   const sn = data?.sn_mva ?? null;
+  // apparent power, signed by the flow direction (falls back to |P| where the
+  // loading sample is missing)
+  const apparent = power.map((p, i) => {
+    if (p == null) return null;
+    const l = data?.loading?.[i];
+    const s = sn != null && l != null ? (l / 100) * sn : Math.abs(p);
+    return p < 0 ? -s : s;
+  });
+  const hasData = apparent.length > 0 && apparent.some((v) => v != null);
+  const hasExport = apparent.some((v) => v != null && v < 0);
   const ratedLabel = sn != null ? t("trafo.rated", { kva: (sn * 1000).toFixed(0) }) : "";
   const limits: GLimit[] = sn == null ? [] :
     hasExport
@@ -44,12 +54,12 @@ export default function TrafoProfile({ trafo, name, now, day, onClose, embedded 
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
       {!err && data && hasData && (
         <ProfileGraph
-          series={[{ label: t("trafo.power"), color: "#f2ae00", data: power, fill: !hasExport,
+          series={[{ label: t("trafo.power"), color: "#f2ae00", data: apparent, fill: !hasExport,
                      colorData: data.loading, colorFn: loadingColor },
                    ...((data.est_power?.some((v) => v != null) ?? false)
                      ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_power! }] : [])]}
-          limits={limits} scale={1000} unit="kW" dec={1} baseZero={!hasExport} now={now}
-          yTitle={t("axis.power")}
+          limits={limits} scale={1000} unit="kVA" dec={1} baseZero={!hasExport} now={now}
+          yTitle={t("axis.apparent")}
         />
       )}
       {!err && data && !hasData && (
