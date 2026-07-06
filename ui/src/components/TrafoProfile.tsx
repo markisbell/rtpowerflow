@@ -49,6 +49,7 @@ export default function TrafoProfile({ trafo, name, now, day, onClose, embedded 
                    ...((data.est_power?.some((v) => v != null) ?? false)
                      ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_power! }] : [])]}
           limits={limits} scale={1000} unit="kW" dec={1} baseZero={!hasExport} now={now}
+          yTitle={t("axis.power")}
         />
       )}
       {!err && data && !hasData && (

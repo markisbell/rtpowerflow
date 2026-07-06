@@ -85,6 +85,14 @@ const en = {
   },
 
   graph: { uhr: "{{time}}", est: "Estimate" },
+  axis: {
+    time: "Time / h",
+    power: "Power / kW",
+    voltage: "Voltage / V",
+    current: "Current / A",
+    soc: "State of charge / %",
+    price: "Price / €/MWh",
+  },
 
   mbar: {
     netz: "Grid",
@@ -329,6 +337,14 @@ const de: typeof en = {
   },
 
   graph: { uhr: "{{time}} Uhr", est: "Schätzung" },
+  axis: {
+    time: "Zeit / h",
+    power: "Leistung / kW",
+    voltage: "Spannung / V",
+    current: "Strom / A",
+    soc: "Ladezustand / %",
+    price: "Preis / €/MWh",
+  },
 
   mbar: {
     netz: "Netz",

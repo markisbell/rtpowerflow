@@ -40,7 +40,7 @@ export default function LineProfile({ line, name, now, day, onClose, embedded = 
           limits={data.rated_i_ka != null
             ? [{ value: data.rated_i_ka, label: t("line.rated", { a: (data.rated_i_ka * 1000).toFixed(0) }), color: "#f85149" }]
             : []}
-          scale={1000} unit="A" dec={0} now={now}
+          scale={1000} unit="A" dec={0} now={now} yTitle={t("axis.current")}
         />
       )}
       {!err && data && !hasData && (

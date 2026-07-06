@@ -10,6 +10,8 @@ interface Props {
   marker?: number;    // horizontal limit line at ±marker (e.g. trafo rating)
   step?: boolean;     // sample-and-hold steps instead of linear interpolation
   fluid?: boolean;    // scale to the container width (width/height = viewBox)
+  xTitle?: string;    // axis caption, e.g. "Zeit / h"
+  yTitle?: string;    // axis caption, e.g. "Leistung / kW"
 }
 
 /** Y-axis extent of the chart: all plotted series plus headroom for the
@@ -21,6 +23,12 @@ export function chartExtent(
   const ext = over ? [...main, ...over] : [...main];
   if (marker && marker > 0) ext.push(marker * 1.05);   // keep the limit in view
   return { max: Math.max(...ext, 1e-9), min: Math.min(...ext, 0) };
+}
+
+/** n evenly distributed axis tick values from min to max (both included). */
+export function axisTicks(min: number, max: number, n = 5): number[] {
+  const span = max - min;
+  return Array.from({ length: n }, (_, k) => min + (span * k) / (n - 1));
 }
 
 /** A compact area/line chart for a daily profile. Handles negative values
@@ -37,11 +45,16 @@ export default function Sparkline({
   marker,
   step = false,
   fluid = false,
+  xTitle,
+  yTitle,
 }: Props) {
   if (!values.length) return null;
+  const FS = 11;                          // one font size for all axis text
   const pad = 26;
-  const w = width - pad * 2;
-  const h = height - pad * 2;
+  const padL = yTitle ? 56 : 40;          // room for tick labels (+ rotated title)
+  const padB = xTitle ? 42 : 26;          // room for tick labels (+ axis title)
+  const w = width - padL - pad;
+  const h = height - pad - padB;
 
   const ds = (arr: number[]) => {
     const stride = Math.max(1, Math.floor(arr.length / 280));
@@ -55,9 +68,11 @@ export default function Sparkline({
   const { min, max } = chartExtent(main, over, marker);
   const span = max - min || 1e-9;
 
-  const x = (i: number, n: number) => pad + (i / (n - 1)) * w;
+  const x = (i: number, n: number) => padL + (i / (n - 1)) * w;
   const y = (v: number) => pad + h - ((v - min) / span) * h;
   const y0 = y(0);
+  const yDec = span < 10 ? 1 : 0;        // tick label decimals
+  const yTicks = axisTicks(min, max);
 
   // step = sample-and-hold: each value holds until the next sample (the natural
   // look for discrete per-minute load profiles); otherwise linear segments
@@ -72,14 +87,49 @@ export default function Sparkline({
     }
     return d;
   };
-  const area = `${path(main)} L${x(main.length - 1, main.length).toFixed(1)},${y0} L${pad},${y0} Z`;
+  const area = `${path(main)} L${x(main.length - 1, main.length).toFixed(1)},${y0} L${padL},${y0} Z`;
 
   return (
     <svg width={fluid ? undefined : width} height={fluid ? undefined : height}
          viewBox={`0 0 ${width} ${height}`}
          style={fluid ? { width: "100%", height: "auto", display: "block" } : undefined}
          role="img" aria-label="daily load profile">
-      <line x1={pad} y1={y0} x2={pad + w} y2={y0} stroke="#3a4250" strokeWidth={1} />
+      {/* grid: a tick + label every 2 h, five evenly spaced y ticks */}
+      {hourAxis &&
+        Array.from({ length: 13 }, (_, k) => k * 2).map((hr) => (
+          <g key={"h" + hr}>
+            <line x1={padL + (hr / 24) * w} y1={pad} x2={padL + (hr / 24) * w}
+                  y2={pad + h} stroke="#1b2028" strokeWidth={1} />
+            <text x={padL + (hr / 24) * w} y={pad + h + FS + 4} fill="#8a93a3"
+                  fontSize={FS} textAnchor="middle">
+              {hr}
+            </text>
+          </g>
+        ))}
+      {yTicks.map((v, k) => (
+        <g key={"y" + k}>
+          <line x1={padL} y1={y(v)} x2={padL + w} y2={y(v)}
+                stroke="#1b2028" strokeWidth={1} />
+          <text x={padL - 5} y={y(v) + FS / 3} fill="#8a93a3" fontSize={FS}
+                textAnchor="end">
+            {v.toFixed(yDec)}
+          </text>
+        </g>
+      ))}
+      {/* axis titles: quantity / unit */}
+      {xTitle && (
+        <text x={padL + w / 2} y={height - 8} fill="#8a93a3" fontSize={FS}
+              textAnchor="middle">
+          {xTitle}
+        </text>
+      )}
+      {yTitle && (
+        <text x={13} y={pad + h / 2} fill="#8a93a3" fontSize={FS} textAnchor="middle"
+              transform={`rotate(-90, 13, ${pad + h / 2})`}>
+          {yTitle}
+        </text>
+      )}
+      <line x1={padL} y1={y0} x2={padL + w} y2={y0} stroke="#3a4250" strokeWidth={1} />
       <path d={area} fill={fill} stroke="none" />
       <path d={path(main)} fill="none" stroke={color} strokeWidth={1.8} />
       {over && (
@@ -87,26 +137,17 @@ export default function Sparkline({
       )}
       {marker && marker > 0 && (
         <>
-          <line x1={pad} y1={y(marker)} x2={pad + w} y2={y(marker)}
+          <line x1={padL} y1={y(marker)} x2={padL + w} y2={y(marker)}
                 stroke="#e5534b" strokeWidth={1.2} strokeDasharray="6 4" />
           {min < -marker * 0.5 && (
-            <line x1={pad} y1={y(-marker)} x2={pad + w} y2={y(-marker)}
+            <line x1={padL} y1={y(-marker)} x2={padL + w} y2={y(-marker)}
                   stroke="#e5534b" strokeWidth={1.2} strokeDasharray="6 4" />
           )}
-          <text x={pad + w} y={y(marker) - 4} fill="#e5534b" fontSize="10" textAnchor="end">
+          <text x={padL + w} y={y(marker) - 4} fill="#e5534b" fontSize="10" textAnchor="end">
             {marker.toFixed(0)}
           </text>
         </>
       )}
-      <text x={2} y={pad + 4} fill="#8a93a3" fontSize="10">{max.toFixed(max < 10 ? 1 : 0)}</text>
-      <text x={2} y={y0 + 3} fill="#8a93a3" fontSize="10">0</text>
-      {min < 0 && <text x={2} y={pad + h} fill="#8a93a3" fontSize="10">{min.toFixed(1)}</text>}
-      {hourAxis &&
-        [0, 6, 12, 18, 24].map((hr) => (
-          <text key={hr} x={pad + (hr / 24) * w} y={height - 6} fill="#8a93a3" fontSize="10" textAnchor="middle">
-            {hr}:00
-          </text>
-        ))}
     </svg>
   );
 }

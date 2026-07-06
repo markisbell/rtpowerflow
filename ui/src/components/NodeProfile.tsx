@@ -53,7 +53,8 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
       {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
       {!err && data && mode === "power" && (
         powerSeries.length
-          ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} now={now} />
+          ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} now={now}
+                          yTitle={t("axis.power")} />
           : <div className="muted" style={{ fontSize: "0.72rem" }}>{t("node.none")}</div>
       )}
       {!err && data && mode === "voltage" && hasVoltage && (
@@ -62,6 +63,7 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
                    ...((data.est_voltage?.some((v) => v != null) ?? false)
                      ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_voltage! }] : [])]}
           limits={VLIMIT} scale={V_BASE} unit="V" dec={1} baseZero={false} now={now}
+          yTitle={t("axis.voltage")}
         />
       )}
     </div>

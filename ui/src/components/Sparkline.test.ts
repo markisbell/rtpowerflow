@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartExtent } from "./Sparkline";
+import { axisTicks, chartExtent } from "./Sparkline";
 
 // Regression: the trafo-rating marker used to be PUSHED into the main series
 // (same array reference when no overlay was drawn) and was then rendered as a
@@ -30,5 +30,16 @@ describe("chartExtent", () => {
     const { min, max } = chartExtent([-26, 218.7], null, 237.5);
     expect(min).toBe(-26);                 // PV reverse flow stays visible
     expect(max).toBeCloseTo(237.5 * 1.05);
+  });
+});
+
+describe("axisTicks", () => {
+  it("returns five evenly spaced ticks including min and max", () => {
+    expect(axisTicks(0, 100)).toEqual([0, 25, 50, 75, 100]);
+    const t = axisTicks(-26, 250);
+    expect(t).toHaveLength(5);
+    expect(t[0]).toBe(-26);
+    expect(t[4]).toBe(250);
+    expect(t[2]).toBeCloseTo((-26 + 250) / 2);   // evenly distributed
   });
 });
