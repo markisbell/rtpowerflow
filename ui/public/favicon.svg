@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- netzsim: Ortsnetzstation speist einen Strang, dessen Kabel als
+       Live-Puls (EKG) schlaegt - Netz + Echtzeit in einem Bild -->
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <path d="M16.5 20 V44 H23 L28 34 L33 52 L37 44 H49" fill="none" stroke="#4c8dff"
+        stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.5 28 H35" fill="none" stroke="#4c8dff" stroke-width="5" stroke-linecap="round"/>
+  <rect x="11" y="10" width="11" height="11" rx="2.5" fill="#f2ae00"/>
+  <circle cx="38" cy="28" r="4.5" fill="#3fb950"/>
+  <circle cx="50" cy="44" r="4.5" fill="#3fb950"/>
+</svg>
