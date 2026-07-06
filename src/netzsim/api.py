@@ -7,7 +7,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from .config import settings
@@ -114,6 +114,16 @@ app.add_middleware(
 # --------------------------------------------------------------------------- #
 # REST
 # --------------------------------------------------------------------------- #
+@app.get("/manual")
+def manual():
+    """The German user manual (docs/Benutzerhandbuch.pdf), for the Hilfe menu."""
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[2] / "docs" / "Benutzerhandbuch.pdf"
+    if not p.is_file():
+        raise HTTPException(404, "manual not available in this deployment")
+    return FileResponse(p, media_type="application/pdf", filename="Benutzerhandbuch.pdf")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

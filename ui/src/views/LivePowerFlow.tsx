@@ -13,29 +13,31 @@ import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import DerPanel from "../components/DerPanel";
-import ScenarioPanel from "../components/ScenarioPanel";
 import Section from "../components/Section";
 import { gridDisplayName } from "../gridname";
+import type { LiveView } from "../App";
 
-type Layout = "map" | "tree";
 type SelKind = "bus" | "line" | "trafo";
 // One collapsible side-panel section per grid element. A section exists while
 // pinned (via the element menu / ctrl-click) or while a battery sits at the
 // element; its body (graphs, readings) renders lazily on expand.
 interface Sec { kind: SelKind; id: number; open: boolean; }
 
-export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
+export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
+  onActive: () => void;
+  view: LiveView;                              // display settings live in App
+  onView: (patch: Partial<LiveView>) => void;  // (driven by the Ansicht menu)
+  measStamp: number;                           // menu meter actions -> refetch
+}) {
   const { t } = useTranslation();
+  const { layout, showValues, viewMode } = view;
   const [topo, setTopo] = useState<Topology | null>(null);
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [layout, setLayout] = useState<Layout>("tree");
-  const [showValues, setShowValues] = useState(false);
   const [sections, setSections] = useState<Sec[]>([]);
   const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [ovOpen, setOvOpen] = useState(true);          // "Overview" section
   const [measOpen, setMeasOpen] = useState(false);     // bulk "Measurements" section
-  const [scenOpen, setScenOpen] = useState(false);     // "Scenarios" section
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
@@ -52,7 +54,6 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   // Three parallel views of the grid: ground truth (default, so a fresh session
   // sees a normal colored grid), the strict observed-only projection, and the
   // WLS state estimate computed from the placed meters (estimator.py).
-  const [viewMode, setViewMode] = useState<"truth" | "observed" | "est">("truth");
   const layoutInit = useRef(false);
   const intervalInit = useRef(false);
 
@@ -87,10 +88,15 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   useEffect(() => {
     if (topo && !layoutInit.current) {
       layoutInit.current = true;
-      setLayout(topo.has_geo ? "map" : "tree");
-      setShowValues(topo.buses.length <= 40);   // on by default for small grids; toggle for big ones
+      onView({ layout: topo.has_geo ? "map" : "tree",
+               showValues: topo.buses.length <= 40 });  // values on by default for small grids
     }
   }, [topo]);
+
+  // meter changes made in the menu bar (presets, TAF mode) -> refresh placement
+  useEffect(() => {
+    if (measStamp > 0) reloadMeasurements();
+  }, [measStamp]);
 
   // drop stale sections when the grid changes; batteries + meters reset with it
   useEffect(() => { setSections([]); setMenu(null); reloadBatteries(); reloadMeasurements(); }, [topo?.name]);
@@ -214,18 +220,6 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   };
   const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
   const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
-  // a scenario load swaps the whole setup server-side: refetch everything
-  const scenarioLoaded = () => {
-    setSections([]);
-    setMenu(null);
-    loadTopo();
-    loadStatus();
-    reloadBatteries();
-    reloadMeasurements();
-    api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
-    setDerStamp((v) => v + 1);
-    onActive();
-  };
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -296,44 +290,7 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
   return (
     <div className="live" style={{ gridTemplateColumns: `1fr ${sideW}px` }}>
       <div className="diagram-wrap">
-        <div className="layout-toggle">
-          {topo.has_geo && (
-            <button className={layout === "map" ? "on" : ""} onClick={() => setLayout("map")}
-                    title={t("live.mapTitle")}>
-              🗺 {t("live.map")}
-            </button>
-          )}
-          <button className={layout === "tree" ? "on" : ""} onClick={() => setLayout("tree")}>
-            {t("live.schematic")}
-          </button>
-          {layout === "tree" && (
-            <button
-              className={showValues ? "on" : ""}
-              style={{ marginLeft: 6 }}
-              onClick={() => setShowValues((v) => !v)}
-              title={t("live.valuesTitle")}
-            >
-              {t("live.values")}
-            </button>
-          )}
-          {(canReveal || est) && (
-            <span style={{ marginLeft: 6, display: "inline-flex", gap: 2 }}>
-              {canReveal && (
-                <button className={mode === "truth" ? "on" : ""} title={t("live.revealTitle")}
-                        onClick={() => setViewMode(mode === "truth" ? "observed" : "truth")}>
-                  👁 {mode === "truth" ? t("live.reveal") : t("live.revealOff")}
-                </button>
-              )}
-              {est && (
-                <button className={mode === "est" ? "on" : ""} title={t("live.estimateTitle")}
-                        onClick={() => setViewMode(mode === "est" ? (canReveal ? "truth" : "observed") : "est")}>
-                  🧮 {t("live.estimate")}
-                </button>
-              )}
-            </span>
-          )}
-        </div>
-        {layout === "map" ? (
+        {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
@@ -443,10 +400,6 @@ export default function LivePowerFlow({ onActive }: { onActive: () => void }) {
             <MeasurementPanel placement={placement} onPreset={meterPreset} onMode={meterMode} />
           </Section>
         )}
-
-        <Section title={t("scen.heading")} open={scenOpen} onToggle={() => setScenOpen((v) => !v)}>
-          <ScenarioPanel onLoaded={scenarioLoaded} />
-        </Section>
 
         {sections.map((sec) => {
           const key = `${sec.kind}${sec.id}`;

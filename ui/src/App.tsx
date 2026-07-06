@@ -3,18 +3,30 @@ import { useTranslation } from "react-i18next";
 import { api } from "./api";
 import type { ActiveGrid } from "./types";
 import { gridDisplayName } from "./gridname";
-import EstimationMenu from "./components/EstimationMenu";
+import MenuBar from "./components/MenuBar";
 import GridBrowser from "./views/GridBrowser";
 import LoadStudio from "./views/LoadStudio";
 import LivePowerFlow from "./views/LivePowerFlow";
 
 type Tab = "grids" | "loads" | "live";
 
+// The Live view's display settings, lifted here so the menu bar (Ansicht)
+// and the view itself share one source of truth.
+export interface LiveView {
+  layout: "map" | "tree";
+  showValues: boolean;
+  viewMode: "truth" | "observed" | "est";
+}
+
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [tab, setTab] = useState<Tab>("grids");
+  const [tab, setTab] = useState<Tab>("live");   // a real program opens its main view
   const [selectedGrid, setSelectedGrid] = useState<string | null>(null);
   const [active, setActive] = useState<ActiveGrid | null>(null);
+  const [live, setLive] = useState<LiveView>({ layout: "tree", showValues: false, viewMode: "truth" });
+  const patchLive = (p: Partial<LiveView>) => setLive((v) => ({ ...v, ...p }));
+  const [measStamp, setMeasStamp] = useState(0);   // menu meter actions -> Live refetch
+  const [liveKey, setLiveKey] = useState(0);       // scenario load -> full Live remount
 
   const refreshActive = () => api.active().then(setActive).catch(() => {});
   useEffect(() => {
@@ -24,22 +36,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <nav className="tabs">
-          <button className={tab === "grids" ? "on" : ""} onClick={() => setTab("grids")}>
-            {t("nav.grid")}
-          </button>
-          <button
-            className={tab === "loads" ? "on" : ""}
-            onClick={() => setTab("loads")}
-            disabled={!selectedGrid}
-          >
-            {t("nav.loads")}
-          </button>
-          <button className={tab === "live" ? "on" : ""} onClick={() => setTab("live")}>
-            {t("nav.live")}
-          </button>
-          <EstimationMenu />
-        </nav>
+        <span className="brand">netzsim</span>
+        <MenuBar tab={tab} onTab={setTab} selectedGrid={selectedGrid} active={active}
+                 live={live} onLive={patchLive}
+                 onMeasChanged={() => setMeasStamp((n) => n + 1)}
+                 onScenarioLoaded={() => { refreshActive(); setTab("live"); setLiveKey((n) => n + 1); }} />
         <div className="active-chip">
           {active?.grid_id ? (
             <>
@@ -79,10 +80,14 @@ export default function App() {
             onApplied={(a) => {
               setActive(a);
               setTab("live");
+              setLiveKey((n) => n + 1);
             }}
           />
         )}
-        {tab === "live" && <LivePowerFlow onActive={refreshActive} />}
+        {tab === "live" && (
+          <LivePowerFlow key={liveKey} onActive={refreshActive}
+                         view={live} onView={patchLive} measStamp={measStamp} />
+        )}
       </main>
     </div>
   );
