@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
@@ -203,6 +203,12 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const changeBatteryMode = async (index: number, mode: BatteryMode) => {
     try {
       const r = await api.setBatteryMode(index, mode);
+      setBatteries(r.batteries);
+    } catch { reloadBatteries(); }
+  };
+  const changeBatterySize = async (index: number, kwh: number, kw: number) => {
+    try {
+      const r = await api.setBatterySize(index, kwh, kw);
       setBatteries(r.batteries);
     } catch { reloadBatteries(); }
   };
@@ -456,9 +462,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                         <option key={m} value={m}>{t(`bat.${m}`)}</option>
                       ))}
                     </select>
-                    <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>
-                      {bat.capacity_kwh} kWh · {bat.power_kw} kW
-                    </span>
+                    <BatterySize bat={bat} free={sec.kind === "trafo"}
+                                 onSize={(c, p) => changeBatterySize(bat.index, c, p)} />
                   </div>
                   <Stat label={t("bat.soc")} value={`${fmt(live?.soc_percent ?? bat.soc_percent, 1)} %`} />
                   <Stat label={t("bat.pwr")} value={live ? `${fmt(live.p_mw * 1000, 2)} kW` : "—"} />
@@ -544,6 +549,55 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
         </label>
       </div>
     </div>
+  );
+}
+
+// classic home-storage units (kWh · kW); the busbar battery is sized freely
+const HOME_SIZES: [number, number][] = [[5, 2.5], [10, 5], [15, 7.5], [20, 10]];
+const numStyle: CSSProperties = {
+  width: 64, fontSize: "0.72rem", background: "var(--panel-2)",
+  color: "var(--text)", border: "1px solid var(--border)", borderRadius: 4,
+  padding: "1px 4px",
+};
+
+function BatterySize({ bat, free, onSize }: {
+  bat: Battery; free: boolean; onSize: (kwh: number, kw: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [kwh, setKwh] = useState(bat.capacity_kwh);
+  const [kw, setKw] = useState(bat.power_kw);
+  useEffect(() => { setKwh(bat.capacity_kwh); setKw(bat.power_kw); },
+            [bat.capacity_kwh, bat.power_kw]);
+  if (!free) {
+    const cur = `${bat.capacity_kwh}|${bat.power_kw}`;
+    const known = HOME_SIZES.some(([c, p]) => `${c}|${p}` === cur);
+    return (
+      <select value={cur} style={{ fontSize: "0.72rem" }}
+              title={t("bat.sizeTitle")}
+              onChange={(e) => { const [c, p] = e.target.value.split("|").map(Number); onSize(c, p); }}>
+        {!known && <option value={cur}>{bat.capacity_kwh} kWh · {bat.power_kw} kW</option>}
+        {HOME_SIZES.map(([c, p]) => (
+          <option key={c} value={`${c}|${p}`}>{c} kWh · {p} kW</option>
+        ))}
+      </select>
+    );
+  }
+  const dirty = kwh !== bat.capacity_kwh || kw !== bat.power_kw;
+  const valid = kwh > 0 && kw > 0;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: "0.72rem" }}
+          title={t("bat.sizeTitle")}>
+      <input type="number" min={1} step={1} value={kwh} style={numStyle}
+             onChange={(e) => setKwh(+e.target.value)} /> kWh
+      <input type="number" min={1} step={1} value={kw} style={{ ...numStyle, width: 56 }}
+             onChange={(e) => setKw(+e.target.value)} /> kW
+      {dirty && (
+        <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
+                disabled={!valid} onClick={() => onSize(kwh, kw)}>
+          {t("bat.apply")}
+        </button>
+      )}
+    </span>
   );
 }
 

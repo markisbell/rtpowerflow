@@ -228,6 +228,22 @@ class Simulator:
                 return True
         return False
 
+    def set_battery_size(self, storage_idx: int, capacity_kwh: float,
+                         power_kw: float) -> bool:
+        """Resize a deployed battery in place (capacity + power rating). The
+        SOC keeps its *fraction*; the storage table and the battery-aware
+        daily sweeps are rebuilt."""
+        for b in self.batteries:
+            if b.storage_idx == storage_idx:
+                frac = b.soc_frac()
+                b.capacity_mwh = max(0.0, capacity_kwh) / 1000.0
+                b.power_mw = max(0.0, power_kw) / 1000.0
+                b.soc_mwh = frac * b.capacity_mwh
+                self._rebuild_storage()
+                self._daily_by_day.clear()
+                return True
+        return False
+
     def remove_battery(self, storage_idx: int) -> bool:
         n = len(self.batteries)
         self.batteries = [b for b in self.batteries if b.storage_idx != storage_idx]
