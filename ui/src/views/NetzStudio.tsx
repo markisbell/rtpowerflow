@@ -295,7 +295,8 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
               </div>
               <div className="ns-chart">
                 <Sparkline values={netKw} overlay={hasPv ? grossKw : undefined}
-                           width={760} height={350} marker={ratingKw} step fluid />
+                           width={760} height={350} marker={ratingKw} step fluid
+                           xTitle={t("axis.time")} yTitle={t("axis.power")} />
               </div>
             </div>
             {preview.n_mfh > 0 && (

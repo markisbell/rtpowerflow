@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { axisTicks } from "./Sparkline";
 
 export interface GSeries {
   label: string;
@@ -13,7 +14,10 @@ export interface GSeries {
 }
 export interface GLimit { value: number; label: string; color: string; }
 
-const W = 300, H = 128, L = 30, R = 8, T = 10, B = 18;
+// geometry + one shared font size: axis labels render at the same size as the
+// HTML time readout and the legend (0.72rem ≈ 11.5px at the panel's ~1:1 scale)
+const W = 300, H = 152, L = 52, R = 10, T = 12, B = 32;
+const FS = 11.5;
 
 // A daily time-series graph (x = 0..24 h) with overlaid series, dashed limit
 // lines, and a cursor that reads out each series at the hovered time. If `now`
@@ -21,8 +25,9 @@ const W = 300, H = 128, L = 30, R = 8, T = 10, B = 18;
 // drawn opaque — colored by the severity colorset when provided — and the rest
 // faded, so the reading ties back to the live line/node color on the map.
 export default function ProfileGraph({
-  series, limits = [], scale, unit, dec, baseZero = true, now = null,
-}: { series: GSeries[]; limits?: GLimit[]; scale: number; unit: string; dec: number; baseZero?: boolean; now?: number | null }) {
+  series, limits = [], scale, unit, dec, baseZero = true, now = null, yTitle,
+}: { series: GSeries[]; limits?: GLimit[]; scale: number; unit: string; dec: number;
+     baseZero?: boolean; now?: number | null; yTitle?: string }) {
   const { t } = useTranslation();
   const [hover, setHover] = useState<number | null>(null); // fraction of the day 0..1
   const ref = useRef<SVGSVGElement | null>(null);
@@ -95,32 +100,45 @@ export default function ProfileGraph({
       </div>
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", cursor: "crosshair" }}
            onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-        {[0, 6, 12, 18, 24].map((h) => {
+        {/* a tick + label every 2 h */}
+        {Array.from({ length: 13 }, (_, k) => k * 2).map((h) => {
           const x = px(h / 24);
           return (
             <g key={h}>
               <line x1={x} y1={T} x2={x} y2={H - B} stroke="#1b2028" strokeWidth={0.5} />
-              <text x={x} y={H - 6} fontSize={7} textAnchor="middle" fill="#6b7480">{h}</text>
+              <text x={x} y={H - B + FS + 2} fontSize={FS} textAnchor="middle" fill="#6b7480">{h}</text>
             </g>
           );
         })}
+        {/* five evenly spaced y ticks with gridlines */}
+        {axisTicks(yMin, yMax).map((v, k) => (
+          <g key={"y" + k}>
+            <line x1={L} y1={py(v)} x2={W - R} y2={py(v)} stroke="#1b2028" strokeWidth={0.5} />
+            <text x={L - 4} y={py(v) + FS / 3} fontSize={FS} textAnchor="end" fill="#6b7480">
+              {(v * scale).toFixed(dec)}
+            </text>
+          </g>
+        ))}
+        {/* axis titles: quantity / unit */}
+        <text x={L + (W - L - R) / 2} y={H - 4} fontSize={FS} textAnchor="middle" fill="#6b7480">
+          {t("axis.time")}
+        </text>
+        <text x={11} y={(T + H - B) / 2} fontSize={FS} textAnchor="middle" fill="#6b7480"
+              transform={`rotate(-90, 11, ${(T + H - B) / 2})`}>
+          {yTitle ?? unit}
+        </text>
         <line x1={L} y1={H - B} x2={W - R} y2={H - B} stroke="#2b3340" strokeWidth={0.8} />
         {/* zero reference line for curves that cross 0 (e.g. battery charge/discharge) */}
         {yMin < 0 && yMax > 0 && (
-          <>
-            <line x1={L} y1={py(0)} x2={W - R} y2={py(0)} stroke="#4a5568" strokeWidth={0.8} />
-            <text x={2} y={py(0) + 2.5} fontSize={7} fill="#6b7480">0</text>
-          </>
+          <line x1={L} y1={py(0)} x2={W - R} y2={py(0)} stroke="#4a5568" strokeWidth={0.8} />
         )}
-        <text x={2} y={T + 5} fontSize={7} fill="#6b7480">{(yMax * scale).toFixed(dec)}</text>
-        <text x={2} y={H - B} fontSize={7} fill="#6b7480">{(yMin * scale).toFixed(dec)}</text>
 
         {limits.map((lm, i) => {
           const y = py(lm.value);
           return (
             <g key={"lim" + i}>
               <line x1={L} y1={y} x2={W - R} y2={y} stroke={lm.color} strokeWidth={0.8} strokeDasharray="4 3" opacity={0.85} />
-              <text x={W - R} y={y - 2} fontSize={6.5} textAnchor="end" fill={lm.color}>{lm.label}</text>
+              <text x={W - R} y={y - 2} fontSize={9.5} textAnchor="end" fill={lm.color}>{lm.label}</text>
             </g>
           );
         })}

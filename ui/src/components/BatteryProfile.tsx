@@ -44,15 +44,17 @@ export default function BatteryProfile({ idx, now, day, onClose, embedded = fals
         <>
           <div className="muted" style={{ fontSize: "0.68rem" }}>{t("bat.soc")}</div>
           <ProfileGraph series={[{ label: t("bat.soc"), color, data: data.soc, fill: true }]}
-                        scale={1} unit="%" dec={0} now={now} />
+                        scale={1} unit="%" dec={0} now={now} yTitle={t("axis.soc")} />
           <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>{t("bat.pwr")}</div>
           <ProfileGraph series={[{ label: t("bat.pwr"), color: "#4c8dff", data: data.power }]}
-                        scale={1000} unit="kW" dec={1} baseZero={false} now={now} />
+                        scale={1000} unit="kW" dec={1} baseZero={false} now={now}
+                        yTitle={t("axis.power")} />
           {data.mode === "price" && data.price.some((v) => v != null) && (
             <>
               <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>{t("bat.dayahead")}</div>
               <ProfileGraph series={[{ label: t("bat.dayahead"), color: "#f2ae00", data: data.price }]}
-                            limits={priceLimits} scale={1} unit="€/MWh" dec={0} now={now} />
+                            limits={priceLimits} scale={1} unit="€/MWh" dec={0} now={now}
+                            yTitle={t("axis.price")} />
             </>
           )}
         </>
