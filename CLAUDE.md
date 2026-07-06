@@ -92,7 +92,12 @@ EchtzeitNetzSimulator/
 │   ├── test_measurements.py  # observability: meter placement, projection, strict-mode strip
 │   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
 ├── ui/                       # app 3: React + Vite + TS frontend (served by nginx)
-│   ├── src/views/            # GridBrowser, LoadStudio, LivePowerFlow (3-step flow)
+│   ├── src/views/            # GridBrowser, LoadStudio, LivePowerFlow — opened via
+│   │                         #   the desktop-style MENU BAR (MenuBar.tsx: Netz ·
+│   │                         #   Simulation · Ansicht · Messungen · Schätzung · Hilfe);
+│   │                         #   app starts in Live; Live display state (layout/
+│   │                         #   values/viewMode) lives in App (LiveView), the
+│   │                         #   transport bar stays at the bottom of Live
 │   ├── src/components/       # GridDiagram (SVG), MapDiagram (Leaflet/OSM), Sparkline
 │   ├── src/api.ts · types.ts · useWebSocket.ts · scales.ts
 │   ├── Dockerfile · nginx.conf   # build static -> nginx, proxies /api + /ws
@@ -178,6 +183,7 @@ default to zeros if omitted.
 |--------|------|-------------|
 | GET | `/` | Built-in live HTML monitor (uses the WebSocket) |
 | GET | `/health` | Liveness |
+| GET | `/manual` | The German user manual PDF (docs/Benutzerhandbuch.pdf, Hilfe menu) |
 | GET | `/status` | Engine state: running, step, day, steps_per_day, interval |
 | GET | `/network` | Static topology (buses+`x,y` layout, lines, trafos, ext_grids, counts) |
 | GET | `/state` | Latest solved `StepResult` (404 until first solve) |

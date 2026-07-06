@@ -45,25 +45,53 @@ body { background: var(--bg); color: var(--text); }
 }
 .lang-switch button.on { background: var(--accent-2); color: #fff; border-color: transparent; }
 
-/* Top tab "Schätzung" with dropdown config panel */
-.est-menu { position: relative; }
-.est-menu > button {
+/* Desktop-style menu bar (Variante A) */
+.brand { font-weight: 700; font-size: 1.02rem; letter-spacing: 0.01em; margin-right: 0.4rem; }
+.mbar { display: flex; gap: 2px; align-items: center; }
+.mbar-overlay { position: fixed; inset: 0; z-index: 1190; }
+/* buttons + drops sit ABOVE the click-away overlay, so clicking another
+   menu label while one is open switches directly (desktop-menu behavior) */
+.mbar-menu { position: relative; z-index: 1200; }
+.mbar-menu > button {
   background: transparent; color: var(--muted); border: 1px solid transparent;
-  padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer;
-  font-size: 1.02rem; font-weight: 600; letter-spacing: 0.01em;
+  padding: 0.45rem 0.9rem; border-radius: 8px; cursor: pointer;
+  font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em;
 }
-.est-menu > button:hover { background: var(--panel-2); color: var(--text); }
-.est-menu > button.on { background: var(--panel-2); border-color: var(--border); color: var(--text); }
-.est-overlay { position: fixed; inset: 0; z-index: 1190; }
-.est-panel {
-  position: absolute; top: calc(100% + 8px); left: 0; z-index: 1200;
-  width: 340px; padding: 12px 14px;
+.mbar-menu > button:hover { background: var(--panel-2); color: var(--text); }
+.mbar-menu > button.on { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+.mbar-drop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 1200;
+  min-width: 250px; max-width: 380px; padding: 6px;
   background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; flex-direction: column; gap: 2px;
   font-size: 0.85rem; text-align: left;
 }
-.est-head { font-weight: 700; font-size: 0.95rem; }
+.mbar-drop .mi {
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  background: transparent; color: var(--text); border: none; cursor: pointer;
+  padding: 6px 9px; border-radius: 6px; font-size: 0.85rem; text-decoration: none;
+}
+.mbar-drop .mi:hover:not(:disabled):not(.info) { background: var(--panel-2); }
+.mbar-drop .mi:disabled { color: #555; cursor: not-allowed; }
+.mbar-drop .mi.on { color: var(--text); }
+.mbar-drop .mi.info { cursor: default; color: var(--muted); font-size: 0.78rem; }
+.mbar-drop .mi .chk { width: 15px; color: var(--accent-2, #4c8dff); text-align: center; flex: none; }
+.mbar-drop .mi .sub { margin-left: auto; font-size: 0.72rem; }
+.mbar-drop .mi.grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.mbar-drop .mi.row, .mbar-drop .mi-row { display: flex; gap: 6px; align-items: center; padding: 2px 4px; }
+.mbar-drop .mi.row input { flex: 1; min-width: 0; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; font-size: 0.8rem; }
+.mbar-drop button.mini { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer; flex: none; }
+.mbar-drop button.mini:hover:not(:disabled) { color: var(--text); }
+.mbar-drop .mi-sep { height: 1px; background: var(--border); margin: 4px 4px; }
+.mbar-drop .mi-hdr { color: var(--muted); font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px 2px; }
+.mbar-drop .dot { width: 7px; height: 7px; flex: none; }
+
+/* Estimation panel (inside the Schätzung menu) */
+.est-body { width: 320px; padding: 4px 6px; display: flex; flex-direction: column; gap: 6px; }
 .est-note { color: var(--muted); font-size: 0.78rem; margin-bottom: 2px; }
 .est-group {
   margin-top: 8px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
