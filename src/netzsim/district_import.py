@@ -80,9 +80,9 @@ def convert_district(grid_dir: str | Path, lv_grids: list[dict], *,
         lv = convert_osm_lv(g["path"], name=g.get("id") or f"lv_{lvid}",
                             steps=steps, power_factor=power_factor)
         lv_buses = lv.grid_structure["buses"]
-        # convert_osm_lv appends a synthetic MV_station bus + auto-sized trafo +
+        # convert_osm_lv appends a synthetic MS-Netz bus + auto-sized trafo +
         # slack; the district replaces all three with the real MV bus + station trafo
-        assert lv_buses[-1]["name"] == "MV_station"
+        assert lv_buses[-1]["name"] == "MS-Netz"
         busbar_local = lv.lines["transformers"][0]["lv_bus"]
         offset = len(bus_specs)
         for b in lv_buses[:-1]:

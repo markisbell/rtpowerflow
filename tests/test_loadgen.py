@@ -139,6 +139,22 @@ def test_ev_charger_power_scales():
     assert max(big["loads"][0]["p_mw"]) <= 22.0 / 1000 + 1e-9
 
 
+def test_ev_charger_mix_draws_standard_ratings():
+    """Mix mode: every wallbox is one of 3.7/11/22 kW, deterministic by seed,
+    and the fixed-rating path stays bit-identical to a non-mix run."""
+    loads = [{"name": f"L{i}", "bus": i + 1} for i in range(30)]
+    a = assign_ev(loads, EvPolicy(penetration=1.0, charger_mix=True, seed=3), steps=1440)
+    ratings = {round(max(ld["p_mw"]) * 1000, 1) for ld in a["loads"]}
+    assert ratings <= {3.7, 11.0, 22.0}
+    assert len(ratings) > 1                       # actually mixed
+    b = assign_ev(loads, EvPolicy(penetration=1.0, charger_mix=True, seed=3), steps=1440)
+    assert a["loads"] == b["loads"]               # deterministic under the seed
+    fixed = assign_ev(loads, EvPolicy(penetration=1.0, charger_kw=11.0, seed=3), steps=1440)
+    assert all(round(max(ld["p_mw"]) * 1000, 1) == 11.0 for ld in fixed["loads"])
+    # the mix only changes ratings — the same homes get an EV
+    assert [ld["bus"] for ld in a["loads"]] == [ld["bus"] for ld in fixed["loads"]]
+
+
 def test_pv_assignment_generates_solar():
     loads = [{"name": f"L{i}", "bus": i + 1} for i in range(8)]
     doc = assign_pv(loads, PvPolicy(penetration=1.0, kwp=5.0, seed=1), steps=24)
@@ -147,6 +163,25 @@ def test_pv_assignment_generates_solar():
     assert p[0] == 0.0 and p[23] == 0.0       # dark at night
     assert max(p) > 0 and 10 <= p.index(max(p)) <= 13  # peak near solar noon
     assert assign_pv(loads, PvPolicy(penetration=0.0), steps=24)["generation"] == []
+
+
+def test_pv_mix_varies_size_and_orientation():
+    """PV mix: sizes spread around the chosen kWp, midday peaks shift per
+    system (east/west roofs), the same buses get PV, deterministic by seed."""
+    import numpy as np
+    loads = [{"name": f"L{i}", "bus": i + 1} for i in range(20)]
+    eq = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, seed=5), steps=1440)
+    mx = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, mix=True, seed=5), steps=1440)
+    # same selection, only the systems differ
+    assert [g["bus"] for g in mx["generation"]] == [g["bus"] for g in eq["generation"]]
+    sizes = [max(g["p_mw"]) * 1000 for g in mx["generation"]]
+    assert all(4.0 <= s <= 16.0 for s in sizes)          # 0.5–1.5x 10 kWp (+rounding)
+    assert max(sizes) - min(sizes) > 2.0                  # actually spread
+    peaks = [int(np.argmax(g["p_mw"])) for g in mx["generation"]]
+    assert max(peaks) - min(peaks) > 30                   # orientations shift the peak
+    assert all(max(g["p_mw"]) * 1000 <= 10.0 for g in eq["generation"])  # equal mode intact
+    mx2 = assign_pv(loads, PvPolicy(penetration=0.6, kwp=10.0, mix=True, seed=5), steps=1440)
+    assert mx["generation"] == mx2["generation"]          # deterministic
 
 
 def test_pv_offsets_load_in_a_solved_net(tmp_path):

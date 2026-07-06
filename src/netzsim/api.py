@@ -695,9 +695,11 @@ class LoadgenPolicy(BaseModel):
     jitter_minutes: int = Field(0, ge=0, le=120)
     ev_penetration: float = Field(0.0, ge=0, le=1)   # fraction of homes with an EV
     ev_charger_kw: float = Field(11.0, gt=0, le=50)  # wallbox power
+    ev_charger_mix: bool = False                     # random 3.7/11/22 kW per EV
     ev_daily_kwh: float = Field(8.0, gt=0, le=100)   # mean energy charged per day
     pv_penetration: float = Field(0.0, ge=0, le=1)   # fraction of load buses with PV
     pv_kwp: float = Field(5.0, gt=0, le=100)         # peak kW per PV system
+    pv_mix: bool = False                             # random size + orientation per system
     # multi-family buildings: sum mfh_min..mfh_max household profiles per load.
     # "auto" applies it to suburban/urban grids only; default "off" keeps
     # existing recipes (saved scenarios) bit-identical.
@@ -764,6 +766,7 @@ def _assigned_load_doc(g, policy: LoadgenPolicy, character: str | None = None) -
         ev = assign_ev(
             households,
             EvPolicy(penetration=policy.ev_penetration, charger_kw=policy.ev_charger_kw,
+                     charger_mix=policy.ev_charger_mix,
                      daily_kwh=policy.ev_daily_kwh, seed=policy.seed),
             steps=settings.steps_per_day,
         )
@@ -786,7 +789,8 @@ def _pv_gen_doc(g, policy: LoadgenPolicy) -> dict | None:
         return None
     return assign_pv(
         _household_loads(g), PvPolicy(penetration=policy.pv_penetration,
-                                      kwp=policy.pv_kwp, seed=policy.seed),
+                                      kwp=policy.pv_kwp, mix=policy.pv_mix,
+                                      seed=policy.seed),
         steps=settings.steps_per_day,
     )
 

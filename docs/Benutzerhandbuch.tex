@@ -348,11 +348,18 @@ Einstellmöglichkeiten:
 
 \begin{itemize}[nosep]
   \item \ui{E-Auto-Anteil} und \ui{Wallbox-Leistung} (3{,}7 / 11 /
-    22~kW): der gewählte Anteil der Gebäude lädt abends
-    \emph{ungesteuert} --- die Ladefenster streuen um den
-    Feierabend, genau das erzeugt die kritische Gleichzeitigkeit.
+    22~kW oder \ui{Zufall}: jede Wallbox bekommt zufällig eine der
+    drei Größen --- dieselben Gebäude, nur gemischte Leistungen):
+    der gewählte Anteil der Gebäude lädt abends \emph{ungesteuert}
+    --- die Ladefenster streuen um den Feierabend, genau das
+    erzeugt die kritische Gleichzeitigkeit.
   \item \ui{PV-Anteil} und \ui{PV-Größe pro Haushalt} (kWp):
     Dach-Photovoltaik als Einspeisung mit Schönwetter-Tagesgang.
+    Die \ui{PV-Auslegung} wählt zwischen \ui{Gleiche Leistung} und
+    \ui{Zufällige Leistung und Verteilung} --- dann streuen
+    Anlagengröße (0{,}5--1{,}5-fach des Reglers) und Dachausrichtung
+    (der Mittagspeak verschiebt sich je Anlage um bis zu
+    $\pm$1{,}5~h) über die Anlagen.
   \item \ui{Mehrfamilienhäuser}: In vorstädtischen und städtischen
     Netzen hängt ein Hausanschluss selten an nur \emph{einem}
     Haushalt. Mit diesem Haken (Vorgabe: an) werden je Gebäude
@@ -373,14 +380,17 @@ Einstellmöglichkeiten:
 \end{itemize}
 
 Die rechte Spalte \ui{3~·~Prüfen \& starten} rechnet bei jeder
-Änderung automatisch nach: durchgezogen der Netto-Bedarf über
-24~Stunden, gestrichelt die Bruttolast vor PV, dazu als rote
-gestrichelte Linie die \emph{Trafo-Bemessungsleistung}. Die
-Kennzahl \ui{Trafo-Spitze} setzt die Tagesspitze (Bezug
-\emph{oder} Rückspeisung) ins Verhältnis zur Nennleistung der
-Ortsnetzstation und färbt sich ab 80\,\% gelb, ab 100\,\% rot ---
-so ist \emph{vor} dem Start sichtbar, ob die Station die gewählte
-Lastsituation überhaupt trägt (Abbildung~\ref{fig:lasten}).
+Änderung automatisch nach --- in \emph{Scheinleistung} (kVA, über
+den Leistungsfaktor aus der Wirklast gerechnet), damit alles direkt
+mit der Nennleistung der Ortsnetzstation vergleichbar ist:
+durchgezogen der Netto-Bedarf über 24~Stunden, gestrichelt die
+Bruttolast vor PV, dazu als rote gestrichelte Linie die
+\emph{Trafo-Bemessungsleistung}. Die Kennzahl \ui{max.\
+Trafo-Auslastung} setzt die \ui{Leistungsspitze} des Tages (Bezug
+\emph{oder} Rückspeisung) ins Verhältnis zur Nennleistung und färbt
+sich ab 80\,\% gelb, ab 100\,\% rot --- so ist \emph{vor} dem Start
+sichtbar, ob die Station die gewählte Lastsituation überhaupt trägt
+(Abbildung~\ref{fig:lasten}).
 \ui{Übernehmen \& starten} lädt das Netz mit den erzeugten Profilen
 in die Live-Simulation. Alternativ lässt sich der Schritt mit
 \ui{Platzhalter}-Lasten überspringen (glatte synthetische
@@ -394,8 +404,8 @@ realistische Zappeln echter Haushalte).
     E-Auto-Anteil, 50\,\% PV, Mehrfamilienhäuser aktiv): die
     Netto-Kurve wird mittags negativ --- der Strang speist zurück
     ---, die Abendspitze nähert sich der gestrichelten
-    Trafo-Bemessungslinie, die Kennzahl \ui{Trafo-Spitze} steht auf
-    92\,\%.}
+    Trafo-Bemessungslinie, die Kennzahl \ui{max.\ Trafo-Auslastung}
+    steht auf 92\,\%.}
   \label{fig:lasten}
 \end{figure}
 
@@ -403,24 +413,24 @@ realistische Zappeln echter Haushalte).
 Für das 33-Gebäude-Netz zeigt die Vorschau nacheinander:
 \begin{itemize}[nosep]
   \item \textbf{Nur Haushalte:} Aus 33~Gebäuden werden mit dem
-    Mehrfamilienhaus-Haken \textbf{154~Haushalte}; die Netto-Spitze
-    liegt bei \textbf{180{,}7~kW} gegen 19:20 Uhr
-    (\ui{Trafo-Spitze} 76\,\%). Ohne den Haken (33 Einzelhaushalte)
-    wären es nur 57~kW --- die Summe wächst aber \emph{nicht}
-    linear mit der Haushaltszahl: nie kochen alle gleichzeitig.
-    Diese \emph{Durchmischung} ist der Grund, warum eine
-    250-kVA-Station für einen ganzen Ortsteil reicht.
+    Mehrfamilienhaus-Haken \textbf{154~Haushalte}; die
+    \ui{Leistungsspitze} liegt bei \textbf{190~kVA} gegen 19:20 Uhr
+    (\ui{max.\ Trafo-Auslastung} 76\,\%). Ohne den Haken (33
+    Einzelhaushalte) wären es nur 60~kVA --- die Summe wächst aber
+    \emph{nicht} linear mit der Haushaltszahl: nie kochen alle
+    gleichzeitig. Diese \emph{Durchmischung} ist der Grund, warum
+    eine 250-kVA-Station für einen ganzen Ortsteil reicht.
   \item \textbf{+ 40\,\% E-Autos (11~kW):} 12 Wallboxen laden abends
-    ungesteuert. Die Spitze steigt auf \textbf{218{,}7~kW}
+    ungesteuert. Die Spitze steigt auf \textbf{230~kVA}
     (+21\,\%), obwohl rechnerisch $12 \times 11 = 132$~kW
     installiert sind --- die Ladefenster überlappen nur teilweise.
-    Die \ui{Trafo-Spitze} springt auf \textbf{92\,\%} und färbt
-    sich gelb: E-Mobilität wirkt fast ausschließlich auf die
+    Die \ui{max.\ Trafo-Auslastung} springt auf \textbf{92\,\%} und
+    färbt sich gelb: E-Mobilität wirkt fast ausschließlich auf die
     Abendspitze.
   \item \textbf{+ 50\,\% PV (5~kWp):} 15 Anlagen mit zusammen
-    75~kWp drücken die Netto-Kurve mittags auf \textbf{$-$26~kW}
+    75~kWp drücken die Netto-Kurve mittags auf \textbf{$-$27~kVA}
     --- der Strang speist zurück. Die Abendspitze bleibt bei
-    218{,}7~kW: Abendspitze und Mittagstal liegen zeitlich so weit
+    230~kVA: Abendspitze und Mittagstal liegen zeitlich so weit
     auseinander, dass PV die E-Auto-Spitze \emph{nicht} entlastet.
 \end{itemize}
 Genau dieses Auseinanderfallen von Erzeugung und Verbrauch motiviert

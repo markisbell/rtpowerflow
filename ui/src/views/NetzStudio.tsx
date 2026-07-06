@@ -33,9 +33,10 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
   const [scale, setScale] = useState(1);
   const [pf, setPf] = useState(0.95);
   const [evPen, setEvPen] = useState(0);
-  const [evKw, setEvKw] = useState(11);
+  const [evKw, setEvKw] = useState<number | "mix">(11);
   const [pvPen, setPvPen] = useState(0);
   const [pvKwp, setPvKwp] = useState(5);
+  const [pvMix, setPvMix] = useState(false);
   const [mfh, setMfh] = useState(true);            // 3-6 households per building
   const [preview, setPreview] = useState<AssignResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,11 +68,13 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
     mode, seed, scale,
     power_factor: pf,
     ev_penetration: evPen,
-    ev_charger_kw: evKw,
+    ev_charger_kw: evKw === "mix" ? 11 : evKw,
+    ev_charger_mix: evKw === "mix",
     pv_penetration: pvPen,
     pv_kwp: pvKwp,
+    pv_mix: pvMix,
     mfh: mfh ? "auto" : "off",
-  }), [chosen, mode, seed, scale, pf, evPen, evKw, pvPen, pvKwp, mfh]);
+  }), [chosen, mode, seed, scale, pf, evPen, evKw, pvPen, pvKwp, pvMix, mfh]);
 
   // topology preview of the selected grid (stale responses ignored)
   const reqRef = useRef(0);
@@ -129,14 +132,16 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
       return n;
     });
 
-  // transformer loading from the net curve: S = P/cosphi vs. rated sn
-  const netKw = preview ? preview.net_p_mw.map((p) => p * 1000) : [];
-  const grossKw = preview ? preview.total_load_p_mw.map((p) => p * 1000) : [];
+  // the check column compares against the trafo's kVA rating, so everything is
+  // plotted as APPARENT power: S = P / cosphi with the policy's power factor
+  const netKva = preview ? preview.net_p_mw.map((p) => (p * 1000) / pf) : [];
+  const grossKva = preview ? preview.total_load_p_mw.map((p) => (p * 1000) / pf) : [];
   const hasPv = !!preview && preview.n_pv > 0;
   const sn = preview?.trafo_sn_mva ?? null;
   const peakAbsMw = preview ? Math.max(preview.peak_net_mw, -preview.min_net_mw) : 0;
+  const peakKva = (peakAbsMw / pf) * 1000;
   const trafoPct = preview && sn ? (peakAbsMw / pf / sn) * 100 : null;
-  const ratingKw = sn ? sn * pf * 1000 : undefined;   // P-equivalent chart line
+  const ratingKva = sn ? sn * 1000 : undefined;       // the rating line, in kVA
 
   if (error && !grids) return <div className="empty">{t("grid.failed")}<br />{error}</div>;
   if (!grids) return <div className="spinner">{t("grid.loadingLib")}</div>;
@@ -179,14 +184,28 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
         {selected && (
           <>
             {gridPrev && (
-              <div className="kpis">
-                <Kpi k={t("grid.kBuses")} v={`${gridPrev.n_bus}`} />
-                <Kpi k={t("grid.kLines")} v={`${gridPrev.n_line}`} />
-                <Kpi k={t("grid.kLoads")} v={`${gridPrev.n_load}`} />
-                {gridPrev.trafos[0] && gridPrev.trafos[0].sn_mva > 0 && (
-                  <Kpi k={t("netz.kTrafo")} v={`${fmt(gridPrev.trafos[0].sn_mva * 1000, 0)} kVA`} />
+              <>
+                <div className="kpis">
+                  <Kpi k={t("grid.kBuses")} v={`${gridPrev.n_bus}`} />
+                  <Kpi k={t("grid.kLines")} v={`${gridPrev.n_line}`} />
+                  <Kpi k={t("grid.kLoads")} v={`${gridPrev.n_load}`} />
+                  {gridPrev.trafos[0] && gridPrev.trafos[0].sn_mva > 0 && (
+                    <Kpi k={t("netz.kTrafo")} v={`${fmt(gridPrev.trafos[0].sn_mva * 1000, 0)} kVA`} />
+                  )}
+                </div>
+                {gridPrev.notes.length > 0 && (
+                  <details style={{ marginBottom: "0.7rem" }}>
+                    <summary className="note" style={{ cursor: "pointer" }}>
+                      {t("grid.notes", { count: gridPrev.notes.length })}
+                    </summary>
+                    <ul style={{ fontSize: "0.75rem", color: "var(--muted)", margin: "0.3rem 0" }}>
+                      {gridPrev.notes.map((n, i) => (
+                        <li key={i}>{n}</li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
-              </div>
+              </>
             )}
             {!available && <p className="note">{t("loads.noLpg")}</p>}
 
@@ -199,10 +218,12 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
             {evPen > 0 && (
               <div className="field">
                 <label>{t("loads.wallbox")}</label>
-                <select value={evKw} onChange={(e) => setEvKw(+e.target.value)}>
-                  <option value={3.7}>{t("loads.ev37")}</option>
-                  <option value={11}>{t("loads.ev11")}</option>
-                  <option value={22}>{t("loads.ev22")}</option>
+                <select value={String(evKw)}
+                        onChange={(e) => setEvKw(e.target.value === "mix" ? "mix" : +e.target.value)}>
+                  <option value="3.7">{t("loads.ev37")}</option>
+                  <option value="11">{t("loads.ev11")}</option>
+                  <option value="22">{t("loads.ev22")}</option>
+                  <option value="mix">{t("loads.evMix")}</option>
                 </select>
               </div>
             )}
@@ -212,11 +233,21 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
                      onChange={(e) => setPvPen(+e.target.value)} />
             </div>
             {pvPen > 0 && (
-              <div className="field">
-                <label>{t("loads.pvSize", { kwp: pvKwp.toFixed(1) })}</label>
-                <input type="range" min={1} max={15} step={0.5} value={pvKwp}
-                       onChange={(e) => setPvKwp(+e.target.value)} />
-              </div>
+              <>
+                <div className="field">
+                  <label>{t("loads.pvSize", { kwp: pvKwp.toFixed(1) })}</label>
+                  <input type="range" min={1} max={15} step={0.5} value={pvKwp}
+                         onChange={(e) => setPvKwp(+e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>{t("loads.pvSizing")}</label>
+                  <select value={pvMix ? "mix" : "equal"}
+                          onChange={(e) => setPvMix(e.target.value === "mix")}>
+                    <option value="equal">{t("loads.pvEqual")}</option>
+                    <option value="mix">{t("loads.pvMix")}</option>
+                  </select>
+                </div>
+              </>
             )}
             <div className="field">
               <label className="arch-row" style={{ padding: 0 }}>
@@ -287,16 +318,16 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
                 <Kpi k={t("netz.kHouseholds")} v={`${preview.n_households}`} />
                 <Kpi k={t("loads.kEvs")} v={`${preview.n_ev}`} />
                 <Kpi k={t("loads.kPv")} v={`${preview.n_pv}`} />
-                <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakAbsMw * 1000, 1)} kW`} />
+                <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakKva, 1)} kVA`} />
                 {trafoPct != null && (
                   <Kpi k={t("netz.kTrafoPeak")} v={`${fmt(trafoPct, 0)} %`}
                        tone={trafoPct >= 100 ? "bad" : trafoPct >= 80 ? "warn" : "ok"} />
                 )}
               </div>
               <div className="ns-chart">
-                <Sparkline values={netKw} overlay={hasPv ? grossKw : undefined}
-                           width={760} height={350} marker={ratingKw} step fluid
-                           xTitle={t("axis.time")} yTitle={t("axis.power")} />
+                <Sparkline values={netKva} overlay={hasPv ? grossKva : undefined}
+                           width={760} height={350} marker={ratingKva} step fluid
+                           xTitle={t("axis.time")} yTitle={t("axis.apparent")} />
               </div>
             </div>
             {preview.n_mfh > 0 && (

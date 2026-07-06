@@ -16,6 +16,7 @@ import numpy as np
 class PvPolicy:
     penetration: float = 0.0    # fraction of load buses that host a PV system
     kwp: float = 5.0            # peak DC power per system [kW]
+    mix: bool = False           # random size (0.5–1.5x kwp) + orientation per system
     seed: int = 0
     peak_hour: float = 12.0     # solar noon
     width_hours: float = 3.5    # bell half-width
@@ -40,14 +41,27 @@ def _clearsky(steps: int, peak_hour: float, width_hours: float) -> np.ndarray:
 def assign_pv(loads: list[dict], policy: PvPolicy, *, steps: int = 1440) -> dict:
     """Return a netzsim ``generation.json`` doc (sgen) for the PV systems."""
     rng = np.random.default_rng(policy.seed + 99)
+    # separate stream for the size/orientation mix so enabling it does NOT
+    # shift the main stream: the same buses get PV, only the systems differ
+    mix_rng = np.random.default_rng(policy.seed + 211)
     shape = _clearsky(steps, policy.peak_hour, policy.width_hours)
     gens: list[dict] = []
     for i, ld in enumerate(loads):
         if rng.random() >= policy.penetration:
             continue
-        # small scatter for orientation/derating (0.8–1.0)
-        size_mw = policy.kwp / 1000.0 * (0.8 + 0.2 * rng.random())
-        p = np.round(shape * size_mw, 6)
+        # small scatter for orientation/derating (0.8–1.0); always drawn so the
+        # selection stream stays identical whether or not the mix is active
+        base_scatter = 0.8 + 0.2 * rng.random()
+        if policy.mix:
+            # random size around the chosen kWp + east/west roof orientation
+            # (the midday peak shifts per system by up to ±1.5 h)
+            size_mw = policy.kwp / 1000.0 * float(mix_rng.uniform(0.5, 1.5))
+            shape_i = _clearsky(steps, policy.peak_hour + float(mix_rng.uniform(-1.5, 1.5)),
+                                policy.width_hours)
+        else:
+            size_mw = policy.kwp / 1000.0 * base_scatter
+            shape_i = shape
+        p = np.round(shape_i * size_mw, 6)
         gens.append({
             "name": f"PV_{ld.get('name') or i}",
             "bus": ld["bus"],
