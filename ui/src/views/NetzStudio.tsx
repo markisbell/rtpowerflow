@@ -282,23 +282,27 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
         {selected && busy && !preview && <div className="spinner">…</div>}
         {selected && preview && (
           <>
-            <div className="kpis">
-              <Kpi k={t("netz.kHouseholds")} v={`${preview.n_households}`} />
-              <Kpi k={t("loads.kEvs")} v={`${preview.n_ev}`} />
-              <Kpi k={t("loads.kPv")} v={`${preview.n_pv}`} />
-              <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakAbsMw * 1000, 1)} kW`} />
-              {trafoPct != null && (
-                <Kpi k={t("netz.kTrafoPeak")} v={`${fmt(trafoPct, 0)} %`}
-                     tone={trafoPct >= 100 ? "bad" : trafoPct >= 80 ? "warn" : "ok"} />
-              )}
+            <div className="ns-chartrow">
+              <div className="kpis col">
+                <Kpi k={t("netz.kHouseholds")} v={`${preview.n_households}`} />
+                <Kpi k={t("loads.kEvs")} v={`${preview.n_ev}`} />
+                <Kpi k={t("loads.kPv")} v={`${preview.n_pv}`} />
+                <Kpi k={t("loads.kNetPeak")} v={`${fmt(peakAbsMw * 1000, 1)} kW`} />
+                {trafoPct != null && (
+                  <Kpi k={t("netz.kTrafoPeak")} v={`${fmt(trafoPct, 0)} %`}
+                       tone={trafoPct >= 100 ? "bad" : trafoPct >= 80 ? "warn" : "ok"} />
+                )}
+              </div>
+              <div className="ns-chart">
+                <Sparkline values={netKw} overlay={hasPv ? grossKw : undefined}
+                           width={760} height={350} marker={ratingKw} step fluid />
+              </div>
             </div>
             {preview.n_mfh > 0 && (
               <p className="muted" style={{ fontSize: "0.78rem" }}>
                 🏢 {t("netz.mfhUsed", { mfh: preview.n_mfh, hh: preview.n_households })}
               </p>
             )}
-            <Sparkline values={netKw} overlay={hasPv ? grossKw : undefined}
-                       width={560} height={230} marker={ratingKw} />
             <p className="muted" style={{ fontSize: "0.78rem" }}>
               {t("loads.netDesc")}{hasPv && t("loads.netDescPv")}.{" "}
               {sn

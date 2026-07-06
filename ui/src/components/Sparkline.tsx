@@ -8,6 +8,8 @@ interface Props {
   overlayColor?: string;
   hourAxis?: boolean;
   marker?: number;    // horizontal limit line at ±marker (e.g. trafo rating)
+  step?: boolean;     // sample-and-hold steps instead of linear interpolation
+  fluid?: boolean;    // scale to the container width (width/height = viewBox)
 }
 
 /** A compact area/line chart for a daily profile. Handles negative values
@@ -22,6 +24,8 @@ export default function Sparkline({
   overlayColor = "#8a93a3",
   hourAxis = true,
   marker,
+  step = false,
+  fluid = false,
 }: Props) {
   if (!values.length) return null;
   const pad = 26;
@@ -47,12 +51,26 @@ export default function Sparkline({
   const y = (v: number) => pad + h - ((v - min) / span) * h;
   const y0 = y(0);
 
-  const path = (arr: number[]) =>
-    arr.map((v, i) => `${i === 0 ? "M" : "L"}${x(i, arr.length).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  // step = sample-and-hold: each value holds until the next sample (the natural
+  // look for discrete per-minute load profiles); otherwise linear segments
+  const path = (arr: number[]) => {
+    if (!step) {
+      return arr.map((v, i) =>
+        `${i === 0 ? "M" : "L"}${x(i, arr.length).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    }
+    let d = `M${x(0, arr.length).toFixed(1)},${y(arr[0]).toFixed(1)}`;
+    for (let i = 1; i < arr.length; i++) {
+      d += ` H${x(i, arr.length).toFixed(1)} V${y(arr[i]).toFixed(1)}`;
+    }
+    return d;
+  };
   const area = `${path(main)} L${x(main.length - 1, main.length).toFixed(1)},${y0} L${pad},${y0} Z`;
 
   return (
-    <svg width={width} height={height} role="img" aria-label="daily load profile">
+    <svg width={fluid ? undefined : width} height={fluid ? undefined : height}
+         viewBox={`0 0 ${width} ${height}`}
+         style={fluid ? { width: "100%", height: "auto", display: "block" } : undefined}
+         role="img" aria-label="daily load profile">
       <line x1={pad} y1={y0} x2={pad + w} y2={y0} stroke="#3a4250" strokeWidth={1} />
       <path d={area} fill={fill} stroke="none" />
       <path d={path(main)} fill="none" stroke={color} strokeWidth={1.8} />
