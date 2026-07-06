@@ -6,7 +6,7 @@ export interface GridListItem {
   category: string;
   thumbnail: string | null;
   voltage?: "MV" | "LV" | null;
-  character?: "rural" | "suburban" | "urban" | null;
+  character?: "rural" | "suburban" | "urban" | "user" | null;
   nodes?: number | null;
   n_bus?: number;
   n_line?: number;
@@ -25,9 +25,13 @@ export interface GridPreview {
   n_line: number;
   n_trafo: number;
   n_load: number;
-  buses: { id: number; name: string; vn_kv: number; zone?: string }[];
-  lines: { name: string | null; from_bus: number; to_bus: number; length_km: number }[];
+  buses: { id: number; name: string; vn_kv: number; zone?: string;
+           geo?: [number, number] | null; kind?: string | null }[];
+  lines: { name: string | null; from_bus: number; to_bus: number; length_km: number;
+           geometry?: [number, number][] | null }[];
   trafos: { name: string | null; hv_bus: number; lv_bus: number; sn_mva: number }[];
+  load_buses?: number[];
+  slack_buses?: number[];
   notes: string[];
 }
 
@@ -60,6 +64,11 @@ export interface LoadgenPolicy {
   ev_daily_kwh?: number;
   pv_penetration?: number;
   pv_kwp?: number;
+  // multi-family buildings: sum mfh_min..mfh_max household profiles per load.
+  // "auto" applies to suburban/urban grids; the backend default is "off".
+  mfh?: "auto" | "off" | "on";
+  mfh_min?: number;
+  mfh_max?: number;
 }
 
 export interface AssignResponse {
@@ -68,7 +77,10 @@ export interface AssignResponse {
   n_load: number;
   n_ev: number;
   n_pv: number;
+  n_households: number;
+  n_mfh: number;
   archetypes_used: string[];
+  trafo_sn_mva: number | null;
   total_load_p_mw: number[];
   total_pv_p_mw: number[];
   net_p_mw: number[];
@@ -76,7 +88,8 @@ export interface AssignResponse {
   peak_net_mw: number;
   min_net_mw: number;
   mean_load_mw: number;
-  assignments: { name: string | null; bus: number; archetype: string; variant: number; ev: boolean }[];
+  assignments: { name: string | null; bus: number; archetype: string; variant: number;
+                 ev: boolean; households?: number }[];
 }
 
 export interface TopoBus {

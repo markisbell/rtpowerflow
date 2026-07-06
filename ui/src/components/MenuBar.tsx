@@ -9,10 +9,9 @@ import type { LiveView } from "../App";
 /** Desktop-style menu bar (Variante A): Netz · Simulation · Ansicht ·
  *  Messungen · Schätzung · Hilfe. One menu open at a time; the transport
  *  controls stay in the Live view's bottom bar. */
-export default function MenuBar({ tab, onTab, selectedGrid, active, live, onLive, onMeasChanged, onScenarioLoaded }: {
-  tab: "grids" | "loads" | "live";
-  onTab: (t: "grids" | "loads" | "live") => void;
-  selectedGrid: string | null;
+export default function MenuBar({ tab, onTab, active, live, onLive, onMeasChanged, onScenarioLoaded }: {
+  tab: "config" | "live";
+  onTab: (t: "config" | "live") => void;
   active: ActiveGrid | null;
   live: LiveView;
   onLive: (patch: Partial<LiveView>) => void;
@@ -28,8 +27,7 @@ export default function MenuBar({ tab, onTab, selectedGrid, active, live, onLive
     <nav className="mbar">
       {open && <div className="mbar-overlay" onClick={close} />}
       <Menu id="netz" label={t("mbar.netz")} open={open} onToggle={toggle}>
-        <NetzMenu tab={tab} onTab={(x) => { onTab(x); close(); }}
-                  selectedGrid={selectedGrid} active={active} />
+        <NetzMenu tab={tab} onTab={(x) => { onTab(x); close(); }} active={active} />
       </Menu>
       <Menu id="sim" label={t("mbar.sim")} open={open} onToggle={toggle}>
         <SimMenu isOpen={open === "sim"} onScenarioLoaded={() => { onScenarioLoaded(); close(); }} />
@@ -71,19 +69,15 @@ function Menu({ id, label, open, onToggle, children }: {
 }
 
 // ---- Netz ----------------------------------------------------------------
-function NetzMenu({ tab, onTab, selectedGrid, active }: {
-  tab: string; onTab: (t: "grids" | "loads" | "live") => void;
-  selectedGrid: string | null; active: ActiveGrid | null;
+function NetzMenu({ tab, onTab, active }: {
+  tab: string; onTab: (t: "config" | "live") => void;
+  active: ActiveGrid | null;
 }) {
   const { t } = useTranslation();
   return (
     <>
-      <button className={"mi" + (tab === "grids" ? " on" : "")} onClick={() => onTab("grids")}>
-        {t("mbar.chooseGrid")}
-      </button>
-      <button className={"mi" + (tab === "loads" ? " on" : "")} disabled={!selectedGrid}
-              onClick={() => onTab("loads")}>
-        {t("mbar.configLoads")}
+      <button className={"mi" + (tab === "config" ? " on" : "")} onClick={() => onTab("config")}>
+        {t("mbar.netzStudio")}
       </button>
       <button className={"mi" + (tab === "live" ? " on" : "")} onClick={() => onTab("live")}>
         {t("mbar.toLive")}

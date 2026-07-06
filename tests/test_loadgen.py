@@ -168,6 +168,38 @@ def test_pv_offsets_load_in_a_solved_net(tmp_path):
     assert res.converged and res.summary["total_gen_mw"] > 0  # PV is generating
 
 
+def test_mfh_sums_multiple_household_profiles(tmp_path):
+    """A multi-family building is the sum of n household profiles."""
+    lib = _make_library(tmp_path)          # pool order: (A1,0),(A2,0),(A1,1),(A2,1)
+    doc = assign_to_loads([{"name": "MFH", "bus": 1}], lib,
+                          AssignPolicy(households_range=(2, 2)), steps=24)
+    ld = doc["loads"][0]
+    assert ld["households"] == 2
+    # round_robin, no jitter: A1 v0 (0.3 kW) + A2 v0 (1.0 kW) summed
+    assert ld["p_mw"][0] == pytest.approx((0.3 + 1.0) / 1000.0)
+    assert doc["assignments"][0]["households"] == 2
+
+
+def test_mfh_range_is_deterministic_and_bounded(tmp_path):
+    lib = _make_library(tmp_path)
+    loads = [{"name": f"B{i}", "bus": i + 1} for i in range(10)]
+    p = AssignPolicy(households_range=(3, 6), seed=7)
+    a = assign_to_loads(loads, lib, p, steps=24)
+    b = assign_to_loads(loads, lib, p, steps=24)
+    ns = [x["households"] for x in a["assignments"]]
+    assert all(3 <= n <= 6 for n in ns) and len(set(ns)) > 1
+    assert ns == [x["households"] for x in b["assignments"]]
+
+
+def test_single_family_default_unchanged(tmp_path):
+    """No households_range -> exactly the old single-profile behavior."""
+    lib = _make_library(tmp_path)
+    loads = [{"name": f"L{i}", "bus": i + 1} for i in range(4)]
+    doc = assign_to_loads(loads, lib, AssignPolicy(), steps=24)
+    assert all(ld["households"] == 1 for ld in doc["loads"])
+    assert doc["loads"][0]["p_mw"][0] == pytest.approx(0.0003)   # A1 v0 alone
+
+
 def test_empty_library_raises(tmp_path):
     lib = LoadLibrary(tmp_path)  # no index.json
     assert lib.available is False

@@ -111,6 +111,10 @@ class Simulator:
         self.est_config = EstConfig()
         self._load_household: list[bool] = [
             getattr(ld, "household", None) is not False for ld in data.load.loads]
+        # metering points per building (multi-family houses sum n profiles);
+        # the SLP pseudo basis scales with it — the DSO knows its meter counts
+        self._load_households: list[int] = [
+            int(getattr(ld, "households", None) or 1) for ld in data.load.loads]
 
         # bus-addressed journal of runtime DER changes — the delta a scenario
         # file stores on top of the deterministic grid + loadgen recipe.
@@ -141,15 +145,20 @@ class Simulator:
         self._est_wall = 0.0
         self._daily_by_day.clear()
 
-    def _est_row_sets(self) -> tuple[set[int], set[int]]:
+    def _est_row_sets(self) -> tuple[set[int], set[int], dict[int, int]]:
         """Which load-profile rows are EV charging / real households — the
-        row-level knowledge the estimation policy filters on."""
+        row-level knowledge the estimation policy filters on — plus each row's
+        metering-point count (multi-family buildings scale the SLP basis)."""
         ev_rows = {i for i, li in enumerate(self.prof.load_idx)
                    if "EV_" in str(self.net.load.at[li, "name"] or "")}
         household_rows = {i for i in range(len(self.prof.load_idx))
                           if i >= len(self._load_household)     # runtime rows
                           or self._load_household[i]}
-        return ev_rows, household_rows
+        counts = {i: self._load_households[i]
+                  for i in range(min(len(self.prof.load_idx),
+                                     len(self._load_households)))
+                  if self._load_households[i] > 1}
+        return ev_rows, household_rows, counts
 
     def set_pv_days(self, shapes: np.ndarray | None) -> None:
         """Attach per-day PV shapes ([n_days, steps], 0..1). Applied only if the
@@ -371,6 +380,7 @@ class Simulator:
         self.prof.load_p = np.vstack([self.prof.load_p, np.zeros((1, self.steps_per_day))])
         self.prof.load_q = np.vstack([self.prof.load_q, np.zeros((1, self.steps_per_day))])
         self._load_household.append(False)     # EV charging is not a household
+        self._load_households.append(1)
         self._set_ev_row(len(self.prof.load_idx) - 1, kw, start_min, dur_min)
         self._der_log_put({"op": "add_ev", "bus": int(bus), "kw": float(kw),
                            "start_min": int(start_min) % 1440,
@@ -438,6 +448,8 @@ class Simulator:
         self.prof.load_q = np.delete(self.prof.load_q, i, axis=0)
         if i < len(self._load_household):
             self._load_household.pop(i)
+        if i < len(self._load_households):
+            self._load_households.pop(i)
         self.net.load.drop(load, inplace=True)
         self._der_invalidate()
         return True
@@ -584,11 +596,11 @@ class Simulator:
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
             if self._estimator is None:
-                ev_rows, household_rows = self._est_row_sets()
+                ev_rows, household_rows, hh_counts = self._est_row_sets()
                 self._estimator = Estimator(
                     self.net, self.prof, self._loads_at, self._sgens_at,
                     ev_rows=ev_rows, household_rows=household_rows,
-                    config=self.est_config)
+                    household_counts=hh_counts, config=self.est_config)
             now = time.monotonic()
             if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
@@ -831,9 +843,10 @@ class Simulator:
         est_i = {int(l): [] for l in net.line.index}
         est_p_hv = {int(t): [] for t in net.trafo.index}
         if do_est:
-            ev_rows, household_rows = self._est_row_sets()
+            ev_rows, household_rows, hh_counts = self._est_row_sets()
             estimator = Estimator(net, prof, self._loads_at, self._sgens_at,
                                   ev_rows=ev_rows, household_rows=household_rows,
+                                  household_counts=hh_counts,
                                   config=self.est_config)
         else:
             estimator = None

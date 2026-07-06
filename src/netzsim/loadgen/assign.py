@@ -22,6 +22,9 @@ class AssignPolicy:
     scale: float = 1.0                    # global multiplier on real household kW
     power_factor: float = 0.95            # -> q_mvar from p_mw
     jitter_minutes: int = 0               # circular shift per load (decorrelate repeats)
+    # multi-family buildings: each load element sums this many household
+    # profiles (drawn per building). None -> single-family (one profile).
+    households_range: tuple[int, int] | None = None
 
 
 def _resample(profile_kw: list[float], steps: int) -> np.ndarray:
@@ -74,16 +77,26 @@ def assign_to_loads(
 
     load_specs: list[dict] = []
     assignments: list[dict] = []
+    cursor = 0                       # round-robin position (advances per household)
     for i, ld in enumerate(loads):
-        if policy.mode == "random":
-            aid, vi = pool[int(rng.integers(len(pool)))]
-        else:
-            aid, vi = pool[i % len(pool)]
-        arch = library.get(aid)
-        kw = _resample(arch.variants_kw[vi], steps) * policy.scale
-        if policy.jitter_minutes:
-            shift = int(rng.integers(-policy.jitter_minutes, policy.jitter_minutes + 1))
-            kw = np.roll(kw, shift)
+        lo, hi = policy.households_range or (1, 1)
+        n = int(rng.integers(lo, hi + 1)) if hi > lo else int(lo)
+        kw = np.zeros(steps)
+        aid = vi = None
+        for _ in range(max(n, 1)):
+            if policy.mode == "random":
+                a, v = pool[int(rng.integers(len(pool)))]
+            else:
+                a, v = pool[cursor % len(pool)]
+                cursor += 1
+            if aid is None:
+                aid, vi = a, v           # first household labels the building
+            hh = _resample(library.get(a).variants_kw[v], steps) * policy.scale
+            if policy.jitter_minutes:
+                shift = int(rng.integers(-policy.jitter_minutes,
+                                         policy.jitter_minutes + 1))
+                hh = np.roll(hh, shift)
+            kw = kw + hh
         p_mw = np.round(kw / 1000.0, 6)
         q_mvar = np.round(p_mw * tan_phi, 6)
         load_specs.append({
@@ -91,9 +104,10 @@ def assign_to_loads(
             "bus": ld["bus"],
             "p_mw": p_mw.tolist(),
             "q_mvar": q_mvar.tolist(),
+            "households": n,
         })
         assignments.append({"name": ld.get("name"), "bus": ld["bus"],
-                            "archetype": aid, "variant": vi})
+                            "archetype": aid, "variant": vi, "households": n})
 
     return {
         "resolution_minutes": 1440 // steps if steps else 1,

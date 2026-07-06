@@ -150,6 +150,25 @@ def test_slp_basis_replaces_household_means():
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_slp_basis_scales_with_metering_points():
+    """Multi-family buildings: the DSO knows the meter count per building, so
+    the SLP pseudo is n x the per-household assumption."""
+    sim = _fresh_lv_sim()
+    all_rows = set(range(len(sim.prof.load_idx)))
+    bus, rows = next((b, r) for b, r in sim._loads_at.items() if len(r) == 1)
+    est = Estimator(sim.net, sim.prof, sim._loads_at, sim._sgens_at,
+                    ev_rows=set(), household_rows=all_rows,
+                    household_counts={rows[0]: 5},
+                    config=EstConfig(load_basis="slp", slp_annual_kwh=4000.0))
+    slp_mw = 4000.0 / 8760.0 / 1000.0
+    assert est._p_mean[bus] == pytest.approx(5 * slp_mw, rel=1e-9)
+    # profile basis is untouched by the count (the true sum already carries it)
+    est.set_config(EstConfig(load_basis="profile"))
+    assert est._p_mean[bus] == pytest.approx(
+        float(sim.prof.load_p[rows[0]].mean()), rel=1e-9)
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
 def test_ev_pseudo_excluded_by_default():
     """EV charging is not part of the pseudo value unless allowed — but it
     always widens the uncertainty (its peak stays in the std base)."""

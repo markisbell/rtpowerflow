@@ -30,6 +30,23 @@ def test_loadgen_policy_rejects_nonsense():
     assert LoadgenPolicy().pv_kwp == 5.0
 
 
+def test_loadgen_policy_mfh_fields_and_range():
+    from netzsim.api import _households_range
+    with pytest.raises(ValidationError):
+        LoadgenPolicy(mfh="always")
+    with pytest.raises(ValidationError):
+        LoadgenPolicy(mfh_min=0)
+    p = LoadgenPolicy()                  # default off: saved recipes stay stable
+    assert p.mfh == "off" and _households_range(p, "urban") is None
+    auto = LoadgenPolicy(mfh="auto")
+    assert _households_range(auto, "urban") == (3, 6)
+    assert _households_range(auto, "suburban") == (3, 6)
+    assert _households_range(auto, "rural") is None
+    assert _households_range(auto, "user") is None
+    on = LoadgenPolicy(mfh="on", mfh_min=2, mfh_max=4)
+    assert _households_range(on, None) == (2, 4)
+
+
 def test_der_requests_rejects_nonsense():
     with pytest.raises(ValidationError):
         PvRequest(bus=0, kwp=0.0)

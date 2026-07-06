@@ -1,8 +1,10 @@
 """FastAPI application: REST control plane + WebSocket live result stream."""
 from __future__ import annotations
 
+import json
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -18,7 +20,7 @@ from .battery import MODES
 from .grid_catalog import GridCatalog, preview
 from .measurements import METER_MODES, PRESETS
 from .realpv import load_prices, load_pv_days
-from .scenarios import ScenarioStore
+from .scenarios import ScenarioStore, _slug
 from .loadgen import (
     AssignPolicy,
     EvPolicy,
@@ -363,7 +365,7 @@ async def scenarios_load(sid: str):
             gen_doc = g.generation
             policy = LoadgenPolicy(**doc["loadgen"]) if doc.get("loadgen") else None
             if policy is not None:
-                assigned = _assigned_load_doc(g, policy)
+                assigned = _assigned_load_doc(g, policy, _grid_character(gid))
                 load_doc = {k: assigned[k] for k in ("resolution_minutes", "steps", "loads")}
                 load_source = "lpg"
                 n_ev = assigned["n_ev"]
@@ -630,6 +632,57 @@ def grid_preview(grid_id: str):
     return preview(g)
 
 
+class GridImportRequest(BaseModel):
+    doc: dict                      # the raw grid JSON (gridformat or gridedit-mv)
+    name: str | None = None        # display name; defaults to the doc's name
+
+
+@app.post("/grids/import")
+def grids_import(req: GridImportRequest):
+    """Import a grid file (gridgen/gridedit JSON) into the user catalog.
+
+    The document is written to ``user_grids/`` and validated by actually
+    converting it; a file that does not convert is removed again (400)."""
+    base = _slug(req.name or str(req.doc.get("name") or "import"))
+    directory = Path(settings.user_grids_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    path, n = directory / f"{base}.json", 1
+    while path.exists():
+        n += 1
+        path = directory / f"{base}-{n}.json"
+    path.write_text(json.dumps(req.doc, indent=2, ensure_ascii=False),
+                    encoding="utf-8")
+    gid = f"user_{path.stem}"
+    try:
+        if not runtime.catalog.has(gid):        # triggers the user-dir rescan
+            raise ValueError("file not recognized by the catalog")
+        g = runtime.catalog.get_inputs(gid, steps=settings.steps_per_day)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 — conversion failed: reject upload
+        path.unlink(missing_ok=True)
+        runtime.catalog._scan_user()
+        raise HTTPException(400, f"not an importable grid file: {exc}")
+    p = preview(g)
+    return {"id": gid, "name": req.doc.get("name") or path.stem,
+            "n_bus": p["n_bus"], "n_load": p["n_load"], "notes": g.notes}
+
+
+def _trafo_sn_mva(g) -> float | None:
+    """Summed transformer rating of a grid (std-type lookup, best effort)."""
+    try:
+        from pandapower.std_types import basic_std_types
+        types = basic_std_types()["trafo"]
+    except Exception:  # noqa: BLE001
+        return None
+    total = 0.0
+    for t in g.lines.get("transformers", []):
+        st = t.get("std_type")
+        if st in types:
+            total += float(types[st].get("sn_mva", 0.0))
+    return round(total, 4) if total > 0 else None
+
+
 # --------------------------------------------------------------------------- #
 # Load generation (cached LPG archetype library)
 # --------------------------------------------------------------------------- #
@@ -645,12 +698,32 @@ class LoadgenPolicy(BaseModel):
     ev_daily_kwh: float = Field(8.0, gt=0, le=100)   # mean energy charged per day
     pv_penetration: float = Field(0.0, ge=0, le=1)   # fraction of load buses with PV
     pv_kwp: float = Field(5.0, gt=0, le=100)         # peak kW per PV system
+    # multi-family buildings: sum mfh_min..mfh_max household profiles per load.
+    # "auto" applies it to suburban/urban grids only; default "off" keeps
+    # existing recipes (saved scenarios) bit-identical.
+    mfh: Literal["auto", "off", "on"] = "off"
+    mfh_min: int = Field(3, ge=1, le=12)
+    mfh_max: int = Field(6, ge=1, le=20)
 
 
-def _assign_policy(p: LoadgenPolicy) -> AssignPolicy:
+def _grid_character(grid_id: str) -> str | None:
+    e = runtime.catalog._entries.get(grid_id)
+    return e.character if e else None
+
+
+def _households_range(p: LoadgenPolicy, character: str | None) -> tuple[int, int] | None:
+    if p.mfh == "off" or p.mfh_max < p.mfh_min:
+        return None
+    if p.mfh == "auto" and character not in ("suburban", "urban"):
+        return None
+    return (p.mfh_min, p.mfh_max)
+
+
+def _assign_policy(p: LoadgenPolicy, character: str | None = None) -> AssignPolicy:
     return AssignPolicy(
         archetypes=p.archetypes, mode=p.mode, seed=p.seed, scale=p.scale,
         power_factor=p.power_factor, jitter_minutes=p.jitter_minutes,
+        households_range=_households_range(p, character),
     )
 
 
@@ -671,7 +744,7 @@ def _household_loads(g) -> list[dict]:
     return [ld for ld in g.load["loads"] if ld.get("household", True)]
 
 
-def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
+def _assigned_load_doc(g, policy: LoadgenPolicy, character: str | None = None) -> dict:
     """Base household loads + any synthetic EV charging loads (additive). Loads
     that are not households (lumped LV stations in a district) pass through with
     their aggregate profiles untouched."""
@@ -680,7 +753,7 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
     households = _household_loads(g)
     try:
         doc = assign_to_loads(
-            households, runtime.library, _assign_policy(policy),
+            households, runtime.library, _assign_policy(policy, character),
             steps=settings.steps_per_day,
         )
     except ValueError as exc:
@@ -702,7 +775,8 @@ def _assigned_load_doc(g, policy: LoadgenPolicy) -> dict:
                           for a in doc["assignments"]]
     fixed = [ld for ld in g.load["loads"] if not ld.get("household", True)]
     doc["loads"] = doc["loads"] + [
-        {k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar") if k in ld} for ld in fixed]
+        {k: ld[k] for k in ("name", "bus", "p_mw", "q_mvar", "household") if k in ld}
+        for ld in fixed]
     doc["n_ev"] = n_ev
     return doc
 
@@ -728,7 +802,7 @@ def loadgen_assign(req: AssignRequest):
     if not runtime.catalog.has(req.grid_id):
         raise HTTPException(404, f"unknown grid '{req.grid_id}'")
     g = runtime.catalog.get_inputs(req.grid_id, steps=settings.steps_per_day)
-    assigned = _assigned_load_doc(g, req.policy)
+    assigned = _assigned_load_doc(g, req.policy, _grid_character(req.grid_id))
     pv = _pv_gen_doc(g, req.policy)
 
     import numpy as np
@@ -743,7 +817,12 @@ def loadgen_assign(req: AssignRequest):
         "n_load": len(assigned["loads"]),
         "n_ev": assigned["n_ev"],
         "n_pv": len(pv["generation"]) if pv else 0,
+        "n_households": int(sum(a.get("households") or 1
+                                for a in assigned["assignments"])),
+        "n_mfh": int(sum(1 for a in assigned["assignments"]
+                         if (a.get("households") or 1) > 1)),
         "archetypes_used": sorted({a["archetype"] for a in assigned["assignments"]}),
+        "trafo_sn_mva": _trafo_sn_mva(g),   # None if no std-type rating known
         "total_load_p_mw": [round(float(x), 6) for x in load],
         "total_pv_p_mw": [round(float(x), 6) for x in pv_total],
         "net_p_mw": [round(float(x), 6) for x in net],
@@ -772,7 +851,7 @@ async def config_apply(req: ApplyGridRequest):
         gen_doc = g.generation
         n_ev = n_pv = 0
         if req.loadgen is not None:
-            assigned = _assigned_load_doc(g, req.loadgen)
+            assigned = _assigned_load_doc(g, req.loadgen, _grid_character(req.grid_id))
             load_doc = {k: assigned[k] for k in ("resolution_minutes", "steps", "loads")}
             load_source = "lpg"
             n_ev = assigned["n_ev"]

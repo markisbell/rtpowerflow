@@ -192,14 +192,20 @@ def _counts(g: GridInputs) -> dict[str, int]:
 
 
 def preview(g: GridInputs) -> dict:
-    """A net-free topology preview built straight from the converted dicts."""
+    """A net-free topology preview built straight from the converted dicts.
+
+    Buses carry their real ``geo`` (lon/lat) and ``kind`` (cabinets), lines
+    their street ``geometry`` — enough for the UI to draw the bare structure
+    without building a pandapower net."""
     buses = [
-        {"id": i, "name": b["name"], "vn_kv": b["vn_kv"], "zone": b.get("zone")}
+        {"id": i, "name": b["name"], "vn_kv": b["vn_kv"], "zone": b.get("zone"),
+         "geo": b.get("geo"), "kind": b.get("kind")}
         for i, b in enumerate(g.grid_structure["buses"])
     ]
     lines = [
         {"name": ln.get("name"), "from_bus": ln["from_bus"],
-         "to_bus": ln["to_bus"], "length_km": ln["length_km"]}
+         "to_bus": ln["to_bus"], "length_km": ln["length_km"],
+         "geometry": ln.get("geometry")}
         for ln in g.lines["lines"]
     ]
     trafos = [
@@ -213,5 +219,7 @@ def preview(g: GridInputs) -> dict:
         "buses": buses,
         "lines": lines,
         "trafos": trafos,
+        "load_buses": sorted({int(ld["bus"]) for ld in g.load["loads"]}),
+        "slack_buses": [int(s["bus"]) for s in g.substation["substations"]],
         "notes": g.notes,
     }

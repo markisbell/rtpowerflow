@@ -92,10 +92,10 @@ EchtzeitNetzSimulator/
 │   ├── test_measurements.py  # observability: meter placement, projection, strict-mode strip
 │   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
 ├── ui/                       # app 3: React + Vite + TS frontend (served by nginx)
-│   ├── src/views/            # GridBrowser, LoadStudio, LivePowerFlow — opened via
-│   │                         #   the desktop-style MENU BAR (MenuBar.tsx: Netz ·
-│   │                         #   Simulation · Ansicht · Messungen · Schätzung · Hilfe);
-│   │                         #   app starts in Live; Live display state (layout/
+│   ├── src/views/            # NetzStudio (merged grid+loads workflow), LivePowerFlow
+│   │                         #   — opened via the desktop-style MENU BAR (MenuBar.tsx:
+│   │                         #   Netz · Simulation · Ansicht · Messungen · Schätzung ·
+│   │                         #   Hilfe); app starts in Live; Live display state (layout/
 │   │                         #   values/viewMode) lives in App (LiveView), the
 │   │                         #   transport bar stays at the bottom of Live
 │   ├── src/components/       # GridDiagram (SVG), MapDiagram (Leaflet/OSM), Sparkline
@@ -194,8 +194,9 @@ default to zeros if omitted.
 | POST | `/control/seek?step=N` | Jump to a step |
 | GET | `/grids` | List importable grids from the committed dataset (`available`, `grids[]`) |
 | GET | `/grids/{id}` | Net-free topology preview of a catalog grid (+ converter `notes`) |
+| POST | `/grids/import` | Body `{doc, name?}` → write a gridgen/gridedit JSON to `user_grids/` (validated by converting; 400 removes it) |
 | GET | `/loadgen/archetypes` | List cached LPG archetypes (`available`, `ev_available`, metadata) |
-| POST | `/loadgen/assign` | Body `{grid_id, policy}` → preview net curve (load + EV − PV) + assignment |
+| POST | `/loadgen/assign` | Body `{grid_id, policy}` → preview net curve (load + EV − PV) + assignment + `trafo_sn_mva`, `n_households`, `n_mfh` |
 | POST | `/config/apply` | Body `{grid_id, loadgen?}` → convert (+ LPG loads, EV, PV) + `engine.reconfigure` |
 | GET | `/config/active` | Currently loaded grid metadata (id, name, counts, source, load_source, n_ev, n_pv, notes) |
 | GET | `/measurements` | Meter placement (`node_buses`, `trafo_idxs`), `coverage`, `presets`, `expose_ground_truth` |
@@ -395,12 +396,22 @@ provisioned datasource + dashboard, all in compose.
   cable-cabinet logic, and curated-library selection all live in `gridgen` now (see
   `gridgen/docs/`). To refresh the dataset, regenerate with `gridgen` and re-commit
   the snapshot + bump the pin in `data/DATASET.md`. See `docs/GRIDGEN_EXTRACTION.md`.
-- **The Grid page is a generator *picker*** driven by the manifest — choose
-  **voltage** (MV / LV), **area character** (rural / suburban / urban) and
-  **approximate node count**. `GridCatalog` is **manifest-driven**
-  (`library_manifest`, config `grid_library`); with no manifest it falls back to
-  listing raw ding0 dirs under `ding0_dir`. (The old European-Archetype xlsx
-  archetypes are gone — that converter moved out with the rest of generation.)
+- **One merged grid workflow view** (`NetzStudio.tsx`, menu "Netz → Netz &
+  Lasten…", 2026-07-06): pick a grid from the list (library + user grids) or
+  **import a JSON file** (gridgen/gridedit → `POST /grids/import`, written to
+  `user_grids/`, validated by converting), configure loads/EV/PV, check the
+  **transformer loading** (auto-previewed net curve with the trafo rating as a
+  dashed limit line, peak % KPI), then apply & start. The old separate
+  GridBrowser (voltage/character/node-count picker) and LoadStudio pages are
+  gone. `GridCatalog` is still **manifest-driven** (`library_manifest`, config
+  `grid_library`); with no manifest it falls back to raw ding0 dirs.
+- **Multi-family buildings (MFH)**: `LoadgenPolicy.mfh` — `"auto"` (UI default;
+  applies in **suburban/urban** grids), `"on"`, or `"off"` (**backend default**,
+  keeps saved scenario recipes bit-identical). Each load element then sums
+  `mfh_min..mfh_max` (3–6) household profiles (`assign.py households_range`);
+  the load doc rows carry `households: n` (models.LoadProfile), and the
+  estimator's **SLP basis scales with the metering-point count** (the DSO knows
+  its meter counts; `Estimator(household_counts=…)`).
 - **User-drawn grids** (gridedit) land in `data/user_grids/` (gitignored) and are
   rescanned per `/grids` listing. LV files are gridformat (→ `convert_osm_lv`);
   MV files carry `format: "gridedit-mv"` (→ `gridedit_mv_import.convert_gridedit_mv`:
