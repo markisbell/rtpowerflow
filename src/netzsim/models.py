@@ -132,6 +132,10 @@ class LoadProfile(_Profile):
     # and gridedit MV imports set this; the estimator's SLP pseudo basis
     # applies only to households (big customers are RLM-metered in reality).
     household: Optional[bool] = None
+    # number of households summed into this load (multi-family buildings).
+    # The DSO knows this — it is the building's metering-point count — so the
+    # SLP pseudo basis scales with it. None/1 = single-family.
+    households: Optional[int] = None
 
 
 class GenProfile(_Profile):

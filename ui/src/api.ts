@@ -62,6 +62,9 @@ export const api = {
   setEstConfig: (cfg: EstimationConfig) => post<EstimationConfig>("/estimation/config", cfg),
   grids: () => get<GridsResponse>("/grids"),
   gridPreview: (id: string) => get<GridPreview>(`/grids/${encodeURIComponent(id)}`),
+  importGrid: (doc: unknown, name?: string) =>
+    post<{ id: string; name: string; n_bus: number; n_load: number; notes: string[] }>(
+      "/grids/import", { doc, name: name ?? null }),
   thumbnailUrl: (id: string) => `${API}/grids/${encodeURIComponent(id)}/thumbnail`,
 
   archetypes: () => get<ArchetypesResponse>("/loadgen/archetypes"),

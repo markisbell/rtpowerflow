@@ -158,6 +158,22 @@ button.ghost {
 .studio { display: grid; grid-template-columns: 340px 1fr; height: 100%; }
 .studio .controls { padding: 1rem; overflow: auto; border-right: 1px solid var(--border); }
 .studio .preview { padding: 1rem; overflow: auto; }
+
+/* ---- merged grid workflow (Netz & Lasten) ---- */
+.netzstudio { display: grid; grid-template-columns: 280px 330px 1fr; height: 100%; }
+.netzstudio h3 { margin-top: 0; font-size: 0.95rem; }
+.ns-list { padding: 1rem; overflow: auto; border-right: 1px solid var(--border); background: var(--panel); }
+.ns-config { padding: 1rem; overflow: auto; border-right: 1px solid var(--border); }
+.ns-preview { padding: 1rem; overflow: auto; }
+.ns-hdr { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+          color: var(--muted); margin: 0.9rem 0 0.3rem; }
+.ns-row { padding: 0.45rem 0.55rem; border: 1px solid var(--border); border-radius: 8px;
+          margin-bottom: 0.4rem; cursor: pointer; transition: border-color 0.15s; }
+.ns-row:hover { border-color: var(--accent); }
+.ns-row.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ns-row .title { font-size: 0.82rem; font-weight: 600; }
+.ns-row .sub { font-size: 0.72rem; color: var(--muted); display: flex; gap: 0.35rem; align-items: center; }
+.ns-empty { font-size: 0.75rem; padding: 0.2rem 0.1rem; }
 .field { margin-bottom: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .field label { font-size: 0.8rem; color: var(--muted); }
 .field input[type="number"], .field select {

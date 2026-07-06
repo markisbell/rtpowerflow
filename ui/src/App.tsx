@@ -4,11 +4,10 @@ import { api } from "./api";
 import type { ActiveGrid } from "./types";
 import { gridDisplayName } from "./gridname";
 import MenuBar from "./components/MenuBar";
-import GridBrowser from "./views/GridBrowser";
-import LoadStudio from "./views/LoadStudio";
+import NetzStudio from "./views/NetzStudio";
 import LivePowerFlow from "./views/LivePowerFlow";
 
-type Tab = "grids" | "loads" | "live";
+type Tab = "config" | "live";
 
 // The Live view's display settings, lifted here so the menu bar (Ansicht)
 // and the view itself share one source of truth.
@@ -37,7 +36,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <span className="brand">netzsim</span>
-        <MenuBar tab={tab} onTab={setTab} selectedGrid={selectedGrid} active={active}
+        <MenuBar tab={tab} onTab={setTab} active={active}
                  live={live} onLive={patchLive}
                  onMeasChanged={() => setMeasStamp((n) => n + 1)}
                  onScenarioLoaded={() => { refreshActive(); setTab("live"); setLiveKey((n) => n + 1); }} />
@@ -67,16 +66,10 @@ export default function App() {
       </header>
 
       <main className="content">
-        {tab === "grids" && (
-          <GridBrowser
+        {tab === "config" && (
+          <NetzStudio
             selected={selectedGrid}
             onSelect={setSelectedGrid}
-            onContinue={() => setTab("loads")}
-          />
-        )}
-        {tab === "loads" && selectedGrid && (
-          <LoadStudio
-            gridId={selectedGrid}
             onApplied={(a) => {
               setActive(a);
               setTab("live");

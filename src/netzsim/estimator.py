@@ -73,6 +73,7 @@ class Estimator:
                  sgens_at: dict[int, list[int]], *,
                  ev_rows: set[int] | None = None,
                  household_rows: set[int] | None = None,
+                 household_counts: dict[int, int] | None = None,
                  config: EstConfig | None = None):
         self._net = copy.deepcopy(net)                    # measurements live here
         if len(self._net.measurement):
@@ -88,6 +89,9 @@ class Estimator:
         self._ev_rows = ev_rows or set()                  # rows that are EV charging
         self._household_rows = household_rows if household_rows is not None \
             else set(range(prof.load_p.shape[0]) if prof.load_p.size else [])
+        # metering points per row (multi-family buildings): the DSO knows its
+        # meter counts, so the SLP basis scales with them
+        self._household_counts = household_counts or {}
         self.set_config(config or EstConfig())
 
     def set_config(self, cfg: EstConfig) -> None:
@@ -114,8 +118,9 @@ class Estimator:
                         q += float(self._prof.load_q[i].mean())
                     continue
                 if cfg.load_basis == "slp" and i in self._household_rows:
-                    p += slp_p
-                    q += slp_q
+                    n = self._household_counts.get(i, 1)
+                    p += slp_p * n
+                    q += slp_q * n
                 else:
                     p += float(self._prof.load_p[i].mean())
                     q += float(self._prof.load_q[i].mean())
