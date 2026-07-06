@@ -12,6 +12,17 @@ interface Props {
   fluid?: boolean;    // scale to the container width (width/height = viewBox)
 }
 
+/** Y-axis extent of the chart: all plotted series plus headroom for the
+ *  marker line. Pure — must NEVER mutate the series (a marker pushed into the
+ *  data array would be drawn as a phantom peak at the end of the day). */
+export function chartExtent(
+  main: number[], over: number[] | null, marker?: number,
+): { min: number; max: number } {
+  const ext = over ? [...main, ...over] : [...main];
+  if (marker && marker > 0) ext.push(marker * 1.05);   // keep the limit in view
+  return { max: Math.max(...ext, 1e-9), min: Math.min(...ext, 0) };
+}
+
 /** A compact area/line chart for a daily profile. Handles negative values
  *  (e.g. net load going negative under high PV) with a zero baseline. */
 export default function Sparkline({
@@ -41,10 +52,7 @@ export default function Sparkline({
   const main = ds(values);
   const over = overlay ? ds(overlay) : null;
 
-  const all = over ? [...main, ...over] : main;
-  if (marker && marker > 0) all.push(marker * 1.05);   // keep the limit in view
-  const max = Math.max(...all, 1e-9);
-  const min = Math.min(...all, 0);
+  const { min, max } = chartExtent(main, over, marker);
   const span = max - min || 1e-9;
 
   const x = (i: number, n: number) => pad + (i / (n - 1)) * w;
