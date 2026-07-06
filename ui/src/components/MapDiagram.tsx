@@ -81,7 +81,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     if (!elRef.current) return;
     const map = L.map(elRef.current, { preferCanvas: true, zoomSnap: 0.25, attributionControl: false });
     mapRef.current = map;
-    map.zoomControl.setPosition("bottomleft");   // move +/- to the lower left
+    map.zoomControl.setPosition("topleft");      // +/- in the upper-left corner
     L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution(
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     ).addTo(map);
@@ -329,7 +329,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       )}
       <div className="map-colorbars">
         <Colorbar gradient={LOADING_GRADIENT} top="100%" bottom="0%" caption={t("map.lineLoading")} />
-        <Colorbar gradient={REDS_GRADIENT} top="±6%" bottom="0%" caption={t("map.busVolt")} />
+        <Colorbar gradient={REDS_GRADIENT} top="±10%" bottom="0%" caption={t("map.busVolt")} />
       </div>
     </div>
   );
