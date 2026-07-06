@@ -6,11 +6,15 @@ import { currentWidth, loadingColor, voltageColor, fmt, UNOBSERVED, UNOBSERVED_L
 // stacked-feeder layout spacing (user units): horizontal per depth level, and the
 // vertical room for a feeder track + each leaf-load stub fanned below its node.
 const COL = 96;
-const LEAF_STEP = 28;
-const TRACK_BASE = 34;
-const TRACK_GAP = 16;
+const LEAF_STEP = 34;
+const TRACK_BASE = 44;
+const TRACK_GAP = 28;
 const PADX = 48;
 const PADY = 36;
+// risers leave their parent a little to the RIGHT of the node column, so a
+// drop crossing intermediate tracks never runs through their nodes (which sit
+// exactly on column multiples)
+const RISER_DX = 18;
 
 interface Props {
   topo: Topology;
@@ -145,8 +149,10 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
     return { pos, parent, depthOf: depth, W, H };
   }, [topo]);
 
-  // orthogonal edge: vertical riser at the parent's x, then a horizontal tap to
-  // the child (a straight horizontal line when they share a track).
+  // orthogonal edge: a short stub to the right of the parent, vertical riser
+  // BETWEEN the node columns, then a horizontal tap to the child (a straight
+  // horizontal line when they share a track). Keeping the riser off the column
+  // prevents it from running through nodes of the tracks it crosses.
   const edge = (aId: number, bId: number): { p: XY; c: XY; d: string } | null => {
     const A = pos.get(aId); const B = pos.get(bId);
     if (!A || !B) return null;
@@ -154,7 +160,9 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
     if (parent.get(aId) === bId) { p = B; c = A; }
     else if (parent.get(bId) === aId) { p = A; c = B; }
     else if ((depthOf.get(bId) ?? 0) < (depthOf.get(aId) ?? 0)) { p = B; c = A; }
-    return { p, c, d: `M ${p.x} ${p.y} V ${c.y} H ${c.x}` };
+    if (p.y === c.y) return { p, c, d: `M ${p.x} ${p.y} H ${c.x}` };
+    const rx = p.x + (c.x >= p.x ? RISER_DX : -RISER_DX);
+    return { p, c, d: `M ${p.x} ${p.y} H ${rx} V ${c.y} H ${c.x}` };
   };
 
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });

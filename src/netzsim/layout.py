@@ -130,6 +130,10 @@ def _geographic_positions(net) -> dict[int, tuple[float, float]]:
 # --------------------------------------------------------------------------- #
 # tidy radial tree (rooted at the slack)
 # --------------------------------------------------------------------------- #
+FEEDER_GAP = 2.0   # extra rows between the main feeders (children of the busbar)
+BRANCH_GAP = 0.75  # extra rows between adjacent branch bundles deeper in a feeder
+
+
 def _tree_positions(net) -> dict[int, tuple[float, float]]:
     g = _graph(net)
     pos: dict[int, tuple[float, float]] = {}
@@ -143,13 +147,35 @@ def _tree_positions(net) -> dict[int, tuple[float, float]]:
             for c in children.get(u, []):
                 depth[c] = depth[u] + 1
         ypos: dict[int, float] = {}
-        for u in reversed(order):
+
+        # depth-first, left to right: every subtree occupies a CONTIGUOUS band of
+        # rows (the old reversed-BFS leaf order interleaved leaves of different
+        # feeders, which made branches cross and nodes overlap). Between sibling
+        # subtrees extra spacing is inserted — a lot between the main feeders
+        # (parent at depth <= 1: the slack or the LV busbar), a little between
+        # adjacent branch bundles further down.
+        def assign(u: int) -> None:
             kids = children.get(u, [])
-            if kids:
-                ypos[u] = sum(ypos[c] for c in kids) / len(kids)
-            else:
+            if not kids:
                 ypos[u] = y_cursor[0]
                 y_cursor[0] += 1.0
+                return
+            for i, c in enumerate(kids):
+                if i:
+                    if depth[u] <= 1:
+                        y_cursor[0] += FEEDER_GAP
+                    elif children.get(kids[i - 1]) and children.get(c):
+                        y_cursor[0] += BRANCH_GAP
+                assign(c)
+            ypos[u] = (ypos[kids[0]] + ypos[kids[-1]]) / 2.0
+
+        import sys
+        limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(max(limit, len(order) * 2 + 100))
+        try:
+            assign(root)
+        finally:
+            sys.setrecursionlimit(limit)
         for u in order:
             pos[u] = (float(depth[u]), ypos[u])
 
