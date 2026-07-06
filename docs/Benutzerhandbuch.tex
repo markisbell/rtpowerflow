@@ -224,9 +224,10 @@ Menüleiste am oberen Rand bündelt alle Funktionen
 (Abbildung~\ref{fig:menue}):
 
 \begin{description}[nosep]
-  \item[\ui{Netz}] öffnet den Netzkatalog (\ui{Netz wählen…}) und die
-    Lastkonfiguration (\ui{Lasten konfigurieren…}); darunter steht
-    das aktuell geladene Netz.
+  \item[\ui{Netz}] öffnet die kombinierte Ansicht \ui{Netz \&
+    Lasten…} --- Netz wählen oder importieren, Lasten konfigurieren,
+    Trafo-Auslastung prüfen, starten; darunter steht das aktuell
+    geladene Netz.
   \item[\ui{Simulation}] Start/Pause sowie die komplette
     Szenarien-Verwaltung (Kapitel~\ref{ch:scenarios}).
   \item[\ui{Ansicht}] Darstellung (Karte/Schema/Werte) und Sicht
@@ -250,76 +251,81 @@ Menüleiste am oberen Rand bündelt alle Funktionen
 \end{figure}
 
 Der typische Arbeitsablauf bleibt ein Dreischritt --- Netz wählen,
-Lasten erzeugen, live beobachten. Alle Beispiele dieses Kapitels
-stammen aus \emph{einem} durchgängigen Arbeitsgang mit demselben
-Netz, sodass sich die Zahlen von Schritt zu Schritt wiederfinden
-lassen.
+Lasten erzeugen, live beobachten. Die ersten beiden Schritte leben
+in \emph{einer} Ansicht (\ui{Netz \& Lasten}), die in drei Spalten
+von links nach rechts durchlaufen wird: \ui{1~·~Netz wählen},
+\ui{2~·~Lasten \& Erzeugung}, \ui{3~·~Prüfen \& starten}. Alle
+Beispiele dieses Kapitels stammen aus \emph{einem} durchgängigen
+Arbeitsgang mit demselben Netz, sodass sich die Zahlen von Schritt
+zu Schritt wiederfinden lassen.
 
-\section{Schritt 1: Netz erzeugen}
+\section{Schritt 1: Netz wählen oder importieren}
 
-\ui{Netz} $\rightarrow$ \ui{Netz wählen…} öffnet den Netzkatalog.
-Die Netzbibliothek enthält synthetische deutsche
-Verteilnetze (ding0) auf realer Geographie --- die Topologien sind
-künstlich, aber nach den Regeln realer Netzplanung erzeugt und an
-echten Orten verankert, sodass die Karte echte Straßen und Gebäude
-zeigt. Drei Filter grenzen die Auswahl ein:
+\ui{Netz} $\rightarrow$ \ui{Netz \& Lasten…} öffnet die kombinierte
+Ansicht. Die linke Spalte listet alle verfügbaren Netze:
 
 \begin{description}
-  \item[Spannungsebene] \ui{Mittelspannung (20 kV)} oder
-    \ui{Niederspannung (0,4 kV)}.
-  \item[Gebietscharakter] \ui{Ländlich}, \ui{Vorstädtisch},
-    \ui{Städtisch} oder \ui{Eigene}. Der Charakter prägt die
-    Netzform: ländliche NS-Netze sind reine Strahlennetze mit langen
-    Ausläufern (spannungskritisch), vorstädtische Netze offene Ringe
-    in radialem Betrieb, städtische Netze dicht vermascht
-    (auslastungskritisch). \ui{Eigene} listet mit dem Editor
-    \emph{gridedit} selbst gezeichnete Netze
+  \item[\ui{Bibliothek}] mitgelieferte synthetische deutsche
+    Verteilnetze (ding0) auf realer Geographie: Die Topologien
+    sind künstlich, aber nach den Regeln realer Netzplanung
+    erzeugt und an echten Orten verankert, sodass die Karte echte
+    Straßen zeigt. Ausgeliefert werden die beiden Netze der
+    Referenzszenarien (Kapitel~\ref{ch:scenarios}): ein
+    \emph{ländliches} NS-Netz (reines Strahlennetz mit langem
+    Ausläufer --- spannungskritisch) und ein \emph{vorstädtisches}
+    NS-Netz (mehrere Stränge --- auslastungskritisch bei hoher
+    Gleichzeitigkeit).\footnote{Die volle Bibliothek mit 20 Netzen
+    (MS-Bezirke, städtische Netze, weitere Größen) lässt sich
+    wiederherstellen, indem \texttt{data/grid\_library\_full.json}
+    über \texttt{data/grid\_library.json} kopiert wird. Ein
+    MS-Bibliotheksnetz lädt dann automatisch die straßengerouteten
+    NS-Ortsnetze seines Bezirks mit; NS-Ortsnetze ohne Straßenmodell
+    bleiben als \emph{Summenlast} an ihrer Station, und auf der
+    Live-Karte filtert der Ebenenumschalter \ui{MS}/\ui{NS}/\ui{Alle}.}
+  \item[\ui{Eigene Netze}] alle mit dem Editor \emph{gridedit}
+    gezeichneten und exportierten Netze
     (Kapitel~\ref{ch:gridedit}).
-  \item[ca.\ Knoten] gewünschte Netzgröße.
+  \item[\ui{Netz importieren…}] lädt eine Netzdatei (JSON aus
+    gridedit oder gridgen) direkt in den Katalog. Die Datei wird
+    beim Import probeweise konvertiert --- was sich nicht laden
+    lässt, wird mit einer Fehlermeldung abgewiesen.
 \end{description}
 
-Die Trefferliste zeigt passende Netze; rechts erscheinen die
-Kenndaten des gewählten Netzes samt eventueller Importhinweise.
-\ui{Lasten konfigurieren} übernimmt die Auswahl
-(Abbildung~\ref{fig:netz}).
+Nach der Auswahl erscheinen in der Mittelspalte die Kenndaten
+(Knoten, Leitungen, Lasten, Trafo-Nennleistung) und rechts oben die
+\emph{Struktur} des Netzes: eine dunkle Karte ohne Kartenhintergrund
+--- blaue Kabel entlang der realen Straßenzüge, die Ortsnetzstation
+bernsteinfarben, Kabelverteiler als grüne Quadrate, Hausanschlüsse
+als grüne Punkte (Abbildung~\ref{fig:netz}).
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-netz}
-  \caption{Schritt 1 --- \ui{Netz erzeugen}: Filter (Spannungsebene,
-    Gebietscharakter, Knotenzahl), Trefferliste aus der Netzbibliothek
-    und rechts die Kenndaten des gewählten Netzes.}
+  \caption{Die Ansicht \ui{Netz \& Lasten}: links Bibliothek, eigene
+    Netze und der Datei-Import, in der Mitte die Kenndaten und
+    Lastregler, rechts die Struktur des gewählten Netzes und die
+    laufend aktualisierte Vorschau.}
   \label{fig:netz}
 \end{figure}
 
 \begin{beispiel}[Das Netz der folgenden Kapitel]
-Mit den Filtern \ui{Niederspannung} + \ui{Vorstädtisch} und dem
-Regler bei ca.\ 100 Knoten fällt die Wahl auf das Netz
-\emph{Vorstädtisches NS-Netz~·~273437}: 134~Knoten, 132~Leitungen,
-1~Ortsnetztransformator, 89~Hausanschlüsse. Die Importhinweise
-melden u.\,a., auf welche Standardgröße der Transformator dimensioniert
-wurde. Ein Dorf dieser Größe ist ideal, um Spannungsband und
+Die Wahl fällt auf das \emph{Vorstädtische NS-Netz~·~265991}:
+62~Knoten, 61~Leitungen, 1~Ortsnetztransformator (250~kVA),
+33~Hausanschlüsse an drei Strängen. Die Importhinweise melden
+u.\,a., auf welche Standardgröße der Transformator dimensioniert
+wurde. Ein Ortsteil dieser Größe ist ideal, um Spannungsband und
 Leitungsauslastung gleichzeitig zu beobachten.
 \end{beispiel}
 
-\emph{Besonderheit Mittelspannung:} Ein MS-Netz aus der Bibliothek
-lädt automatisch die straßengerouteten NS-Ortsnetze desselben
-Bezirks mit --- es entsteht ein zusammenhängendes MS+NS-Gebiet mit
-mehreren hundert Knoten über zwei Spannungsebenen. NS-Ortsnetze ohne
-Straßenmodell bleiben als \emph{Summenlast} an ihrer Ortsnetzstation:
-ein einzelner Lastpunkt, der das ganze dahinterliegende Dorf
-vertritt. Auf der Live-Karte lässt sich dann mit dem Ebenenumschalter
-\ui{MS}/\ui{NS}/\ui{Alle} filtern.
-
 \section{Schritt 2: Lasten erzeugen}
 
-In der Lastkonfiguration (\ui{Lasten konfigurieren} im Katalog oder
-im \ui{Netz}-Menü) werden den 89 Hausanschlüssen
-realistische Tagesprofile zugewiesen. Grundlage sind Profile aus dem
-LoadProfileGenerator (LPG), der das Verhalten konkreter Haushalte
-minutengenau simuliert --- Kochen, Waschmaschine, Fernseher,
-Anwesenheit. Die Bibliothek enthält u.\,a.\ folgende Archetypen
-(Jahresverbräuche der hinterlegten Profile):
+In der Mittelspalte \ui{2~·~Lasten \& Erzeugung} werden den
+33~Gebäuden realistische Tagesprofile zugewiesen. Grundlage sind
+Profile aus dem LoadProfileGenerator (LPG), der das Verhalten
+konkreter Haushalte minutengenau simuliert --- Kochen,
+Waschmaschine, Fernseher, Anwesenheit. Die Bibliothek enthält
+u.\,a.\ folgende Archetypen (Jahresverbräuche der hinterlegten
+Profile):
 
 \begin{center}
 \begin{tabular}{@{}llr@{}}
@@ -341,29 +347,42 @@ CHR52 & Studenten-WG & 3\,161 kWh \\
 Einstellmöglichkeiten:
 
 \begin{itemize}[nosep]
-  \item \ui{Zuweisungsmodus}: \ui{Reihum (gleichmäßig)} verteilt die
-    gewählten Archetypen der Reihe nach über die Häuser;
-    \ui{Zufällig (mit Seed)} würfelt --- derselbe \ui{Zufalls-Seed}
-    erzeugt dabei immer dieselbe Verteilung. Das ist für Übungen
-    wichtig: Alle Gruppen mit Seed~0 sehen exakt dasselbe Netz.
-  \item \ui{Skalierungsfaktor}: multipliziert alle Haushaltsprofile.
-    Mit 2{,}0$\times$ lässt sich ein schwach dimensioniertes Netz
-    gezielt an seine Grenzen bringen, ohne die Profile zu wechseln.
-  \item \ui{Leistungsfaktor} ($\cos\varphi$, Vorgabe 0{,}95):
-    bestimmt die Blindleistung, die zu jeder Wirklast gerechnet wird.
   \item \ui{E-Auto-Anteil} und \ui{Wallbox-Leistung} (3{,}7 / 11 /
-    22~kW): der gewählte Anteil der Haushalte lädt abends
+    22~kW): der gewählte Anteil der Gebäude lädt abends
     \emph{ungesteuert} --- die Ladefenster streuen um den
     Feierabend, genau das erzeugt die kritische Gleichzeitigkeit.
   \item \ui{PV-Anteil} und \ui{PV-Größe pro Haushalt} (kWp):
     Dach-Photovoltaik als Einspeisung mit Schönwetter-Tagesgang.
+  \item \ui{Mehrfamilienhäuser}: In vorstädtischen und städtischen
+    Netzen hängt ein Hausanschluss selten an nur \emph{einem}
+    Haushalt. Mit diesem Haken (Vorgabe: an) werden je Gebäude
+    3--6 Haushaltsprofile \emph{addiert} --- die Lastsituation wird
+    dadurch deutlich realistischer, denn die Gleichzeitigkeit
+    innerhalb eines Gebäudes ist eine andere als zwischen
+    Einfamilienhäusern. Die Zustandsschätzung
+    (Kapitel~\ref{ch:observability}) kennt die Zählpunktzahl je
+    Gebäude und skaliert ihre SLP-Annahme entsprechend.
+  \item Unter \ui{Erweitert}: die Archetyp-Auswahl, der
+    \ui{Zuweisungsmodus} (\ui{Reihum} verteilt die Archetypen der
+    Reihe nach; \ui{Zufällig} würfelt --- derselbe \ui{Zufalls-Seed}
+    erzeugt immer dieselbe Verteilung, alle Übungsgruppen mit
+    Seed~0 sehen exakt dasselbe Netz), der \ui{Skalierungsfaktor}
+    (mit 2{,}0$\times$ lässt sich ein Netz gezielt an seine Grenzen
+    bringen) und der \ui{Leistungsfaktor} ($\cos\varphi$,
+    Vorgabe~0{,}95) für die Blindleistung.
 \end{itemize}
 
-\ui{Vorschau} simuliert die aggregierte Netto-Tageslast des Strangs
-vor dem Start: durchgezogen der Netto-Bedarf, gestrichelt die
-Bruttolast vor PV (Abbildung~\ref{fig:lasten}). \ui{Übernehmen \&
-starten} lädt das Netz mit den erzeugten Profilen in die
-Live-Simulation. Alternativ lässt sich der Schritt mit
+Die rechte Spalte \ui{3~·~Prüfen \& starten} rechnet bei jeder
+Änderung automatisch nach: durchgezogen der Netto-Bedarf über
+24~Stunden, gestrichelt die Bruttolast vor PV, dazu als rote
+gestrichelte Linie die \emph{Trafo-Bemessungsleistung}. Die
+Kennzahl \ui{Trafo-Spitze} setzt die Tagesspitze (Bezug
+\emph{oder} Rückspeisung) ins Verhältnis zur Nennleistung der
+Ortsnetzstation und färbt sich ab 80\,\% gelb, ab 100\,\% rot ---
+so ist \emph{vor} dem Start sichtbar, ob die Station die gewählte
+Lastsituation überhaupt trägt (Abbildung~\ref{fig:lasten}).
+\ui{Übernehmen \& starten} lädt das Netz mit den erzeugten Profilen
+in die Live-Simulation. Alternativ lässt sich der Schritt mit
 \ui{Platzhalter}-Lasten überspringen (glatte synthetische
 Tageskurven --- ausreichend für Topologie-Demos, aber ohne das
 realistische Zappeln echter Haushalte).
@@ -371,32 +390,38 @@ realistische Zappeln echter Haushalte).
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-lasten}
-  \caption{Schritt 2 --- \ui{Lasten erzeugen}: links Archetypen und
-    Regler (hier 40\,\% E-Auto-Anteil, 50\,\% PV), rechts die
-    Vorschau der aggregierten Tageslast. Die Netto-Kurve wird mittags
-    negativ --- der Strang speist zurück (PV-Einspeisung).}
+  \caption{Lasten \& Erzeugung mit Vorschau (hier 40\,\%
+    E-Auto-Anteil, 50\,\% PV, Mehrfamilienhäuser aktiv): die
+    Netto-Kurve wird mittags negativ --- der Strang speist zurück
+    ---, die Abendspitze nähert sich der gestrichelten
+    Trafo-Bemessungslinie, die Kennzahl \ui{Trafo-Spitze} steht auf
+    92\,\%.}
   \label{fig:lasten}
 \end{figure}
 
-\begin{beispiel}[Gleichzeitigkeit, E-Autos und PV in Zahlen]
-Für das 89-Häuser-Netz zeigt die Vorschau nacheinander:
+\begin{beispiel}[Gleichzeitigkeit, Mehrfamilienhäuser, E-Autos und PV]
+Für das 33-Gebäude-Netz zeigt die Vorschau nacheinander:
 \begin{itemize}[nosep]
-  \item \textbf{Nur Haushalte:} Netto-Spitze \textbf{110{,}5~kW}
-    gegen 18:30 Uhr. Würde man die Einzelspitzen der Haushalte
-    addieren, käme ein Vielfaches heraus --- aber nie kochen alle
-    gleichzeitig. Diese \emph{Durchmischung} ist der Grund, warum
-    ein 400-kVA-Transformator für ein ganzes Dorf reicht.
-  \item \textbf{+ 40\,\% E-Autos (11~kW):} 33 Fahrzeuge laden abends
-    ungesteuert. Die Spitze steigt auf \textbf{186{,}5~kW} (+69\,\%!),
-    obwohl rechnerisch $33 \times 11 = 363$~kW installiert sind ---
-    die Ladefenster überlappen nur teilweise. E-Mobilität wirkt fast
-    ausschließlich auf die Abendspitze.
-  \item \textbf{+ 50\,\% PV (5~kWp):} 45 Anlagen mit zusammen
-    225~kWp drücken die Netto-Kurve mittags auf
-    \textbf{$-$177{,}6~kW} --- der Strang speist dann mehr ins
-    Mittelspannungsnetz zurück, als er abends bezieht. Abendspitze
-    und Mittagstal liegen zeitlich so weit auseinander, dass PV die
-    E-Auto-Spitze \emph{nicht} entlastet.
+  \item \textbf{Nur Haushalte:} Aus 33~Gebäuden werden mit dem
+    Mehrfamilienhaus-Haken \textbf{154~Haushalte}; die Netto-Spitze
+    liegt bei \textbf{180{,}7~kW} gegen 19:20 Uhr
+    (\ui{Trafo-Spitze} 76\,\%). Ohne den Haken (33 Einzelhaushalte)
+    wären es nur 57~kW --- die Summe wächst aber \emph{nicht}
+    linear mit der Haushaltszahl: nie kochen alle gleichzeitig.
+    Diese \emph{Durchmischung} ist der Grund, warum eine
+    250-kVA-Station für einen ganzen Ortsteil reicht.
+  \item \textbf{+ 40\,\% E-Autos (11~kW):} 12 Wallboxen laden abends
+    ungesteuert. Die Spitze steigt auf \textbf{218{,}7~kW}
+    (+21\,\%), obwohl rechnerisch $12 \times 11 = 132$~kW
+    installiert sind --- die Ladefenster überlappen nur teilweise.
+    Die \ui{Trafo-Spitze} springt auf \textbf{92\,\%} und färbt
+    sich gelb: E-Mobilität wirkt fast ausschließlich auf die
+    Abendspitze.
+  \item \textbf{+ 50\,\% PV (5~kWp):} 15 Anlagen mit zusammen
+    75~kWp drücken die Netto-Kurve mittags auf \textbf{$-$26~kW}
+    --- der Strang speist zurück. Die Abendspitze bleibt bei
+    218{,}7~kW: Abendspitze und Mittagstal liegen zeitlich so weit
+    auseinander, dass PV die E-Auto-Spitze \emph{nicht} entlastet.
 \end{itemize}
 Genau dieses Auseinanderfallen von Erzeugung und Verbrauch motiviert
 die Batteriespeicher aus Kapitel~\ref{ch:der}.
@@ -415,8 +440,8 @@ Die Seite \ui{Live} zeigt die laufende Simulation
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-live}
-  \caption{Schritt 3 --- \ui{Live} zur Abendspitze (19:14 Uhr): Kabel
-    färben sich nach Auslastung (hier bis 79\,\%), an den Häusern
+  \caption{Schritt 3 --- \ui{Live} zur Abendspitze (19:41 Uhr): Kabel
+    färben sich nach Auslastung (hier bis 74\,\%), an den Häusern
     zeigen Symbole E-Auto-Ladungen und PV-Anlagen; rechts die
     Übersicht, unten Zeit-, Tag- und Schrittdauer-Regler.}
   \label{fig:live}
@@ -462,7 +487,7 @@ Die Darstellung wird im Menü \ui{Ansicht} gewählt:
 \subsection{Die Übersicht lesen}
 
 Das Seitenpanel fasst den Netzzustand jedes Schrittes zusammen.
-Anhand des Screenshots (19:14 Uhr, Abendspitze mit E-Autos):
+Anhand des Screenshots (19:41 Uhr, Abendspitze mit E-Autos):
 
 \begin{center}
 \small
@@ -470,16 +495,16 @@ Anhand des Screenshots (19:14 Uhr, Abendspitze mit E-Autos):
 \toprule
 Kennzahl & Wert & Interpretation \\
 \midrule
-U min / max & 217{,}5 / 230 V & Tiefpunkt am Strangende: $-5{,}4\,\%$ \\
+U min / max & 216{,}1 / 230 V & Tiefpunkt am Strangende: $-6{,}0\,\%$ \\
  & & (EN-50160-Band: $\pm 10\,\% \Rightarrow$ 207--253 V) \\
-max.\ Leitungsauslastung & 79 \% & höchstbelastetes Kabel, noch Reserve \\
-max.\ Trafo-Auslastung & 56{,}8 \% & 400-kVA-Station gut ausgelastet \\
-Gesamtlast & 149{,}5 kW & Haushalte + ladende E-Autos \\
-Erzeugung & 21{,}9 kW & Rest-PV der Abendsonne \\
-Bezug (Netz) & 133{,}1 kW & Import aus dem MS-Netz \\
-Verluste & 3{,}56 kW & $\approx 2{,}4\,\%$ der Last --- Abendspitze \\
+max.\ Leitungsauslastung & 73{,}7 \% & höchstbelastetes Kabel, noch Reserve \\
+max.\ Trafo-Auslastung & 64{,}4 \% & 250-kVA-Station gut ausgelastet \\
+Gesamtlast & 148{,}1 kW & Haushalte + ladende E-Autos \\
+Erzeugung & 2{,}1 kW & Rest-PV der Abendsonne \\
+Bezug (Netz) & 152{,}2 kW & Import aus dem MS-Netz \\
+Verluste & 3{,}85 kW & $\approx 2{,}6\,\%$ der Last --- Abendspitze \\
  & & treibt die $I^2R$-Verluste \\
-Rechenzeit & 8{,}5 ms & Lastfluss-Dauer dieses Schrittes \\
+Rechenzeit & 6{,}3 ms & Lastfluss-Dauer dieses Schrittes \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -487,9 +512,9 @@ Rechenzeit & 8{,}5 ms & Lastfluss-Dauer dieses Schrittes \\
 Konvergiert ein Schritt nicht, vermerkt es die Kopfzeile; die
 Simulation läuft mit dem nächsten Schritt normal weiter.
 
-\begin{beispiel}[Was man um 19:14 Uhr auf der Karte sieht]
+\begin{beispiel}[Was man um 19:41 Uhr auf der Karte sieht]
 Der Hauptstrang von der Station zum dichtesten Ortsteil ist orange
-(79\,\%), seine Ausläufer gelbgrün; an gut zwei Dutzend Häusern
+(74\,\%), seine Ausläufer gelbgrün; an einem Dutzend Häusern
 stecken E-Auto-Symbole. Fährt man mit der Maus über das orange
 Kabel, zeigt der Tooltip Auslastung, Strom in Ampere und Wirkleistung.
 Zwei Stunden später (Regler auf 21:30) sind die meisten Ladungen
@@ -513,10 +538,10 @@ Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
         $\pm 10\,\%$ als rote Linien. Eine gelbe Marke zeigt die
         aktuelle Simulationszeit.
       \item \emph{Leitung}: Strom über den Tag gegen den Nennstrom
-        (z.\,B. \glqq Nenn 319~A\grqq) --- Überlastphasen sind sofort
+        (z.\,B. \glqq Nenn 225~A\grqq) --- Überlastphasen sind sofort
         sichtbar.
       \item \emph{Transformator}: Leistungsaustausch gegen die
-        Nennleistung in beide Richtungen ($\pm$400~kVA) ---
+        Nennleistung in beide Richtungen ($\pm$250~kVA) ---
         Rückspeisung erscheint als negativer Ast.
     \end{itemize}
   \item \ui{Messung platzieren} / \ui{entfernen} --- siehe
@@ -528,7 +553,7 @@ Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
 \begin{beispiel}
 Strg+Klick auf das letzte Haus des langen Ausläufers, Modus
 \ui{Spannung}: Die Kurve hängt tagsüber nahe 230~V, sackt aber
-zwischen 18 und 21 Uhr Richtung 218~V ab --- deutlich sichtbar über
+zwischen 18 und 21 Uhr Richtung 216~V ab --- deutlich sichtbar über
 dem $-10\,\%$-Limit bei 207~V, aber der Trend pro zusätzlichem
 E-Auto lässt sich hier unmittelbar demonstrieren: über das
 Aktionsmenü desselben Knotens eine \ui{E-Auto-Ladung hinzufügen}
@@ -580,7 +605,7 @@ in der Übersicht laufend angezeigt (Abbildung~\ref{fig:beobachtet}).
   \caption{Sicht \ui{Nur beobachtet}: nur vier Knoten
     und der Stations-Trafo tragen Messungen --- alles andere ist grau
     und unbekannt. Die Übersicht zeigt ausschließlich gemessene
-    Größen samt Messabdeckung (4/134 Knoten).}
+    Größen samt Messabdeckung (4/62 Knoten).}
   \label{fig:beobachtet}
 \end{figure}
 
@@ -669,23 +694,23 @@ die Simulation flüssig bleibt.
   \caption{Ansicht \ui{Schätzung}: Aus fünf Messungen und dem
     Netzmodell rekonstruiert die WLS-Zustandsschätzung den kompletten
     Netzzustand --- die Karte färbt sich wieder, die Übersicht weist
-    den Schätzfehler gegen die Wahrheit aus (hier 1{,}45~V).}
+    den Schätzfehler gegen die Wahrheit aus (hier 0{,}88~V).}
   \label{fig:schaetzung}
 \end{figure}
 
 \begin{beispiel}[Messkampagne im Experiment]
-Ein lohnender Unterrichtsverlauf auf dem 134-Knoten-Netz zur
+Ein lohnender Unterrichtsverlauf auf dem 62-Knoten-Netz zur
 Abendspitze:
 \begin{enumerate}[nosep]
   \item \textbf{Nur Stations-Trafo} (Preset \ui{Stationen}): Die
     Schätzung kennt die Gesamtbilanz, verteilt sie aber nach
     Standardannahmen --- wahre Spannungen werden auf einige Volt
-    verfehlt, das überlastete Kabel wird nur ungefähr erkannt.
-  \item \textbf{+ 4 Smart Meter} an den Strangenden: Der Fehler
-    fällt auf \textbf{1{,}45~V} (Screenshot) --- die Meter an den
+    verfehlt, das höchstbelastete Kabel wird nur ungefähr erkannt.
+  \item \textbf{+ 3 Smart Meter} an den Strangenden: Der Fehler
+    fällt auf \textbf{0{,}88~V} (Screenshot) --- die Meter an den
     kritischen Enden \glqq spannen\grqq{} das Spannungsprofil auf.
-    Die geschätzte maximale Leitungsauslastung (97{,}4\,\%) liegt
-    nun nahe an der Wahrheit.
+    Die geschätzte maximale Leitungsauslastung (56\,\%) liegt nun
+    nahe an der Wahrheit (54\,\%).
   \item \textbf{Alle Knoten} (Preset): Der Fehler verschwindet
     praktisch ($< 0{,}1$~V) --- Vollausstattung macht die Schätzung
     exakt, kostet im echten Netz aber Millionen.
@@ -826,37 +851,66 @@ Szenarien liegen als JSON-Dateien unter \texttt{data/scenarios/}.
 Batterie-Ladezustände sind bewusst nicht Teil des Rezepts; nach dem
 Laden starten Batterien bei 50\,\%.
 
-\begin{beispiel}[Unterrichtsszenario]
-Die Datei \texttt{pv-einspeisung-leitung-ueberlastet.json}
-(im Szenarien-Ordner \texttt{data/scenarios/}) stellt mit einem
-Klick eine mittägliche Leitungsüberlastung durch PV her --- 100\,\% PV-Anteil mit je 10~kWp auf einem selbst
-gezeichneten Netz, Sprungziel 19:26 Uhr, Schnelldurchlauf:
+\subsection*{Die drei Referenzszenarien}
+
+Mitgeliefert werden drei aufeinander abgestimmte Referenzszenarien.
+Gemeinsame Frage: Welche Fehlerfälle kann der Netzbetreiber per
+Zustandsschätzung überhaupt sehen --- und wozu braucht er
+SMGW-Messungen an Erzeugungsanlagen und Wallboxen
+(Kapitel~\ref{ch:observability})? Alle drei starten kurz vor der
+kritischen Zeit und bringen ihr Messkonzept (Stationsmessung + SMGW
+an den Anlagen) mit.
+
+\begin{enumerate}[nosep]
+  \item \textbf{Bauernhof-PV 75 kW --- Spannungsüberhöhung:}
+    ländliches Netz, 75-kWp-Anlage am 500-m-Strangende. Mittags
+    steigt die Spannung dort auf $\approx$252~V --- direkt an der
+    EN-50160-Grenze (253~V). Mit SMGW an der Anlage trifft die
+    Schätzung die Überhöhung auf unter 1~V; entfernt man das SMGW,
+    sieht der Netzbetreiber nur $\approx$245~V und ahnt nichts.
+  \item \textbf{Feierabend-Laden --- NH-Sicherung löst aus:}
+    Vorstadtnetz, 12 von 24 Haushalten am Hauptstrang laden
+    17:00--18:30 gestaffelt (11~kW). Ab $\approx$18:45 trägt der
+    Strangkopf $\approx$108\,\% / 243~A --- diesen Summenstrom sieht
+    auch die NH-Strangsicherung, sie würde nach einiger Zeit
+    auslösen. Schon die Stationsmessung findet die Überlast.
+  \item \textbf{Mittags-Überlast --- unsichtbar für die
+    NH-Sicherung:} gleicher Strang, hinten speisen acht PV-Anlagen
+    (je 27~kWp) voll ein, vorn laden sechs E-Autos ihren
+    PV-Überschuss (22~kW). Das mittlere Strangsegment trägt
+    $\approx$110\,\% / 248~A, der Abgang an der Station aber nur
+    $\approx$100~A (45\,\%): Die Sicherung sieht diesen Strom nie.
+    Ohne SMGW schätzt der Netzbetreiber das Segment auf
+    $\approx$4\,\% --- mit SMGW an PV und Wallboxen exakt. Das
+    Kernargument für die Messung dezentraler Anlagen.
+\end{enumerate}
+
+\begin{beispiel}[Ein Rezept von innen]
+Das Rezept von Szenario 1 zeigt das Format (gekürzt):
 
 \begin{lstlisting}
 {
   "version": 1,
-  "name": "PV-Einspeisung überlastet Leitung",
-  "grid_id": "user_beispiel",
+  "name": "1 Bauernhof-PV 75 kW - Spannungsüberhöhung",
+  "grid_id": "lv_rural_3150_300266",
   "loadgen": {
     "archetypes": ["CHR01", "CHR03", "CHR05", "CHR07",
-                    "CHR16", "CHR22", "CHR30", "CHR52"],
+                    "CHR16", "CHR30", "CHR22", "CHR52"],
     "mode": "round_robin", "seed": 0, "scale": 1.0,
-    "power_factor": 0.95,
-    "ev_penetration": 1.0, "ev_charger_kw": 22.0,
-    "pv_penetration": 1.0, "pv_kwp": 10.0
+    "power_factor": 0.95
   },
-  "der_ops": [],
+  "der_ops": [ { "op": "add_pv", "bus": 24, "kwp": 75.0 } ],
   "batteries": [],
-  "measurements": { "node_buses": [], "trafo_idxs": [],
+  "measurements": { "node_buses": [24], "trafo_idxs": [0],
                     "mode": "full" },
-  "engine": { "day": 0, "step": 1166, "interval_seconds": 0.1 }
+  "engine": { "day": 0, "step": 660, "interval_seconds": 0.2 }
 }
 \end{lstlisting}
 
-Zum Anpassen genügt ein Texteditor: \texttt{"pv\_kwp": 15.0}
-verschärft die Überlastung, ein Eintrag in \texttt{"batteries"}
-(z.\,B. \texttt{\{"bus": 1, "capacity\_kwh": 20, "power\_kw": 10,
-"mode": "peak"\}}) stellt die Gegenmaßnahme gleich mit ins Rezept.
+Zum Anpassen genügt ein Texteditor: \texttt{"kwp": 100.0}
+verschärft die Überhöhung, ein Eintrag in \texttt{"batteries"}
+(z.\,B. \texttt{\{"bus": 24, "capacity\_kwh": 20, "power\_kw": 10,
+"mode": "self"\}}) stellt die Gegenmaßnahme gleich mit ins Rezept.
 \end{beispiel}
 
 % ===================================================================
@@ -978,11 +1032,12 @@ Erzeugungsnetze, an einem selbst gezeichneten Beispiel.
 \ui{Netz} $\rightarrow$ \ui{Netz exportieren}: Name vergeben, dann
 \ui{In netzsim speichern} (oder \ui{Herunterladen} als JSON). Die
 Dateien landen im user-grids-Ordner von netzsim und erscheinen dort
-\emph{ohne Neustart} unter \ui{Eigene} im Netzkatalog --- NS-Netze
-mit dem gewählten Transformator, MS-Netze mit ihrer
-110-kV-Einspeisung. Über \ui{Netzabschnitt laden} lassen sich
-gespeicherte Netze später wieder in den Editor holen und
-weiterzeichnen.
+\emph{ohne Neustart} unter \ui{Eigene Netze} in der Ansicht
+\ui{Netz \& Lasten} --- NS-Netze mit dem gewählten Transformator,
+MS-Netze mit ihrer 110-kV-Einspeisung. (Auf einem anderen Rechner
+tut es auch \ui{Herunterladen} + \ui{Netz importieren…} in netzsim.)
+Über \ui{Netzabschnitt laden} lassen sich gespeicherte Netze später
+wieder in den Editor holen und weiterzeichnen.
 
 % ===================================================================
 \chapter{Langzeit-Visualisierung mit Grafana}
@@ -1084,6 +1139,7 @@ POST & \api{/control/seek?step=N} & an Schritt springen \\
 POST & \api{/control/interval} & Schrittdauer ändern \\
 POST & \api{/control/seekday} & realen PV-Tag wählen \\
 GET & \api{/grids}, \api{/grids/\{id\}} & Netzkatalog, Netzvorschau \\
+POST & \api{/grids/import} & Netzdatei (JSON) in den Katalog importieren \\
 POST & \api{/config/apply} & Netz (+ Lastkonfiguration) laden \\
 GET & \api{/loadgen/archetypes} & LPG-Archetypen \\
 POST & \api{/loadgen/assign} & Lastzuweisung als Vorschau rechnen \\
@@ -1102,7 +1158,7 @@ starten}):
 \begin{lstlisting}
 curl -X POST http://localhost:8000/config/apply \
   -H "Content-Type: application/json" \
-  -d '{"grid_id": "suburban_lv_273437",
+  -d '{"grid_id": "lv_suburban_1864_265991",
        "loadgen": {"ev_penetration": 0.4, "pv_penetration": 0.5}}'
 \end{lstlisting}
 
