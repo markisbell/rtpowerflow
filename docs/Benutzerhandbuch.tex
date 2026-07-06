@@ -218,16 +218,47 @@ npm run dev                       # -> http://localhost:5173
 % ===================================================================
 \chapter{Arbeitsablauf: Netz -- Lasten -- Live}
 
-Die Oberfläche führt in drei Schritten durch die Simulation. Die
-Navigation oben zeigt \ui{Netz}, \ui{Lasten} und \ui{Live}. Alle
-Beispiele dieses Kapitels stammen aus \emph{einem} durchgängigen
-Arbeitsgang mit demselben Netz, sodass sich die Zahlen von Schritt zu
-Schritt wiederfinden lassen.
+Die Oberfläche ist wie ein klassisches Desktop-Programm organisiert:
+Beim Start öffnet sich direkt die \emph{Live-Ansicht}, und die
+Menüleiste am oberen Rand bündelt alle Funktionen
+(Abbildung~\ref{fig:menue}):
+
+\begin{description}[nosep]
+  \item[\ui{Netz}] öffnet den Netzkatalog (\ui{Netz wählen…}) und die
+    Lastkonfiguration (\ui{Lasten konfigurieren…}); darunter steht
+    das aktuell geladene Netz.
+  \item[\ui{Simulation}] Start/Pause sowie die komplette
+    Szenarien-Verwaltung (Kapitel~\ref{ch:scenarios}).
+  \item[\ui{Ansicht}] Darstellung (Karte/Schema/Werte) und Sicht
+    (Wahrheit / Nur beobachtet / Schätzung,
+    Kapitel~\ref{ch:observability}).
+  \item[\ui{Messungen}] Mess-Presets, TAF-Modus und die aktuelle
+    Abdeckung.
+  \item[\ui{Schätzung}] die Richtlinie der Zustandsschätzung
+    (Kapitel~\ref{ch:observability}).
+  \item[\ui{Hilfe}] öffnet dieses Benutzerhandbuch als PDF.
+\end{description}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-menue}
+  \caption{Die Menüleiste über der Live-Ansicht, hier mit geöffnetem
+    \ui{Ansicht}-Menü: Darstellung und Sicht als Auswahlgruppen. Die
+    Transportleiste (Start/Pause, Zeit, Tag, Schrittdauer) bleibt
+    permanent am unteren Rand.}
+  \label{fig:menue}
+\end{figure}
+
+Der typische Arbeitsablauf bleibt ein Dreischritt --- Netz wählen,
+Lasten erzeugen, live beobachten. Alle Beispiele dieses Kapitels
+stammen aus \emph{einem} durchgängigen Arbeitsgang mit demselben
+Netz, sodass sich die Zahlen von Schritt zu Schritt wiederfinden
+lassen.
 
 \section{Schritt 1: Netz erzeugen}
 
-Auf der Seite \ui{Netz erzeugen} wird das zu simulierende Netz
-gewählt. Die Netzbibliothek enthält synthetische deutsche
+\ui{Netz} $\rightarrow$ \ui{Netz wählen…} öffnet den Netzkatalog.
+Die Netzbibliothek enthält synthetische deutsche
 Verteilnetze (ding0) auf realer Geographie --- die Topologien sind
 künstlich, aber nach den Regeln realer Netzplanung erzeugt und an
 echten Orten verankert, sodass die Karte echte Straßen und Gebäude
@@ -282,7 +313,8 @@ vertritt. Auf der Live-Karte lässt sich dann mit dem Ebenenumschalter
 
 \section{Schritt 2: Lasten erzeugen}
 
-Auf der Seite \ui{Lasten erzeugen} werden den 89 Hausanschlüssen
+In der Lastkonfiguration (\ui{Lasten konfigurieren} im Katalog oder
+im \ui{Netz}-Menü) werden den 89 Hausanschlüssen
 realistische Tagesprofile zugewiesen. Grundlage sind Profile aus dem
 LoadProfileGenerator (LPG), der das Verhalten konkreter Haushalte
 minutengenau simuliert --- Kochen, Waschmaschine, Fernseher,
@@ -392,6 +424,8 @@ Die Seite \ui{Live} zeigt die laufende Simulation
 
 \subsection{Darstellungen}
 
+Die Darstellung wird im Menü \ui{Ansicht} gewählt:
+
 \begin{description}
   \item[\ui{Karte}] Echte OpenStreetMap-Karte an den Koordinaten des
     Netzes (Hell/Dunkel umschaltbar). Leitungen färben sich
@@ -412,8 +446,9 @@ Die Seite \ui{Live} zeigt die laufende Simulation
 \subsection{Steuerung}
 
 \begin{itemize}[nosep]
-  \item \ui{Start} / \ui{Pause} halten die Simulation an und setzen
-    sie fort --- praktisch, um einen Zustand in Ruhe zu besprechen.
+  \item \ui{Start} / \ui{Pause} (Transportleiste unten oder Menü
+    \ui{Simulation}) halten die Simulation an und setzen sie fort ---
+    praktisch, um einen Zustand in Ruhe zu besprechen.
   \item Der \ui{Zeitpunkt}-Regler springt an eine beliebige Uhrzeit
     des Tages (siehe Beispiel in Abschnitt~\ref{sec:zeitmodell}).
   \item \ui{Schrittdauer} stellt die Realzeit pro Simulationsschritt
@@ -516,8 +551,9 @@ zeigt netzsim das Netz daher grau mit Fragezeichen: unbeobachtbar.
 
 \section{Messgeräte platzieren}
 
-Zwei Gerätetypen stehen zur Verfügung (Sektion \ui{Messungen} im
-Seitenpanel oder per Element-Menü):
+Zwei Gerätetypen stehen zur Verfügung (per Klick auf ein Element,
+über die Sektion \ui{Messungen} im Seitenpanel oder gesammelt über
+das Menü \ui{Messungen}):
 
 \begin{description}
   \item[Smart Meter (Knoten)] liefert die Spannung, Wirk- und
@@ -533,15 +569,15 @@ Leitungen tragen bewusst \emph{keine} Messung --- Leitungsströme
 bleiben unbekannt, solange die Wahrheit ausgeblendet ist. Gerade das
 höchstbelastete Kabel ist also unsichtbar, wenn dort niemand misst.
 
-Schnell-Aktionen: \ui{Alle Knoten}, \ui{Stationen} (nur
-Stations-Trafos), \ui{Alle Trafos}, \ui{Alle löschen}. Die
-\ui{Abdeckung} (gemessene Knoten/Trafos) wird laufend angezeigt
-(Abbildung~\ref{fig:beobachtet}).
+Schnell-Aktionen im Menü \ui{Messungen}: \ui{Alle Knoten},
+\ui{Stationen} (nur Stations-Trafos), \ui{Alle Trafos}, \ui{Alle
+löschen}. Die \ui{Abdeckung} (gemessene Knoten/Trafos) wird dort und
+in der Übersicht laufend angezeigt (Abbildung~\ref{fig:beobachtet}).
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-beobachtet}
-  \caption{Beobachtete Ansicht (\ui{Lastfluss aus}): nur vier Knoten
+  \caption{Sicht \ui{Nur beobachtet}: nur vier Knoten
     und der Stations-Trafo tragen Messungen --- alles andere ist grau
     und unbekannt. Die Übersicht zeigt ausschließlich gemessene
     Größen samt Messabdeckung (4/134 Knoten).}
@@ -573,12 +609,12 @@ Diagrammen sichtbar.
 
 \section{Die drei Ansichtsmodi}
 
-Über die Schaltflächen der Live-Ansicht wählt man:
+Im Menü \ui{Ansicht} wählt man unter \ui{Sicht}:
 
 \begin{description}
-  \item[\ui{Lastfluss an} (Wahrheit)] Der echte Lastfluss wird
+  \item[\ui{Wahrheit (Lastfluss)}] Der echte Lastfluss wird
     vollständig eingeblendet --- die Vergleichs- und Lehransicht.
-  \item[\ui{Lastfluss aus} (nur beobachtet)] Werte nur an platzierten
+  \item[\ui{Nur beobachtet}] Werte nur an platzierten
     Messungen, alles andere grau. Der Standardblick des Betreibers.
   \item[\ui{Schätzung}] Die WLS-Zustandsschätzung wird wie ein
     Lastfluss dargestellt (siehe unten).
@@ -779,10 +815,11 @@ abgespielt. Der Vorteil: Die Dateien sind klein, lesbar und von Hand
 anpassbar.
 
 \begin{itemize}[nosep]
-  \item \ui{Speichern} in der Sektion \ui{Szenarien} legt das aktuelle
-    Setup unter einem Namen ab (optional mit Beschreibung).
-  \item \ui{Laden} spielt das Rezept vollständig ab und startet am
-    gespeicherten Zeitpunkt.
+  \item Im Menü \ui{Simulation}: Namen eintippen und \ui{Speichern}
+    legt das aktuelle Setup ab.
+  \item Ein Klick auf einen Szenario-Eintrag im selben Menü spielt
+    das Rezept vollständig ab und startet am gespeicherten Zeitpunkt;
+    das $\times$ daneben löscht es.
 \end{itemize}
 
 Szenarien liegen als JSON-Dateien unter \texttt{data/scenarios/}.

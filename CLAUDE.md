@@ -520,7 +520,34 @@ estimate decimation is **pinned per grid** to clean 15/30/60/120-min tiers
 one consistent resolution. Honesty tripwire:
 `test_estimation_honesty_pv_rise_unknowable` — rural feeder, strong midday PV,
 5 % metering, no PV knowledge → the estimator MUST miss > 60 % of the voltage
-rise (fails = truth is leaking). Demo scenario:
-`data/scenarios/pv-berh-hung-unsichtbar-f-r-den-vnb.json` (240 V real vs
-231 V estimated at the feeder end). Note: the policy is an operator setting —
+rise (fails = truth is leaking). Note: the policy is an operator setting —
 deliberately NOT part of scenario recipes.
+
+### Reference scenarios (the committed teaching set, 2026-07-06)
+
+`data/scenarios/` holds exactly **three reference scenarios** (the earlier
+examples were removed on customer request); `data/grid_library.json` is
+**trimmed to the two grids they use** (`lv_rural_3150_300266`,
+`lv_suburban_1864_265991`) so the picker only offers those. The full 20-entry
+manifest lives on as `data/grid_library_full.json` (copy it back to restore;
+`test_district_import.py` / `test_runtime_swap.py` point at the full file).
+All three include the SMGW measurement concept (station trafo meter + node
+meters at the plants/wallboxes) and start shortly before the critical time
+(interval 0.2 s/step):
+
+1. **`1-bauernhof-pv-75-kw-spannungs-berh-hung`** — rural grid, 75-kWp PV at
+   the 500-m feeder end (bus 24). Noon: ~252 V at the farm (EN 50160 limit
+   253 V), main line >90 %. Estimate WITH the plant SMGW hits it to <1 V;
+   without, the VNB sees ~245 V.
+2. **`2-feierabend-laden-strang-berlast-nh-sicherung-l-st-aus`** — suburban
+   grid, 12 of 24 households on feeder L43 charge 11-kW EVs staggered
+   17:00–18:30 (PV share 50 % but dark by then). From ~18:45 the feeder head
+   carries ~108 % / 243 A — the NH fuse *sees* this summed current and would
+   trip after a while. Even the blind estimate (station meter only) finds the
+   overload — the station measurement is exactly what the fuse sees.
+3. **`3-mittags-berlast-unsichtbar-f-r-die-nh-sicherung`** — same suburban
+   feeder, 8×27-kWp PV cluster at the far end, 6 EVs near the head charging
+   PV surplus at 22 kW (10:30–14:30). Noon: middle segment L12 ~110 % / 248 A
+   while the station feeder head carries only ~45 % / 102 A — the NH fuse
+   never sees the overload. Blind estimate: ~4 % (clueless); with SMGWs at
+   PV + wallboxes: ~110 % (exact). The core SMGW argument.

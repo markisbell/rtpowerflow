@@ -15,7 +15,9 @@ from netzsim.grid_catalog import GridCatalog
 from netzsim.simulator import Simulator
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "data" / "grid_library.json"
+# the FULL manifest: the active grid_library.json is deliberately trimmed to the
+# grids of the reference scenarios, but districts must stay testable
+MANIFEST = ROOT / "data" / "grid_library_full.json"
 DING0_DIR = ROOT / "data" / "ding0_grids"
 
 pytestmark = pytest.mark.skipif(not MANIFEST.exists(), reason="no committed dataset")

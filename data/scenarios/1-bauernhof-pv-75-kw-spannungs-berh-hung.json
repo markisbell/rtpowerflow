@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "created": "2026-07-06T16:06:09",
+  "name": "1 Bauernhof-PV 75 kW – Spannungsüberhöhung",
+  "description": "Ländliches Netz: 75-kWp-Anlage am 500-m-Strangende (Bus 24, Bauernhof). Gegen Mittag steigt die Spannung dort auf ~252 V – direkt an der EN-50160-Grenze (253 V); die Hauptleitung trägt >90 % Auslastung. Messkonzept: Stationsmessung + SMGW an der Anlage. Mit SMGW trifft die Zustandsschätzung die Überhöhung auf <1 V, ohne sieht der VNB nur ~245 V (SMGW an Bus 24 zum Vorführen entfernen und wieder setzen).",
+  "grid_id": "lv_rural_3150_300266",
+  "loadgen": {
+    "archetypes": [
+      "CHR01",
+      "CHR03",
+      "CHR05",
+      "CHR07",
+      "CHR16",
+      "CHR30",
+      "CHR22",
+      "CHR52"
+    ],
+    "mode": "round_robin",
+    "seed": 0,
+    "scale": 1.0,
+    "power_factor": 0.95,
+    "jitter_minutes": 0,
+    "ev_penetration": 0.0,
+    "ev_charger_kw": 11.0,
+    "ev_daily_kwh": 8.0,
+    "pv_penetration": 0.0,
+    "pv_kwp": 10.0
+  },
+  "der_ops": [
+    {
+      "op": "add_pv",
+      "bus": 24,
+      "kwp": 75.0
+    }
+  ],
+  "batteries": [],
+  "measurements": {
+    "node_buses": [
+      24
+    ],
+    "trafo_idxs": [
+      0
+    ],
+    "mode": "full"
+  },
+  "engine": {
+    "day": 0,
+    "step": 660,
+    "interval_seconds": 0.2
+  }
+}

@@ -13,7 +13,8 @@ from netzsim.simulator import Simulator
 from netzsim.state import StateStore
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "data" / "grid_library.json"
+# full manifest (the active grid_library.json is trimmed to the reference scenarios)
+MANIFEST = ROOT / "data" / "grid_library_full.json"
 DING0_DIR = ROOT / "data" / "ding0_grids"
 
 

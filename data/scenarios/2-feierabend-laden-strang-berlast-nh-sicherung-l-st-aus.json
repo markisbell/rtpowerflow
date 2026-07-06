@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "created": "2026-07-06T16:12:23",
+  "name": "2 Feierabend-Laden – Strangüberlast, NH-Sicherung löst aus",
+  "description": "Vorstadtnetz, 50 % PV: 12 von 24 Haushalten am Hauptstrang laden ab 17:00–18:30 gestaffelt ihr E-Auto (11 kW, unkoordiniert). Die PV liefert um diese Zeit fast nichts mehr; ab ~18:45 laden alle gleichzeitig und der Strangkopf trägt ~108 % / 243 A – die NH-Sicherung sieht diesen Summenstrom und würde nach einiger Zeit auslösen. Messkonzept: Stationsmessung + SMGW an allen 12 Wallboxen (meldepflichtig nach §19 NAV) – die Schätzung lokalisiert die Überlast strangscharf.",
+  "grid_id": "lv_suburban_1864_265991",
+  "loadgen": {
+    "archetypes": [
+      "CHR01",
+      "CHR03",
+      "CHR05",
+      "CHR07",
+      "CHR16",
+      "CHR30",
+      "CHR22",
+      "CHR52"
+    ],
+    "mode": "round_robin",
+    "seed": 0,
+    "scale": 1.0,
+    "power_factor": 0.95,
+    "jitter_minutes": 0,
+    "ev_penetration": 0.0,
+    "ev_charger_kw": 11.0,
+    "ev_daily_kwh": 8.0,
+    "pv_penetration": 0.5,
+    "pv_kwp": 10.0
+  },
+  "der_ops": [
+    {
+      "op": "add_ev",
+      "bus": 22,
+      "kw": 11.0,
+      "start_min": 1020,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 19,
+      "kw": 11.0,
+      "start_min": 1032,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 17,
+      "kw": 11.0,
+      "start_min": 1044,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 16,
+      "kw": 11.0,
+      "start_min": 1050,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 35,
+      "kw": 11.0,
+      "start_min": 1056,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 31,
+      "kw": 11.0,
+      "start_min": 1062,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 38,
+      "kw": 11.0,
+      "start_min": 1068,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 26,
+      "kw": 11.0,
+      "start_min": 1074,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 27,
+      "kw": 11.0,
+      "start_min": 1080,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 30,
+      "kw": 11.0,
+      "start_min": 1086,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 25,
+      "kw": 11.0,
+      "start_min": 1095,
+      "dur_min": 240
+    },
+    {
+      "op": "add_ev",
+      "bus": 51,
+      "kw": 11.0,
+      "start_min": 1110,
+      "dur_min": 240
+    }
+  ],
+  "batteries": [],
+  "measurements": {
+    "node_buses": [
+      16,
+      17,
+      19,
+      22,
+      25,
+      26,
+      27,
+      30,
+      31,
+      35,
+      38,
+      51
+    ],
+    "trafo_idxs": [
+      0
+    ],
+    "mode": "full"
+  },
+  "engine": {
+    "day": 0,
+    "step": 1005,
+    "interval_seconds": 0.2
+  }
+}
