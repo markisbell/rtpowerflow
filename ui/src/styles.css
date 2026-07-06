@@ -250,14 +250,15 @@ button.ghost {
 .map-layers button.on { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
 .map-colorbars {
   position: absolute; right: 10px; bottom: 14px; z-index: 650;
-  display: flex; gap: 14px; align-items: flex-end;
+  display: flex; gap: 20px; align-items: flex-end;
   background: #ffffffe6; border: 1px solid #d0d0d0; border-radius: 8px;
-  padding: 8px 11px 7px; box-shadow: 0 1px 6px #00000033;
+  padding: 11px 15px 10px; box-shadow: 0 1px 6px #00000033;
 }
-.colorbar { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.cb-ramp { width: 12px; height: 92px; border: 1px solid #00000033; border-radius: 2px; }
-.cb-top, .cb-bot, .cb-cap { font-size: 0.62rem; color: #222; font-variant-numeric: tabular-nums; }
-.cb-cap { margin-top: 3px; max-width: 56px; text-align: center; line-height: 1.05; }
+.colorbar { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cb-ramp { width: 18px; height: 138px; border: 1px solid #00000033; border-radius: 2px; }
+.cb-top, .cb-bot, .cb-cap { font-size: 0.93rem; color: #222; font-variant-numeric: tabular-nums; }
+.cb-cap { margin-top: 4px; max-width: 90px; text-align: center; line-height: 1.1;
+          overflow-wrap: anywhere; hyphens: auto; }
 .layout-toggle { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 2px; }
 .layout-toggle button {
   background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);

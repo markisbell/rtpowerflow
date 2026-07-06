@@ -499,7 +499,7 @@ const de: typeof en = {
     voltA: "U {{v}} V", meterI: "I {{v}} A", meterP: "P {{v}} kW", meterQ: "Q {{v}} kvar",
   },
   map: {
-    dark: "🌙 Dunkel", light: "☀ Hell", lineLoading: "Leitungsauslastung", busVolt: "Spannungs-Δ",
+    dark: "🌙 Dunkel", light: "☀ Hell", lineLoading: "Leitungs­auslastung", busVolt: "Spannungs-Δ",
     layerMv: "MS", layerLv: "NS", layerAll: "Alle",
     layerMvTitle: "Nur Mittelspannung", layerLvTitle: "Nur Niederspannung",
     layerAllTitle: "Beide Spannungsebenen",

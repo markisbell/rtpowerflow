@@ -440,8 +440,8 @@ Die Seite \ui{Live} zeigt die laufende Simulation
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-live}
-  \caption{Schritt 3 --- \ui{Live} zur Abendspitze (19:41 Uhr): Kabel
-    färben sich nach Auslastung (hier bis 74\,\%), an den Häusern
+  \caption{Schritt 3 --- \ui{Live} zur Abendspitze (19:39 Uhr): Kabel
+    färben sich nach Auslastung (hier bis 76\,\%), an den Häusern
     zeigen Symbole E-Auto-Ladungen und PV-Anlagen; rechts die
     Übersicht, unten Zeit-, Tag- und Schrittdauer-Regler.}
   \label{fig:live}
@@ -487,7 +487,7 @@ Die Darstellung wird im Menü \ui{Ansicht} gewählt:
 \subsection{Die Übersicht lesen}
 
 Das Seitenpanel fasst den Netzzustand jedes Schrittes zusammen.
-Anhand des Screenshots (19:41 Uhr, Abendspitze mit E-Autos):
+Anhand des Screenshots (19:39 Uhr, Abendspitze mit E-Autos):
 
 \begin{center}
 \small
@@ -495,16 +495,16 @@ Anhand des Screenshots (19:41 Uhr, Abendspitze mit E-Autos):
 \toprule
 Kennzahl & Wert & Interpretation \\
 \midrule
-U min / max & 216{,}1 / 230 V & Tiefpunkt am Strangende: $-6{,}0\,\%$ \\
+U min / max & 215{,}5 / 230 V & Tiefpunkt am Strangende: $-6{,}3\,\%$ \\
  & & (EN-50160-Band: $\pm 10\,\% \Rightarrow$ 207--253 V) \\
-max.\ Leitungsauslastung & 73{,}7 \% & höchstbelastetes Kabel, noch Reserve \\
-max.\ Trafo-Auslastung & 64{,}4 \% & 250-kVA-Station gut ausgelastet \\
-Gesamtlast & 148{,}1 kW & Haushalte + ladende E-Autos \\
-Erzeugung & 2{,}1 kW & Rest-PV der Abendsonne \\
-Bezug (Netz) & 152{,}2 kW & Import aus dem MS-Netz \\
-Verluste & 3{,}85 kW & $\approx 2{,}6\,\%$ der Last --- Abendspitze \\
+max.\ Leitungsauslastung & 76{,}2 \% & höchstbelastetes Kabel, noch Reserve \\
+max.\ Trafo-Auslastung & 63{,}5 \% & 250-kVA-Station gut ausgelastet \\
+Gesamtlast & 146{,}8 kW & Haushalte + ladende E-Autos \\
+Erzeugung & 3{,}1 kW & Rest-PV der Abendsonne \\
+Bezug (Netz) & 150 kW & Import aus dem MS-Netz \\
+Verluste & 4{,}11 kW & $\approx 2{,}8\,\%$ der Last --- Abendspitze \\
  & & treibt die $I^2R$-Verluste \\
-Rechenzeit & 6{,}3 ms & Lastfluss-Dauer dieses Schrittes \\
+Rechenzeit & 8{,}2 ms & Lastfluss-Dauer dieses Schrittes \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -512,9 +512,9 @@ Rechenzeit & 6{,}3 ms & Lastfluss-Dauer dieses Schrittes \\
 Konvergiert ein Schritt nicht, vermerkt es die Kopfzeile; die
 Simulation läuft mit dem nächsten Schritt normal weiter.
 
-\begin{beispiel}[Was man um 19:41 Uhr auf der Karte sieht]
+\begin{beispiel}[Was man um 19:39 Uhr auf der Karte sieht]
 Der Hauptstrang von der Station zum dichtesten Ortsteil ist orange
-(74\,\%), seine Ausläufer gelbgrün; an einem Dutzend Häusern
+(76\,\%), seine Ausläufer gelbgrün; an einem Dutzend Häusern
 stecken E-Auto-Symbole. Fährt man mit der Maus über das orange
 Kabel, zeigt der Tooltip Auslastung, Strom in Ampere und Wirkleistung.
 Zwei Stunden später (Regler auf 21:30) sind die meisten Ladungen
@@ -553,7 +553,7 @@ Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
 \begin{beispiel}
 Strg+Klick auf das letzte Haus des langen Ausläufers, Modus
 \ui{Spannung}: Die Kurve hängt tagsüber nahe 230~V, sackt aber
-zwischen 18 und 21 Uhr Richtung 216~V ab --- deutlich sichtbar über
+zwischen 18 und 21 Uhr Richtung 215~V ab --- deutlich sichtbar über
 dem $-10\,\%$-Limit bei 207~V, aber der Trend pro zusätzlichem
 E-Auto lässt sich hier unmittelbar demonstrieren: über das
 Aktionsmenü desselben Knotens eine \ui{E-Auto-Ladung hinzufügen}
@@ -694,7 +694,7 @@ die Simulation flüssig bleibt.
   \caption{Ansicht \ui{Schätzung}: Aus fünf Messungen und dem
     Netzmodell rekonstruiert die WLS-Zustandsschätzung den kompletten
     Netzzustand --- die Karte färbt sich wieder, die Übersicht weist
-    den Schätzfehler gegen die Wahrheit aus (hier 0{,}88~V).}
+    den Schätzfehler gegen die Wahrheit aus (hier 0{,}7~V).}
   \label{fig:schaetzung}
 \end{figure}
 
@@ -707,10 +707,10 @@ Abendspitze:
     Standardannahmen --- wahre Spannungen werden auf einige Volt
     verfehlt, das höchstbelastete Kabel wird nur ungefähr erkannt.
   \item \textbf{+ 3 Smart Meter} an den Strangenden: Der Fehler
-    fällt auf \textbf{0{,}88~V} (Screenshot) --- die Meter an den
+    fällt auf \textbf{0{,}7~V} (Screenshot) --- die Meter an den
     kritischen Enden \glqq spannen\grqq{} das Spannungsprofil auf.
-    Die geschätzte maximale Leitungsauslastung (56\,\%) liegt nun
-    nahe an der Wahrheit (54\,\%).
+    Auch die geschätzte maximale Leitungsauslastung (52\,\%) liegt
+    nun nahe an der Wahrheit.
   \item \textbf{Alle Knoten} (Preset): Der Fehler verschwindet
     praktisch ($< 0{,}1$~V) --- Vollausstattung macht die Schätzung
     exakt, kostet im echten Netz aber Millionen.

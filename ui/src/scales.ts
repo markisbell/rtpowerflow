@@ -82,10 +82,12 @@ export function lineLoadingColor(pct: number | null | undefined): string {
   return ramp(LOADING, pct / 100);
 }
 
-/** Bus voltage [pu] -> 'Reds' by deviation from 1.0 (white=nominal, red=stressed). */
+/** Bus voltage [pu] -> 'Reds' by deviation from 1.0 (white=nominal, red=stressed).
+ *  Full red at ±10 % — the EN 50160 band limit: a node at the limit is at
+ *  the end of the scale, not beyond it. */
 export function voltageReds(vm: number | null | undefined): string {
   if (vm == null) return "rgb(200,200,200)";
-  return ramp(REDS, Math.abs(vm - 1.0) / 0.06);
+  return ramp(REDS, Math.abs(vm - 1.0) / 0.10);
 }
 
 /** CSS linear-gradient string for a colorbar legend of the given colormap. */
