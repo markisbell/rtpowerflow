@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { NodeProfiles, NodeSeriesKind } from "../types";
+import type { NodeProfiles, NodeSeriesKind, ProfileView } from "../types";
 import { voltageColor, V_BASE } from "../scales";
 import ProfileGraph, { type GSeries } from "./ProfileGraph";
 
@@ -9,6 +9,8 @@ const COLOR: Record<NodeSeriesKind, string> = {
   residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950",
   wind: "#39c5cf", biogas: "#b08968", gen: "#8b949e",
 };
+// the meter's own readings, in every graph the same near-white "device" color
+const MEAS_COLOR = "#e6edf3";
 const VLIMIT = [
   { value: 1.1, label: `${Math.round(1.1 * V_BASE)} V`, color: "#f85149" },
   { value: 0.9, label: `${Math.round(0.9 * V_BASE)} V`, color: "#f85149" },
@@ -16,8 +18,15 @@ const VLIMIT = [
 
 // Per-node daily graph: power (residential/EV/PV load & generation) or voltage,
 // switchable, with the EN 50160 ±10 % voltage limits shown in voltage mode.
+// `view` mirrors the Live perspective: the backend only sends the layers that
+// view may see (truth curves, the meter's own readings, the estimate) and the
+// graph simply renders whatever arrived — so the Gemessen view shows ONLY the
+// metered quantities in the metering raster.
 // `embedded`: rendered inside an accordion Section, which owns title + close.
-export default function NodeProfile({ bus, name, now, day, onClose, embedded = false }: { bus: number; name: string; now: number | null; day: number; onClose?: () => void; embedded?: boolean }) {
+export default function NodeProfile({ bus, name, now, day, view = "est", onClose, embedded = false }: {
+  bus: number; name: string; now: number | null; day: number;
+  view?: ProfileView; onClose?: () => void; embedded?: boolean;
+}) {
   const { t } = useTranslation();
   const [data, setData] = useState<NodeProfiles | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -26,14 +35,26 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
   useEffect(() => {
     let alive = true;
     setData(null); setErr(null);
-    api.nodeProfiles(bus).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
+    api.nodeProfiles(bus, view).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [bus, day]);
+  }, [bus, day, view]);
 
-  const powerSeries: GSeries[] = (data?.series ?? []).map((s) => ({
-    label: t(`node.${s.kind}`), color: COLOR[s.kind], data: s.p_mw, fill: true,
-  }));
-  const hasVoltage = (data?.voltage?.length ?? 0) > 0;
+  const meas = data?.measured ?? null;
+  const powerSeries: GSeries[] = [
+    ...(data?.series ?? []).map((s) => ({
+      label: t(`node.${s.kind}`), color: COLOR[s.kind], data: s.p_mw, fill: true,
+    })),
+    ...(meas ? [{ label: t("graph.meas"), color: MEAS_COLOR, data: meas.p_mw }] : []),
+  ];
+  const voltageSeries: GSeries[] = [
+    ...((data?.voltage?.length ?? 0) > 0
+      ? [{ label: t("node.voltageSeries"), color: "#c586ff", data: data!.voltage,
+           colorData: data!.voltage, colorFn: voltageColor }] : []),
+    ...(meas?.vm ? [{ label: t("graph.meas"), color: MEAS_COLOR, data: meas.vm }] : []),
+    ...((data?.est_voltage?.some((v) => v != null) ?? false)
+      ? [{ label: t("graph.est"), color: "#e879f9", data: data!.est_voltage! }] : []),
+  ];
+  const hasVoltage = voltageSeries.length > 0;
 
   return (
     <div style={embedded ? {} : { marginTop: "0.7rem", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
@@ -55,16 +76,14 @@ export default function NodeProfile({ bus, name, now, day, onClose, embedded = f
         powerSeries.length
           ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} now={now}
                           yTitle={t("axis.power")} />
-          : <div className="muted" style={{ fontSize: "0.72rem" }}>{t("node.none")}</div>
+          : <div className="muted" style={{ fontSize: "0.72rem" }}>
+              {view === "measured" ? t("view.noMeter") : t("node.none")}
+            </div>
       )}
       {!err && data && mode === "voltage" && hasVoltage && (
-        <ProfileGraph
-          series={[{ label: t("node.voltageSeries"), color: "#c586ff", data: data.voltage, colorData: data.voltage, colorFn: voltageColor },
-                   ...((data.est_voltage?.some((v) => v != null) ?? false)
-                     ? [{ label: t("graph.est"), color: "#e879f9", data: data.est_voltage! }] : [])]}
-          limits={VLIMIT} scale={V_BASE} unit="V" dec={1} baseZero={false} now={now}
-          yTitle={t("axis.voltage")}
-        />
+        <ProfileGraph series={voltageSeries} limits={VLIMIT}
+                      scale={V_BASE} unit="V" dec={1} baseZero={false} now={now}
+                      yTitle={t("axis.voltage")} />
       )}
     </div>
   );

@@ -142,30 +142,34 @@ def network():
 
 
 @app.get("/node/{bus}/profiles")
-def node_profiles(bus: int):
-    """Daily load/generation + voltage curves at one bus (residential / EV / PV)."""
+def node_profiles(bus: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily curves at one bus. ``view`` picks the layers the caller may see:
+    truth (load/generation split + voltage), measured (only the meter's own
+    quantities in the metering raster), est (all layers overlaid)."""
     sim = runtime.engine.sim
     if bus < 0 or bus not in sim.net.bus.index:
         raise HTTPException(404, f"unknown bus {bus}")
-    return sim.node_profiles(bus)
+    return sim.node_profiles(bus, view=view)
 
 
 @app.get("/line/{line}/profiles")
-def line_profiles(line: int):
-    """Daily current + loading curve for one line, with its rated current."""
+def line_profiles(line: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily current + loading curve for one line, with its rated current.
+    Lines carry no meters — the measured view is deliberately empty."""
     sim = runtime.engine.sim
     if line < 0 or line not in sim.net.line.index:
         raise HTTPException(404, f"unknown line {line}")
-    return sim.line_profiles(line)
+    return sim.line_profiles(line, view=view)
 
 
 @app.get("/trafo/{trafo}/profiles")
-def trafo_profiles(trafo: int):
-    """Daily power exchange + loading curve for one transformer, with its rating."""
+def trafo_profiles(trafo: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily power exchange + loading curve for one transformer, with its rating.
+    The measured layer appears only for a metered transformer."""
     sim = runtime.engine.sim
     if trafo < 0 or trafo not in sim.net.trafo.index:
         raise HTTPException(404, f"unknown trafo {trafo}")
-    return sim.trafo_profiles(trafo)
+    return sim.trafo_profiles(trafo, view=view)
 
 
 @app.get("/state")
@@ -293,6 +297,48 @@ async def remove_battery(idx: int):
     return {"removed": idx}
 
 
+# --------------------------------------------------------------------------- #
+# Overload controllers (netzdienliche Steuerung, placed like batteries/meters)
+# --------------------------------------------------------------------------- #
+class ControllerRequest(BaseModel):
+    scope: Literal["station", "bus"] = "station"
+    bus: int | None = None                            # required for scope "bus"
+    limit_pct: float = Field(100.0, ge=20, le=150)    # curtail above this loading
+
+
+@app.get("/controllers")
+def controllers():
+    """Placed overload controllers with their live curtailment factors."""
+    return {"controllers": [c.as_dict() for c in runtime.engine.sim.controllers]}
+
+
+@app.post("/controller")
+async def add_controller(req: ControllerRequest):
+    """Place an overload controller (station = whole grid, bus = one node)."""
+    try:
+        c = runtime.engine.sim.add_controller(req.scope, req.bus, req.limit_pct)
+    except KeyError:
+        raise HTTPException(404, f"unknown bus {req.bus}")
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    return c.as_dict()
+
+
+@app.post("/controller/{cid}/config")
+async def controller_config(cid: int, limit_pct: float = Query(..., ge=20, le=150)):
+    """Change a controller's loading limit."""
+    if not runtime.engine.sim.set_controller(cid, limit_pct):
+        raise HTTPException(404, f"no controller {cid}")
+    return controllers()
+
+
+@app.delete("/controller/{cid}")
+async def remove_controller(cid: int):
+    if not runtime.engine.sim.remove_controller(cid):
+        raise HTTPException(404, f"no controller {cid}")
+    return {"removed": cid}
+
+
 @app.get("/battery/{idx}/profiles")
 def battery_profiles(idx: int):
     """Daily SOC + charge/discharge curve (+ price) for one battery, current day."""
@@ -337,6 +383,8 @@ async def scenarios_save(req: ScenarioSaveRequest):
         "batteries": [{"bus": b.bus, "capacity_kwh": round(b.capacity_mwh * 1000, 3),
                        "power_kw": round(b.power_mw * 1000, 3), "mode": b.mode}
                       for b in sim.batteries],
+        "controllers": [{"scope": c.scope, "bus": c.bus, "limit_pct": c.limit_pct}
+                        for c in sim.controllers],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
                          "mode": sim.meters.mode},
@@ -410,6 +458,12 @@ async def scenarios_load(sid: str):
                             float(b.get("power_kw", 5.0)), b.get("mode", "self"))
         except Exception:  # noqa: BLE001
             log.warning("scenario '%s': skipped battery %s", sid, b)
+    for c in doc.get("controllers", []):
+        try:
+            sim.add_controller(c.get("scope", "station"), c.get("bus"),
+                               float(c.get("limit_pct", 100.0)))
+        except Exception:  # noqa: BLE001
+            log.warning("scenario '%s': skipped controller %s", sid, c)
     m = doc.get("measurements") or {}
     sim.meters.clear()
     for bus in m.get("node_buses", []):

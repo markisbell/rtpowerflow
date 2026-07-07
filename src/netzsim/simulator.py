@@ -13,6 +13,7 @@ import pandapower as pp
 
 from . import battery as bat
 from .battery import MODES, Battery
+from .controller import SCOPES, Controller
 from .data_loader import InputData
 from .estimator import EstConfig, Estimator
 from .measurements import MeasurementSet
@@ -34,6 +35,8 @@ class StepResult:
     trafos: list[dict[str, Any]] = field(default_factory=list)
     ext_grids: list[dict[str, Any]] = field(default_factory=list)
     batteries: list[dict[str, Any]] = field(default_factory=list)
+    # placed overload controllers with their live curtailment factors
+    controllers: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
     # Observability projection: what the placed measurement devices reveal (see
@@ -103,10 +106,10 @@ class Simulator:
         self._est_last: dict | None = None
         self._est_wall = 0.0            # monotonic time of the last estimation run
         self._est_ms = 0.0              # its duration (drives the adaptive spacing)
-        # daily-sweep estimate decimation (1=15 min, 2=30 min, 4=1 h, 8=2 h):
-        # decided ONCE per grid from a robust cost measurement, then pinned, so
-        # the estimated curves keep one consistent resolution for the session
-        self._est_sweep_every: int | None = None
+        # daily-sweep estimate raster in MINUTES (15/30/60/120): decided ONCE
+        # per grid from a robust cost measurement, then pinned, so the
+        # estimated curves keep one consistent resolution for the session
+        self._est_sweep_min: int | None = None
         # estimation policy (config tab); which load rows are real households
         self.est_config = EstConfig()
         self._load_household: list[bool] = [
@@ -122,6 +125,9 @@ class Simulator:
 
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
+        # placed overload controllers (like batteries: per-simulator, reset on swap)
+        self.controllers: list[Controller] = []
+        self._next_cid = 1
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
         self._loads_at: dict[int, list[int]] = {}
         for i, li in enumerate(self.prof.load_idx):
@@ -137,13 +143,15 @@ class Simulator:
     def set_est_config(self, cfg: EstConfig) -> None:
         """Swap the estimation policy (config tab); the estimator is rebuilt
         with fresh per-bus profile knowledge on the next solved step, and the
-        daily-curve cache is dropped so the day graphs re-sweep under the new
-        policy (the sweep cache is also keyed on it, this is belt & braces)."""
+        ESTIMATED day-curve layer is dropped so the day graphs re-estimate
+        under the new policy — the truth sweep does not depend on it and
+        stays cached (its layer sig would reject stale estimates anyway)."""
         self.est_config = cfg
         self._estimator = None
         self._est_last = None
         self._est_wall = 0.0
-        self._daily_by_day.clear()
+        for entry in self._daily_by_day.values():
+            entry.pop("_est", None)
 
     def _est_row_sets(self) -> tuple[set[int], set[int], dict[int, int]]:
         """Which load-profile rows are EV charging / real households — the
@@ -252,6 +260,128 @@ class Simulator:
             self._daily_by_day.clear()
             return True
         return False
+
+    # -- overload controllers (netzdienliche Steuerung) -------------------- #
+    def add_controller(self, scope: str = "station", bus: int | None = None,
+                       limit_pct: float = 100.0) -> Controller:
+        """Place an overload controller — ``station`` throttles all EV/PV of
+        the grid on trafo/line overload, ``bus`` only the DERs at one node
+        (reacting to the lines that touch it)."""
+        if scope not in SCOPES:
+            raise ValueError(f"scope must be one of {SCOPES}")
+        if scope == "bus" and (bus is None or bus not in self.net.bus.index):
+            raise KeyError(bus)
+        c = Controller(cid=self._next_cid, scope=scope,
+                       bus=int(bus) if bus is not None else None,
+                       limit_pct=float(limit_pct))
+        self._next_cid += 1
+        self.controllers.append(c)
+        return c
+
+    def remove_controller(self, cid: int) -> bool:
+        n = len(self.controllers)
+        self.controllers = [c for c in self.controllers if c.cid != cid]
+        return len(self.controllers) != n
+
+    def set_controller(self, cid: int, limit_pct: float) -> bool:
+        for c in self.controllers:
+            if c.cid == cid:
+                c.limit_pct = float(limit_pct)
+                c.release_pct = min(c.release_pct, c.limit_pct - 5.0)
+                return True
+        return False
+
+    def _controller_rows(self, c: Controller) -> tuple[list[int], list[int]]:
+        """Profile row indices (EV loads, PV sgens) in the controller's scope."""
+        ev_rows = [i for i, li in enumerate(self.prof.load_idx)
+                   if "EV_" in str(self.net.load.at[li, "name"] or "")
+                   and (c.scope == "station"
+                        or int(self.net.load.at[li, "bus"]) == c.bus)]
+        pv_rows = [i for i, si in enumerate(self.prof.sgen_idx)
+                   if i < len(self._sgen_is_pv) and self._sgen_is_pv[i]
+                   and (c.scope == "station"
+                        or int(self.net.sgen.at[si, "bus"]) == c.bus)]
+        return ev_rows, pv_rows
+
+    def _apply_controller_factors(self) -> None:
+        """Scale EV loads / PV sgens by the strictest covering controller —
+        called after the step profiles are written, before the batteries."""
+        ev_f: dict[int, float] = {}
+        pv_f: dict[int, float] = {}
+        for c in self.controllers:
+            ev_rows, pv_rows = self._controller_rows(c)
+            for i in ev_rows:
+                ev_f[i] = min(ev_f.get(i, 1.0), c.ev_factor)
+            for i in pv_rows:
+                pv_f[i] = min(pv_f.get(i, 1.0), c.pv_factor)
+        for i, f in ev_f.items():
+            if f < 1.0:
+                li = self.prof.load_idx[i]
+                self.net.load.at[li, "p_mw"] *= f
+                self.net.load.at[li, "q_mvar"] *= f
+        for i, f in pv_f.items():
+            if f < 1.0:
+                si = self.prof.sgen_idx[i]
+                self.net.sgen.at[si, "p_mw"] *= f
+                self.net.sgen.at[si, "q_mvar"] *= f
+
+    def _controller_update(self, res: "StepResult") -> None:
+        """One control step per controller — fed ONLY from the operator's view:
+        meter readings (``res.measurements``) and the WLS state estimate
+        (``res.estimated``, the last available run; a field controller also
+        works on the latest received telegram). The true power flow never
+        reaches the control law, so an overload that neither a meter nor the
+        estimate reveals is NOT acted upon: control quality = observability.
+        Without any data a controller is blind and holds its factors."""
+        meas = res.measurements or {}
+        est = res.estimated if isinstance(res.estimated, dict) else {}
+        est_lines = est.get("lines") or []
+        est_trafos = est.get("trafos") or []
+        for c in self.controllers:
+            seen: list[tuple[float, str]] = []
+            if c.scope == "station":
+                # measured transformer loadings are direct device readings ...
+                for tm in meas.get("trafos", []):
+                    if tm.get("loading_percent") is not None:
+                        seen.append((float(tm["loading_percent"]), "meter"))
+                # ... everything else (line loadings!) exists only estimated
+                for row in (*est_lines, *est_trafos):
+                    if row.get("loading_percent") is not None:
+                        seen.append((float(row["loading_percent"]), "estimate"))
+                # flow direction from the HV-side trafo flow (measured before
+                # estimated): backfeed into the upper grid = domain exports
+                p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                        if tm.get("p_hv_mw") is not None]
+                if not p_hv:
+                    p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                            if tr.get("p_hv_mw") is not None]
+                exporting = bool(p_hv) and sum(p_hv) < 0.0
+            else:
+                ln_df = self.net.line
+                adj = {int(li) for li in ln_df.index
+                       if c.bus in (int(ln_df.at[li, "from_bus"]),
+                                    int(ln_df.at[li, "to_bus"]))}
+                # lines carry no meters in this model — adjacent loadings are
+                # only knowable through the state estimate
+                for ln in est_lines:
+                    if ln.get("index") in adj and ln.get("loading_percent") is not None:
+                        seen.append((float(ln["loading_percent"]), "estimate"))
+                # direction from the node's own meter, else its estimated
+                # injection (res_bus convention: p > 0 consumes, p < 0 feeds in)
+                p_bus = next((n["p_mw"] for n in meas.get("nodes", [])
+                              if n.get("bus") == c.bus and n.get("p_mw") is not None),
+                             None)
+                if p_bus is None:
+                    p_bus = next((b["p_mw"] for b in est.get("buses") or []
+                                  if b.get("index") == c.bus and b.get("p_mw") is not None),
+                                 None)
+                exporting = p_bus is not None and float(p_bus) < 0.0
+            if seen:
+                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
+                c.update(c.seen_pct, exporting)
+            else:
+                c.seen_pct = c.seen_src = None
+                c.update(None, False)
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -566,6 +696,10 @@ class Simulator:
         if p.ext_idx:
             self.net.ext_grid.loc[p.ext_idx, "vm_pu"] = p.ext_vm[:, t]
             self.net.ext_grid.loc[p.ext_idx, "va_degree"] = p.ext_va[:, t]
+        # overload controllers throttle EV/PV before the batteries react, so a
+        # battery sees the actually available (curtailed) local generation/load
+        if self.controllers:
+            self._apply_controller_factors()
         if self.batteries:
             self._apply_batteries(self.net, self.batteries, p, sgen_col, self.day, t,
                                   24.0 / self.steps_per_day, self._loads_at, self._sgens_at,
@@ -617,8 +751,15 @@ class Simulator:
                     self.net, self.prof, self._loads_at, self._sgens_at,
                     ev_rows=ev_rows, household_rows=household_rows,
                     household_counts=hh_counts, config=self.est_config)
+            # the estimate can only be as fine as the METERING raster: standard
+            # mode (TAF 7 Lastgang) delivers new readings once per 15-min
+            # window, so a new estimate is only due at window boundaries; full
+            # mode (TAF 9/10/14) delivers every step (1 min). The wall-clock
+            # spacing below is purely a compute guard for very large grids.
+            raster = (max(1, round(15 * self.steps_per_day / 1440))
+                      if self.meters.mode == "standard" else 1)
             now = time.monotonic()
-            if now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
+            if t % raster == 0 and now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
                 est = self._estimator.run(self.net, res.measurements,
                                           self._sgen_day_mean(day), bats)
@@ -630,6 +771,12 @@ class Simulator:
             res.estimated = self._est_last
         else:
             self._est_last = None
+        # closed control loop: factors computed from THIS step's OBSERVED view
+        # (meters + estimate, never the truth) throttle the NEXT step — runs
+        # after the estimation so the controller sees the freshest estimate
+        if converged and self.controllers:
+            self._controller_update(res)
+            res.controllers = [c.as_dict() for c in self.controllers]
         return res
 
     # -- result extraction ---------------------------------------------- #
@@ -698,6 +845,7 @@ class Simulator:
                 "soc_percent": _r(b.soc_frac() * 100.0), "p_mw": _r(p_mw),
                 "capacity_kwh": _r(b.capacity_mwh * 1000.0), "power_kw": _r(b.power_mw * 1000.0),
             })
+        res.controllers = [c.as_dict() for c in self.controllers]
 
         vm = net.res_bus.vm_pu
         loadings = net.res_line.loading_percent
@@ -795,27 +943,21 @@ class Simulator:
             self._coords = compute_layouts(self.net)
         return self._coords
 
-    def daily_curves(self, day: int | None = None, samples: int = 97) -> dict:
+    def daily_curves(self, day: int | None = None) -> dict:
         """Sweep a whole day once (on an ISOLATED net, so the live engine is not
-        disturbed) and cache per-bus voltage + per-line current/loading + per-trafo
-        power, sampled ~evenly across the day. Cached per day, since real-PV days
-        differ; a grid without real PV only ever uses day 0.
-
-        While meters are placed the sweep also runs the state estimator at the
-        samples — decimated on big nets (one WLS run costs ~1 s there) to a
-        per-grid PINNED tier of clean resolutions (15/30/60/120 min), so the
-        estimated curve keeps one consistent granularity instead of flipping
-        with measurement noise. The daily graphs overlay the operator's
-        estimate on the truth — placing more meters visibly locks the estimated
-        curve onto the real one. The cache is keyed on the meter placement AND
-        the estimation policy, so changing either re-sweeps."""
+        disturbed) and cache per-bus voltage/injection + per-line current/loading
+        + per-trafo power — the TRUTH layer of the day graphs. The power flow is
+        solved at EVERY step, so the curves keep the full input raster (1 minute
+        on the committed grids) — affordable because consecutive solves are
+        recycled (only the bus P/Q injections are rebuilt; validated
+        bit-identical to full solves). Deliberately WITHOUT the state estimator:
+        the pure-Lastfluss view must not pay for WLS runs — the estimated layer
+        is computed lazily by ``daily_est`` and the measured layer is derived
+        from these arrays by ``measured_curves``. Cached per day, since real-PV
+        days differ; a grid without real PV only ever uses day 0."""
         d = self.day if day is None else day
-        # keyed on everything the estimated overlay depends on: the meter
-        # placement/mode AND the estimation policy (config tab)
-        sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs),
-               self.meters.mode, dataclasses.astuple(self.est_config))
         cached = self._daily_by_day.get(d)
-        if cached is not None and cached.get("_sig") == sig:
+        if cached is not None:
             return cached
         # Snapshot the LIVE net (not a rebuild from the input data): runtime
         # DER changes — added/resized PV, EV windows, removals — exist only on
@@ -824,141 +966,233 @@ class Simulator:
         net = copy.deepcopy(self.net)
         net.storage.drop(net.storage.index, inplace=True)  # batteries recreated fresh below
         prof = self.prof
-        sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
         spd = self.steps_per_day
-        n = max(2, min(samples, spd))
-        sample_at = {round(i * (spd - 1) / (n - 1)) for i in range(n)}
-        dt_h = 24.0 / spd
-        # Recreate the batteries on the isolated net (fresh SOC = 50 %) so the swept
-        # curves reflect their charge/discharge; SOC is integrated at full 1-min
-        # resolution while the power flow is solved only at the samples.
-        bs = [Battery(bus=b.bus, capacity_mwh=b.capacity_mwh, power_mw=b.power_mw, mode=b.mode,
-                      eff=b.eff, soc_min=b.soc_min, soc_max=b.soc_max, soc_mwh=0.5 * b.capacity_mwh,
-                      name=b.name,
-                      storage_idx=int(pp.create_storage(net, bus=b.bus, p_mw=0.0,
-                                                        max_e_mwh=b.capacity_mwh, soc_percent=50.0, name=b.name)))
-              for b in self.batteries]
+        bs = self._sweep_batteries(net)
+        bus_ids = [int(b) for b in net.bus.index]
+        line_ids = [int(l) for l in net.line.index]
+        trafo_ids = [int(tr) for tr in net.trafo.index]
+        # truth curves as [n_elem, spd] arrays: unsolved steps stay NaN → null
+        vm_a = np.full((len(bus_ids), spd), np.nan)
+        busp_a = np.full((len(bus_ids), spd), np.nan)
+        ika_a = np.full((len(line_ids), spd), np.nan)
+        load_a = np.full((len(line_ids), spd), np.nan)
+        trp_a = np.full((len(trafo_ids), spd), np.nan)
+        trl_a = np.full((len(trafo_ids), spd), np.nan)
+        for t, solved in self._sweep_solves(net, bs, d, range(spd)):
+            if not solved:
+                continue
+            vm_a[:, t] = net.res_bus["vm_pu"].to_numpy()
+            busp_a[:, t] = net.res_bus["p_mw"].to_numpy()
+            if line_ids:
+                ika_a[:, t] = net.res_line["i_ka"].to_numpy()
+                load_a[:, t] = net.res_line["loading_percent"].to_numpy()
+            if trafo_ids:
+                trp_a[:, t] = net.res_trafo["p_hv_mw"].to_numpy()
+                trl_a[:, t] = net.res_trafo["loading_percent"].to_numpy()
+        result = {"n": spd,
+                  "bus_vm": {b: [_r(x) for x in vm_a[i]] for i, b in enumerate(bus_ids)},
+                  "bus_p": {b: [_r(x) for x in busp_a[i]] for i, b in enumerate(bus_ids)},
+                  "line_i_ka": {l: [_r(x) for x in ika_a[i]] for i, l in enumerate(line_ids)},
+                  "line_loading": {l: [_r(x) for x in load_a[i]] for i, l in enumerate(line_ids)},
+                  "trafo_p_hv": {tr: [_r(x) for x in trp_a[i]] for i, tr in enumerate(trafo_ids)},
+                  "trafo_loading": {tr: [_r(x) for x in trl_a[i]] for i, tr in enumerate(trafo_ids)}}
+        self._daily_by_day[d] = result
+        return result
 
-        def sgen_col_at(t):
+    def _sweep_batteries(self, net) -> list[Battery]:
+        """Recreate the live batteries on an isolated sweep net (fresh SOC 50 %)."""
+        return [Battery(bus=b.bus, capacity_mwh=b.capacity_mwh, power_mw=b.power_mw,
+                        mode=b.mode, eff=b.eff, soc_min=b.soc_min, soc_max=b.soc_max,
+                        soc_mwh=0.5 * b.capacity_mwh, name=b.name,
+                        storage_idx=int(pp.create_storage(net, bus=b.bus, p_mw=0.0,
+                                                          max_e_mwh=b.capacity_mwh,
+                                                          soc_percent=50.0, name=b.name)))
+                for b in self.batteries]
+
+    def _sweep_solves(self, net, bs: list[Battery], d: int, solve_at):
+        """Drive one day on the sweep net: integrate battery SOC at EVERY step,
+        solve the power flow at the steps in ``solve_at`` (recycled after the
+        first success — Ybus unchanged, only bus injections move — with the
+        run_step retry ladder as fallback) and yield ``(t, solved)`` there."""
+        prof = self.prof
+        spd = self.steps_per_day
+        dt_h = 24.0 / spd
+        sgen_peak = prof.sgen_p.max(axis=1) if prof.sgen_p.size else np.zeros(0)
+        want = set(int(t) for t in solve_at)
+        # a varying slack setpoint is NOT covered by the bus-P/Q recycle path
+        use_recycle = not ((prof.ext_vm.size and float(np.ptp(prof.ext_vm, axis=1).max()) > 1e-12)
+                           or (prof.ext_va.size and float(np.ptp(prof.ext_va, axis=1).max()) > 1e-12))
+        warm = False
+        for t in range(spd):
             col = prof.sgen_p[:, t]
             if self.pv_days is not None:
                 col = col.copy()
                 real = sgen_peak * self.pv_days[d % self.pv_days.shape[0], t]
                 col[self._sgen_is_pv] = real[self._sgen_is_pv]
-            return col
-
-        vm = {int(b): [] for b in net.bus.index}
-        i_ka = {int(l): [] for l in net.line.index}
-        loading = {int(l): [] for l in net.line.index}
-        tr_p_hv = {int(t): [] for t in net.trafo.index}
-        tr_loading = {int(t): [] for t in net.trafo.index}
-        # estimated curves (only while meters are placed). A dedicated Estimator
-        # instance: the live engine's runs concurrently on another thread.
-        do_est = bool(self.meters.node_buses or self.meters.trafo_idxs)
-        est_vm = {int(b): [] for b in net.bus.index}
-        est_i = {int(l): [] for l in net.line.index}
-        est_p_hv = {int(t): [] for t in net.trafo.index}
-        if do_est:
-            ev_rows, household_rows, hh_counts = self._est_row_sets()
-            estimator = Estimator(net, prof, self._loads_at, self._sgens_at,
-                                  ev_rows=ev_rows, household_rows=household_rows,
-                                  household_counts=hh_counts,
-                                  config=self.est_config)
-        else:
-            estimator = None
-        # the sweep gets its own MeasurementSet copy: standard-mode window
-        # accumulators must not disturb the live meters' state
-        sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),
-                                      trafo_idxs=set(self.meters.trafo_idxs),
-                                      mode=self.meters.mode) if do_est else None
-        est_bats = {b.bus: b.power_mw for b in self.batteries}
-        # estimate decimation: reuse the pinned per-grid tier; a fresh grid
-        # decides after its first WLS run (see below)
-        est_every, si = self._est_sweep_every or 1, -1
-        # "auto" (not "flat") so multi-voltage-level grids with a transformer
-        # converge on the first solve, matching the live engine; then warm-start.
-        init = "auto"
-        for t in range(spd):
-            sgen_col = sgen_col_at(t) if (bs or t in sample_at) else None
-            if bs:  # advance SOC every minute + set storage setpoints on the net
-                self._apply_batteries(net, bs, prof, sgen_col, d, t, dt_h,
+            if bs:  # advance SOC every step + set storage setpoints on the net
+                self._apply_batteries(net, bs, prof, col, d, t, dt_h,
                                       self._loads_at, self._sgens_at, do_integrate=True)
-            if t not in sample_at:
+            if t not in want:
                 continue
             net.load.loc[prof.load_idx, "p_mw"] = prof.load_p[:, t]
             net.load.loc[prof.load_idx, "q_mvar"] = prof.load_q[:, t]
-            net.sgen.loc[prof.sgen_idx, "p_mw"] = sgen_col
+            net.sgen.loc[prof.sgen_idx, "p_mw"] = col
             net.sgen.loc[prof.sgen_idx, "q_mvar"] = prof.sgen_q[:, t]
             net.ext_grid.loc[prof.ext_idx, "vm_pu"] = prof.ext_vm[:, t]
             net.ext_grid.loc[prof.ext_idx, "va_degree"] = prof.ext_va[:, t]
             solved = False
-            # same retry ladder as run_step: flat init rescues the steps where
-            # the warm/dc-init Newton stalls on ill-conditioned district nets
-            for kw in (dict(init=init),
-                       dict(init="flat"),
-                       dict(init="flat", algorithm="iwamoto_nr", max_iteration=30)):
+            if warm and use_recycle:
                 try:
-                    pp.runpp(net, calculate_voltage_angles=True, **kw)
+                    pp.runpp(net, calculate_voltage_angles=True, init="results",
+                             recycle={"bus_pq": True, "trafo": False, "gen": False})
                     solved = True
-                    break
                 except Exception:  # noqa: BLE001
+                    solved = False
+            if not solved:
+                # same retry ladder as run_step: flat init rescues the steps where
+                # the warm/dc-init Newton stalls on ill-conditioned district nets
+                # ("auto", not "flat", first so multi-voltage-level grids with a
+                # transformer converge on the first solve, matching the live loop)
+                for kw in (dict(init="results" if warm else "auto"),
+                           dict(init="flat"),
+                           dict(init="flat", algorithm="iwamoto_nr", max_iteration=30)):
+                    try:
+                        pp.runpp(net, calculate_voltage_angles=True, **kw)
+                        solved = True
+                        break
+                    except Exception:  # noqa: BLE001
+                        continue
+            warm = solved
+            yield t, solved
+
+    def _raster_steps(self, minutes: float) -> int:
+        return max(1, round(minutes / (1440.0 / self.steps_per_day)))
+
+    def measured_curves(self, day: int | None = None) -> dict:
+        """The MEASURED layer of the day graphs, derived from the truth sweep:
+        only elements that carry a device, only the quantities that device
+        delivers, in the metering raster — full mode (TAF 9/10/14) passes the
+        1-min values through, standard mode (TAF 7 Lastgang) reduces to the
+        15-min window mean of the ACTIVE power (voltage/loading unknown).
+        Cheap array math on the cached truth arrays — never cached itself, so
+        placement/mode changes take effect immediately."""
+        d = self.day if day is None else day
+        truth = self.daily_curves(d)
+        spd = self.steps_per_day
+        standard = self.meters.mode == "standard"
+        win = self._raster_steps(15)
+
+        def window_mean(row: list) -> list:
+            out: list = [None] * spd
+            for w0 in range(0, spd, win):
+                vals = [v for v in row[w0:w0 + win] if v is not None]
+                if vals:
+                    mean = _r(sum(vals) / len(vals))
+                    for i in range(w0, min(w0 + win, spd)):
+                        out[i] = mean
+            return out
+
+        nodes: dict[int, dict] = {}
+        for b in sorted(self.meters.node_buses):
+            p = truth["bus_p"].get(b)
+            if p is None:
+                continue
+            nodes[b] = ({"p_mw": window_mean(p), "vm": None} if standard
+                        else {"p_mw": p, "vm": truth["bus_vm"].get(b)})
+        trafos: dict[int, dict] = {}
+        for tr in sorted(self.meters.trafo_idxs):
+            p = truth["trafo_p_hv"].get(tr)
+            if p is None:
+                continue
+            trafos[tr] = ({"p_hv": window_mean(p), "loading": None} if standard
+                          else {"p_hv": p, "loading": truth["trafo_loading"].get(tr)})
+        return {"raster_min": 15 if standard else round(1440 / spd),
+                "nodes": nodes, "trafos": trafos}
+
+    def daily_est(self, day: int | None = None) -> dict:
+        """The ESTIMATED layer of the day graphs: a lazy WLS mini-sweep that
+        re-solves the day only at the estimate raster (pinned per-grid cost
+        tier, never finer than the metering raster) and runs the estimator
+        there. Stored inside the truth cache entry keyed on the meter
+        placement/mode AND the estimation policy — so it is computed only when
+        the Schätzung view actually asks for it, and the pure-Lastfluss /
+        Gemessen views never pay for WLS runs."""
+        d = self.day if day is None else day
+        truth = self.daily_curves(d)
+        sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs),
+               self.meters.mode, dataclasses.astuple(self.est_config))
+        cached = truth.get("_est")
+        if cached is not None and cached.get("_sig") == sig:
+            return cached
+        spd = self.steps_per_day
+        # without meters there is nothing to estimate: empty layer, so the
+        # profile endpoints report the estimate as absent (None), not all-null
+        est_vm: dict[int, list] = {}
+        est_i: dict[int, list] = {}
+        est_p_hv: dict[int, list] = {}
+        result = {"est_bus_vm": est_vm, "est_line_i_ka": est_i,
+                  "est_trafo_p_hv": est_p_hv, "_sig": sig}
+        if self.meters.node_buses or self.meters.trafo_idxs:
+            est_vm.update({int(b): [None] * spd for b in self.net.bus.index})
+            est_i.update({int(l): [None] * spd for l in self.net.line.index})
+            est_p_hv.update({int(tr): [None] * spd for tr in self.net.trafo.index})
+            net = copy.deepcopy(self.net)
+            net.storage.drop(net.storage.index, inplace=True)
+            bs = self._sweep_batteries(net)
+            ev_rows, household_rows, hh_counts = self._est_row_sets()
+            estimator = Estimator(net, self.prof, self._loads_at, self._sgens_at,
+                                  ev_rows=ev_rows, household_rows=household_rows,
+                                  household_counts=hh_counts, config=self.est_config)
+            # its own MeasurementSet copy: standard-mode window accumulators
+            # must not disturb the live meters' state
+            sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),
+                                          trafo_idxs=set(self.meters.trafo_idxs),
+                                          mode=self.meters.mode)
+            est_bats = {b.bus: b.power_mw for b in self.batteries}
+            meter_raster = self._raster_steps(15) if self.meters.mode == "standard" else 1
+            est_steps = max(self._raster_steps(self._est_sweep_min or 15), meter_raster)
+            redo: list[int] = []
+            for t, solved in self._sweep_solves(net, bs, d,
+                                                range(0, spd, est_steps)):
+                if not solved:
                     continue
-            si += 1
-            est = None
-            if solved:
-                init = "results"
-                for b in net.bus.index:
-                    vm[int(b)].append(_r(net.res_bus.at[b, "vm_pu"]))
-                for l in net.line.index:
-                    i_ka[int(l)].append(_r(net.res_line.at[l, "i_ka"]))
-                    loading[int(l)].append(_r(net.res_line.at[l, "loading_percent"]))
-                for tr in net.trafo.index:
-                    tr_p_hv[int(tr)].append(_r(net.res_trafo.at[tr, "p_hv_mw"]))
-                    tr_loading[int(tr)].append(_r(net.res_trafo.at[tr, "loading_percent"]))
-                if estimator is not None and si % est_every == 0:
-                    est = estimator.run(net, sweep_meters.observe(net, t),
-                                        self._sgen_day_mean(d), est_bats)
-                    if est is not None and self._est_sweep_every is None:
-                        # decide the tier ONCE per grid: big nets sample the
-                        # estimate coarser so a sweep stays interactive. Use
-                        # the cheaper of this run and the live loop's smoothed
-                        # cost (the first run may be a cold-start outlier), and
-                        # snap to clean resolutions: 15/30/60/120 min.
-                        ms = est["solve_ms"]
-                        if self._est_ms > 0:
-                            ms = min(ms, self._est_ms)
-                        self._est_sweep_every = est_every = (
-                            1 if ms <= 120 else 2 if ms <= 240
-                            else 4 if ms <= 480 else 8)
-            else:  # non-convergence at this step → gaps
-                init = "auto"
-                for b in net.bus.index:
-                    vm[int(b)].append(None)
-                for l in net.line.index:
-                    i_ka[int(l)].append(None); loading[int(l)].append(None)
-                for tr in net.trafo.index:
-                    tr_p_hv[int(tr)].append(None); tr_loading[int(tr)].append(None)
-            eb = {e["index"]: e["vm_pu"] for e in est["buses"]} if est else {}
-            el = {e["index"]: e["i_ka"] for e in est["lines"]} if est else {}
-            et = {e["index"]: e["p_hv_mw"] for e in est["trafos"]} if est else {}
-            for b in net.bus.index:
-                est_vm[int(b)].append(eb.get(int(b)))
-            for l in net.line.index:
-                est_i[int(l)].append(el.get(int(l)))
-            for tr in net.trafo.index:
-                est_p_hv[int(tr)].append(et.get(int(tr)))
-        result = {"n": n, "bus_vm": vm, "line_i_ka": i_ka, "line_loading": loading,
-                  "trafo_p_hv": tr_p_hv, "trafo_loading": tr_loading,
-                  "est_bus_vm": est_vm if do_est else {},
-                  "est_line_i_ka": est_i if do_est else {},
-                  "est_trafo_p_hv": est_p_hv if do_est else {},
-                  "_sig": sig}
-        self._daily_by_day[d] = result
+                est = estimator.run(net, sweep_meters.observe(net, t),
+                                    self._sgen_day_mean(d), est_bats)
+                if est is None:
+                    continue
+                if self._est_sweep_min is None:
+                    # decide the tier ONCE per grid: big nets sample the
+                    # estimate coarser so a sweep stays interactive. Use the
+                    # cheaper of this run and the live loop's smoothed cost
+                    # (the first run may be a cold-start outlier), and snap to
+                    # clean resolutions: 15/30/60/120 min.
+                    ms = est["solve_ms"]
+                    if self._est_ms > 0:
+                        ms = min(ms, self._est_ms)
+                    self._est_sweep_min = (15 if ms <= 120 else 30 if ms <= 240
+                                           else 60 if ms <= 480 else 120)
+                    coarser = max(self._raster_steps(self._est_sweep_min), meter_raster)
+                    if coarser > est_steps:
+                        # keep only the samples on the coarser raster; the
+                        # generator keeps yielding the fine ones — skip them
+                        est_steps = coarser
+                if t % est_steps != 0:
+                    continue
+                for e in est["buses"]:
+                    est_vm[e["index"]][t] = e["vm_pu"]
+                for e in est["lines"]:
+                    est_i[e["index"]][t] = e["i_ka"]
+                for e in est["trafos"]:
+                    est_p_hv[e["index"]][t] = e["p_hv_mw"]
+        truth["_est"] = result
         return result
 
-    def node_profiles(self, bus: int) -> dict:
-        """A bus's daily curves: input p_mw split into residential / EV loads and PV
-        generation (``EV_*`` loads, ``PV_*`` sgen), plus its voltage over the day."""
+    def node_profiles(self, bus: int, view: str = "est") -> dict:
+        """A bus's daily curves. ``view`` picks the layers the caller may see:
+        ``truth`` = input p_mw split into residential / EV / PV (grid-model
+        knowledge) + the solved voltage; ``measured`` = ONLY the meter's own
+        quantities in the metering raster (net P, V in full mode — never the
+        composition, which no meter can know); ``est`` = all layers overlaid."""
         p, net = self.prof, self.net
         cats: dict[str, "np.ndarray | None"] = {}
         def add(key, row):
@@ -981,42 +1215,72 @@ class Simulator:
         series = [{"kind": k, "p_mw": [_r(v) for v in cats[k]]}
                   for k in order if cats.get(k) is not None]
         name = str(net.bus.at[bus, "name"]) if bus in net.bus.index else str(bus)
-        d = self.daily_curves(self.day)
-        return {"bus": bus, "name": name, "steps_per_day": self.steps_per_day,
-                "series": series, "voltage": d["bus_vm"].get(bus, []),
-                "est_voltage": d.get("est_bus_vm", {}).get(bus)}
+        out = {"bus": bus, "name": name, "steps_per_day": self.steps_per_day,
+               "view": view, "series": [], "voltage": [],
+               "est_voltage": None, "measured": None}
+        if view in ("truth", "est"):
+            d = self.daily_curves(self.day)
+            out["series"] = series
+            out["voltage"] = d["bus_vm"].get(bus, [])
+        if view in ("measured", "est"):
+            m = self.measured_curves(self.day)
+            node = m["nodes"].get(bus)
+            if node is not None:
+                out["measured"] = {**node, "raster_min": m["raster_min"]}
+        if view == "est":
+            out["est_voltage"] = self.daily_est(self.day)["est_bus_vm"].get(bus)
+        return out
 
-    def line_profiles(self, line: int) -> dict:
+    def line_profiles(self, line: int, view: str = "est") -> dict:
         """A line's daily current + loading curves, with its rated current (the
-        ampacity limit = ``max_i_ka × parallel``)."""
+        ampacity limit = ``max_i_ka × parallel``). ``view`` picks the layers:
+        lines carry no meters, so the measured view is deliberately empty."""
         net = self.net
-        d = self.daily_curves(self.day)
         rated = float(net.line.at[line, "max_i_ka"]) * int(net.line.at[line, "parallel"])
-        return {
+        out = {
             "line": line, "name": str(net.line.at[line, "name"] or line),
             "from_bus": int(net.line.at[line, "from_bus"]), "to_bus": int(net.line.at[line, "to_bus"]),
             "steps_per_day": self.steps_per_day, "rated_i_ka": _r(rated),
-            "current": d["line_i_ka"].get(line, []), "loading": d["line_loading"].get(line, []),
-            "est_current": d.get("est_line_i_ka", {}).get(line),
+            "view": view, "current": [], "loading": [], "est_current": None,
         }
+        if view in ("truth", "est"):
+            d = self.daily_curves(self.day)
+            out["current"] = d["line_i_ka"].get(line, [])
+            out["loading"] = d["line_loading"].get(line, [])
+        if view == "est":
+            out["est_current"] = self.daily_est(self.day)["est_line_i_ka"].get(line)
+        return out
 
-    def trafo_profiles(self, trafo: int) -> dict:
+    def trafo_profiles(self, trafo: int, view: str = "est") -> dict:
         """A transformer's daily power exchange (HV-side P) + loading curves, with
-        its rated apparent power (``sn_mva × parallel``) as the capacity limit."""
+        its rated apparent power (``sn_mva × parallel``) as the capacity limit.
+        ``view`` picks the layers; the measured layer appears only for a metered
+        transformer, in the metering raster."""
         net = self.net
-        d = self.daily_curves(self.day)
         rated = float(net.trafo.at[trafo, "sn_mva"]) * int(net.trafo.at[trafo, "parallel"])
-        return {
+        out = {
             "trafo": trafo, "name": str(net.trafo.at[trafo, "name"] or trafo),
             "hv_bus": int(net.trafo.at[trafo, "hv_bus"]), "lv_bus": int(net.trafo.at[trafo, "lv_bus"]),
             "steps_per_day": self.steps_per_day, "sn_mva": _r(rated),
-            "power": d["trafo_p_hv"].get(trafo, []), "loading": d["trafo_loading"].get(trafo, []),
-            "est_power": d.get("est_trafo_p_hv", {}).get(trafo),
+            "view": view, "power": [], "loading": [], "est_power": None, "measured": None,
         }
+        if view in ("truth", "est"):
+            d = self.daily_curves(self.day)
+            out["power"] = d["trafo_p_hv"].get(trafo, [])
+            out["loading"] = d["trafo_loading"].get(trafo, [])
+        if view in ("measured", "est"):
+            m = self.measured_curves(self.day)
+            tm = m["trafos"].get(trafo)
+            if tm is not None:
+                out["measured"] = {**tm, "raster_min": m["raster_min"]}
+        if view == "est":
+            out["est_power"] = self.daily_est(self.day)["est_trafo_p_hv"].get(trafo)
+        return out
 
-    def battery_profiles(self, storage_idx: int, samples: int = 97) -> dict | None:
-        """A battery's daily SOC + charge/discharge curve for the current day. The
-        controllers read profiles/price only (no power flow), so this integrates
+    def battery_profiles(self, storage_idx: int) -> dict | None:
+        """A battery's daily SOC + charge/discharge curve for the current day, in
+        the full input raster (1 minute on the committed grids). The battery
+        strategies read profiles/price only (no power flow), so this integrates
         SOC over the full day cheaply — on throwaway battery copies starting at
         50 %, so the live SOC is untouched. Includes the price curve for context."""
         target = next((b for b in self.batteries if b.storage_idx == storage_idx), None)
@@ -1024,8 +1288,6 @@ class Simulator:
             return None
         day, spd = self.day, self.steps_per_day
         dt_h = 24.0 / spd
-        n = max(2, min(samples, spd))
-        sample_at = {round(i * (spd - 1) / (n - 1)) for i in range(n)}
         bs = [Battery(bus=b.bus, capacity_mwh=b.capacity_mwh, power_mw=b.power_mw, mode=b.mode,
                       eff=b.eff, soc_min=b.soc_min, soc_max=b.soc_max,
                       soc_mwh=0.5 * b.capacity_mwh, name=b.name, storage_idx=b.storage_idx)
@@ -1051,10 +1313,9 @@ class Simulator:
                 bat.integrate(b, p, dt_h)
                 if b is tgt:
                     p_tgt = p
-            if t in sample_at:
-                soc.append(_r(tgt.soc_frac() * 100.0)); power.append(_r(p_tgt))
-                price.append(_r(pctx["price"]) if "price" in pctx else None)
-                price_lo, price_hi = pctx.get("price_lo", price_lo), pctx.get("price_hi", price_hi)
+            soc.append(_r(tgt.soc_frac() * 100.0)); power.append(_r(p_tgt))
+            price.append(_r(pctx["price"]) if "price" in pctx else None)
+            price_lo, price_hi = pctx.get("price_lo", price_lo), pctx.get("price_hi", price_hi)
         return {
             "index": storage_idx, "bus": target.bus, "name": target.name, "mode": target.mode,
             "steps_per_day": spd, "capacity_kwh": _r(target.capacity_mwh * 1000.0),

@@ -36,11 +36,14 @@ export default function ProfileGraph({
   const vals: number[] = [];
   series.forEach((s) => s.data.forEach((v) => v != null && vals.push(v)));
   limits.forEach((l) => vals.push(l.value));
+  const dataMin = vals.length ? Math.min(...vals) : 0;
   let yMax = vals.length ? Math.max(...vals) : 1;
-  let yMin = baseZero ? 0 : vals.length ? Math.min(...vals) : 0;
+  // baseZero anchors the axis at 0 for all-positive data — but negative values
+  // (e.g. a metered node exporting PV) must never be clipped away
+  let yMin = baseZero ? Math.min(0, dataMin) : dataMin;
   const pad = (yMax - yMin) * 0.08 || Math.abs(yMax) * 0.08 || 0.01;
   yMax += pad;
-  if (!baseZero) yMin -= pad;
+  if (!baseZero || yMin < 0) yMin -= pad;
   if (yMax <= yMin) yMax = yMin + 1;
 
   const px = (frac: number) => L + frac * (W - L - R);
@@ -78,9 +81,14 @@ export default function ProfileGraph({
     }
     return segs;
   };
-  // step-after: the value shown at a position is the sample whose plateau it's on
-  const valAt = (s: GSeries, frac: number) =>
-    s.data[Math.min(s.data.length - 1, Math.floor(frac * (s.data.length - 1)))] ?? null;
+  // step-after: the value shown at a position is the sample whose plateau it's
+  // on — for sparse series (e.g. a 15-min estimate raster inside a 1-min day)
+  // that is the last filled sample at or before the position, matching stepPath
+  const valAt = (s: GSeries, frac: number) => {
+    let i = Math.min(s.data.length - 1, Math.floor(frac * (s.data.length - 1)));
+    while (i > 0 && s.data[i] == null) i--;
+    return s.data[i] ?? null;
+  };
 
   const onMove = (e: React.MouseEvent) => {
     const r = ref.current!.getBoundingClientRect();
@@ -147,7 +155,11 @@ export default function ProfileGraph({
         {series.map((s) => {
           const d = line(s);
           if (!s.fill || !d) return null;
-          return <path key={"a" + s.label} d={`${d}L${px(1).toFixed(1)} ${py(yMin).toFixed(1)} L${px(0).toFixed(1)} ${py(yMin).toFixed(1)} Z`}
+          // fill between the curve and the zero line (clamped into the chart),
+          // so on a chart that spans negative values a positive series does not
+          // flood the export region below zero
+          const base = py(Math.max(yMin, Math.min(yMax, 0)));
+          return <path key={"a" + s.label} d={`${d}L${px(1).toFixed(1)} ${base.toFixed(1)} L${px(0).toFixed(1)} ${base.toFixed(1)} Z`}
                        fill={s.color} opacity={nowF != null ? 0.09 : 0.14} />;
         })}
         {series.map((s) => {

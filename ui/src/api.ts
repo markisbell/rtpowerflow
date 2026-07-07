@@ -7,6 +7,7 @@ import type {
   BatteryMode,
   BatteryProfiles,
   EngineStatus,
+  GridController,
   GridPreview,
   GridsResponse,
   LineProfiles,
@@ -17,6 +18,7 @@ import type {
   Scenario,
   MeterPreset,
   NodeProfiles,
+  ProfileView,
   PvDays,
   StepResult,
   Topology,
@@ -81,9 +83,12 @@ export const api = {
   network: () => get<Topology>("/network"),
   status: () => get<EngineStatus>("/status"),
   state: () => get<StepResult>("/state"),
-  nodeProfiles: (bus: number) => get<NodeProfiles>(`/node/${bus}/profiles`),
-  lineProfiles: (line: number) => get<LineProfiles>(`/line/${line}/profiles`),
-  trafoProfiles: (trafo: number) => get<TrafoProfiles>(`/trafo/${trafo}/profiles`),
+  nodeProfiles: (bus: number, view: ProfileView = "est") =>
+    get<NodeProfiles>(`/node/${bus}/profiles?view=${view}`),
+  lineProfiles: (line: number, view: ProfileView = "est") =>
+    get<LineProfiles>(`/line/${line}/profiles?view=${view}`),
+  trafoProfiles: (trafo: number, view: ProfileView = "est") =>
+    get<TrafoProfiles>(`/trafo/${trafo}/profiles?view=${view}`),
 
   start: () => post<EngineStatus>("/control/start"),
   pause: () => post<EngineStatus>("/control/pause"),
@@ -122,6 +127,14 @@ export const api = {
     post<BatteriesResponse>(`/battery/${index}/mode?name=${mode}`),
   setBatterySize: (index: number, capacity_kwh: number, power_kw: number) =>
     post<BatteriesResponse>(`/battery/${index}/size?capacity_kwh=${capacity_kwh}&power_kw=${power_kw}`),
+
+  // overload controllers (netzdienliche Steuerung)
+  controllers: () => get<{ controllers: GridController[] }>("/controllers"),
+  addController: (body: { scope: "station" | "bus"; bus?: number | null; limit_pct?: number }) =>
+    post<GridController>("/controller", body),
+  removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
+  setControllerLimit: (id: number, limit_pct: number) =>
+    post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
   meterPreset: (name: MeterPreset) =>
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
   meterMode: (name: MeterMode) =>

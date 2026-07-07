@@ -210,19 +210,22 @@ def test_pv_pseudo_flag_controls_generation_value():
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
-def test_config_change_resweeps_daily_curves():
-    """The day graphs must re-run under a new estimation policy — the sweep
-    cache is keyed on the config, and the sweep's estimator honors it."""
+def test_config_change_reestimates_daily_curves():
+    """The estimated day-graph layer must re-run under a new estimation policy
+    (its cache is keyed on the config) — while the TRUTH layer, which does not
+    depend on the policy, stays cached."""
     sim = _fresh_lv_sim()
     sim.meters.apply_preset("substation_trafos", sim.net)
-    d1 = sim.daily_curves()
-    assert sim.daily_curves() is d1                 # cache hit under same policy
+    t1 = sim.daily_curves()
+    e1 = sim.daily_est()
+    assert sim.daily_est() is e1                    # cache hit under same policy
     sim.set_est_config(EstConfig(load_basis="slp", pseudo_std_pct=200))
-    d2 = sim.daily_curves()
-    assert d2 is not d1                             # policy change -> re-sweep
-    # the re-sweep really used the new policy: some estimated voltage differs
-    b = next(iter(d1["est_bus_vm"]))
-    pairs = [(a, c) for a, c in zip(d1["est_bus_vm"][b], d2["est_bus_vm"][b])
+    assert sim.daily_curves() is t1                 # truth survives the policy change
+    e2 = sim.daily_est()
+    assert e2 is not e1                             # policy change -> re-estimate
+    # the re-run really used the new policy: some estimated voltage differs
+    b = next(iter(e1["est_bus_vm"]))
+    pairs = [(a, c) for a, c in zip(e1["est_bus_vm"][b], e2["est_bus_vm"][b])
              if a is not None and c is not None]
     assert pairs and any(abs(a - c) > 1e-7 for a, c in pairs)
 
@@ -281,21 +284,113 @@ def test_estimation_honesty_pv_rise_unknowable():
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
 def test_estimate_sweep_resolution_is_pinned():
     """The estimated day curve keeps ONE consistent resolution per grid: the
-    decimation tier is pinned after the first decision and survives policy
-    changes — no flipping between 15-min and hourly sampling."""
+    raster tier (in minutes) is pinned after the first decision and survives
+    policy changes — no flipping between 15-min and hourly sampling."""
     sim = _fresh_lv_sim()
     sim.meters.apply_preset("substation_trafos", sim.net)
-    sim._est_sweep_every = 4                        # pretend: a slow (big) net
-    d = sim.daily_curves()
+    sim._est_sweep_min = 60                         # pretend: a slow (big) net
+    d = sim.daily_est()
     b = next(iter(d["est_bus_vm"]))
     idx = [i for i, v in enumerate(d["est_bus_vm"][b]) if v is not None]
     assert idx, "no estimated samples at all"
-    assert all(i % 4 == 0 for i in idx)             # hourly raster, aligned
+    # 96-step day → 15 min/step → hourly raster = every 4th step, aligned
+    assert all(i % 4 == 0 for i in idx)
     sim.set_est_config(EstConfig(load_basis="slp"))
-    assert sim._est_sweep_every == 4                # tier survives the policy swap
-    d2 = sim.daily_curves()
+    assert sim._est_sweep_min == 60                 # tier survives the policy swap
+    d2 = sim.daily_est()
     idx2 = [i for i, v in enumerate(d2["est_bus_vm"][b]) if v is not None]
     assert idx2 == idx                              # same raster after re-sweep
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_daily_curves_solve_every_step():
+    """The truth curves of the day graphs keep the FULL input raster (customer
+    requirement: power-flow results always at profile resolution — 1 minute on
+    the real grids): one solved value per step for voltage, line current and
+    trafo loading, no decimation and no gaps on a healthy grid."""
+    sim = _fresh_lv_sim()
+    d = sim.daily_curves()
+    spd = sim.steps_per_day
+    assert d["n"] == spd
+    for key in ("bus_vm", "line_i_ka", "line_loading", "trafo_p_hv", "trafo_loading"):
+        row = next(iter(d[key].values()))
+        assert len(row) == spd, f"{key} decimated: {len(row)} != {spd}"
+        assert all(v is not None for v in row), f"{key} has gaps"
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_estimate_raster_follows_metering_taf():
+    """The live estimate can only be as fine as the METERING raster: standard
+    mode (TAF 7 Lastgang) delivers one reading per 15-min window → a new
+    estimate only at window boundaries (in between the last one is held);
+    full mode (TAF 9/10/14) delivers every minute → estimate every step."""
+    g = convert_osm_lv(LV_GRID, steps=1440)         # real 1-min day
+    data = input_data_from_dicts(g.grid_structure, g.lines, g.load,
+                                 g.generation, g.substation)
+    sim = Simulator(data)
+    sim.meters.apply_preset("all_nodes", sim.net)
+    sim.meters.set_mode("standard")
+
+    def step(t):
+        sim._est_wall = 0.0                         # disarm the compute guard
+        return sim.run_step(t)
+
+    assert step(76).estimated is None               # 01:16 — no boundary yet
+    assert step(75).estimated["step"] == 75         # 75 = window boundary
+    assert step(76).estimated["step"] == 75         # held between boundaries
+    assert step(90).estimated["step"] == 90         # next boundary refreshes
+
+    sim.meters.set_mode("full")                     # TAF 9/10/14: every minute
+    assert step(76).estimated["step"] == 76
+    assert step(77).estimated["step"] == 77
+
+
+@pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
+def test_profile_views_expose_only_their_layer():
+    """Each day-graph view carries only its own data (customer requirement):
+    Lastfluss = full-raster power flow, no estimate, no WLS cost; Gemessen =
+    ONLY metered quantities in the metering raster (standard mode: 15-min
+    window means of P, no voltage/loading); Schätzung = all layers overlaid."""
+    g = convert_osm_lv(LV_GRID, steps=1440)         # real 1-min day
+    data = input_data_from_dicts(g.grid_structure, g.lines, g.load,
+                                 g.generation, g.substation)
+    sim = Simulator(data)
+    sim.meters.apply_preset("substation_trafos", sim.net)
+    bus = next(iter(sim._loads_at))                 # a real consumer bus ...
+    sim.meters.add_node(bus)                        # ... with a smart meter
+
+    # Lastfluss: full raster, nothing measured/estimated attached
+    tr = sim.trafo_profiles(0, view="truth")
+    assert len(tr["power"]) == 1440
+    assert tr["est_power"] is None and tr["measured"] is None
+
+    # Gemessen (full mode / TAF 9-10-14): only the meter's quantities, 1-min
+    m = sim.trafo_profiles(0, view="measured")
+    assert m["power"] == []                         # no truth curve leaks
+    assert m["measured"]["raster_min"] == 1
+    assert m["measured"]["loading"] is not None
+    assert len(m["measured"]["p_hv"]) == 1440
+    n = sim.node_profiles(bus, view="measured")
+    assert n["series"] == [] and n["voltage"] == [] # composition = truth knowledge
+    assert n["measured"]["vm"] is not None
+    unmetered = next(int(b) for b in sim.net.bus.index
+                     if int(b) not in sim.meters.node_buses)
+    assert sim.node_profiles(unmetered, view="measured")["measured"] is None
+    assert sim.line_profiles(0, view="measured")["current"] == []  # lines: no meters
+
+    # Standard mode (TAF 7 Lastgang): 15-min P means only, no voltage
+    sim.meters.set_mode("standard")
+    n2 = sim.node_profiles(bus, view="measured")
+    assert n2["measured"]["vm"] is None
+    assert n2["measured"]["raster_min"] == 15
+    p = n2["measured"]["p_mw"]
+    assert len(p) == 1440
+    assert all(len({v for v in p[w:w + 15] if v is not None}) <= 1
+               for w in range(0, 1440, 15)), "not constant within a 15-min window"
+    assert p != sim.daily_curves()["bus_p"][bus]    # really means, not 1-min truth
+
+    # the Lastfluss/Gemessen path never paid for a WLS run
+    assert "_est" not in sim._daily_by_day[sim.day]
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")

@@ -229,8 +229,26 @@ export interface StepResult {
   trafos?: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
   ext_grids?: { index: number; name: string; p_mw: number; q_mvar: number }[];
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
+  controllers?: GridController[];
   summary?: StepSummary;
   error: string | null;
+}
+
+/** A placed overload controller (netzdienliche Steuerung): throttles EV
+ *  charging / PV feed-in of its scope when the loading limit is exceeded. */
+export interface GridController {
+  id: number;
+  scope: "station" | "bus";
+  bus: number | null;
+  limit_pct: number;
+  release_pct: number;
+  ev_factor: number;
+  pv_factor: number;
+  active: boolean;
+  /** loading the controller last saw of its domain (meters + estimate);
+   *  null = blind, no measurement data at all */
+  seen_pct: number | null;
+  seen_src: "meter" | "estimate" | null;
 }
 
 export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
@@ -291,13 +309,21 @@ export interface BatteryProfiles {
 }
 
 export type NodeSeriesKind = "residential" | "ev" | "pv" | "wind" | "biogas" | "gen";
+/** Which day-graph layers a profile request may carry: truth = full-raster
+ *  power flow, measured = only metered quantities in the metering raster,
+ *  est = all layers overlaid. */
+export type ProfileView = "truth" | "measured" | "est";
 export interface NodeProfiles {
   bus: number;
   name: string;
   steps_per_day: number;
+  view: ProfileView;
   series: { kind: NodeSeriesKind; p_mw: (number | null)[] }[];
   voltage: (number | null)[];
-  est_voltage?: (number | null)[] | null;   // state estimate (meters placed)
+  est_voltage?: (number | null)[] | null;   // state estimate (est view only)
+  /** the node meter's own readings (measured/est view; null = no meter) */
+  measured?: { p_mw: (number | null)[]; vm: (number | null)[] | null;
+               raster_min: number } | null;
 }
 export interface LineProfiles {
   line: number;
@@ -306,9 +332,10 @@ export interface LineProfiles {
   to_bus: number;
   steps_per_day: number;
   rated_i_ka: number | null;
+  view: ProfileView;
   current: (number | null)[];
   loading: (number | null)[];
-  est_current?: (number | null)[] | null;   // state estimate (meters placed)
+  est_current?: (number | null)[] | null;   // state estimate (est view only)
 }
 export interface TrafoProfiles {
   trafo: number;
@@ -317,9 +344,13 @@ export interface TrafoProfiles {
   lv_bus: number;
   steps_per_day: number;
   sn_mva: number | null;
+  view: ProfileView;
   power: (number | null)[];
   loading: (number | null)[];
-  est_power?: (number | null)[] | null;     // state estimate (meters placed)
+  est_power?: (number | null)[] | null;     // state estimate (est view only)
+  /** the trafo meter's own readings (measured/est view; null = no meter) */
+  measured?: { p_hv: (number | null)[]; loading: (number | null)[] | null;
+               raster_min: number } | null;
 }
 
 export interface EngineStatus {
