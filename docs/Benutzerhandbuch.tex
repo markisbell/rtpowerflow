@@ -1054,6 +1054,108 @@ verschärft die Überhöhung, ein Eintrag in \texttt{"batteries"}
 \end{beispiel}
 
 % ===================================================================
+\chapter{Daten exportieren}
+\label{ch:export}
+
+Alles, was die Simulation rechnet, lässt sich als \textbf{CSV-Paket}
+herunterladen --- für die Auswertung in Python, MATLAB oder Excel und
+als Datengrundlage für Übungsblätter. Beide Wege leben im Menü
+\ui{Simulation} unter \ui{Daten-Export}
+(Abbildung~\ref{fig:export}) und erzeugen identisch aufgebaute
+Pakete:
+
+\begin{description}
+  \item[\ui{Tage exportieren}] --- der Standardweg. Die gewünschte
+    Anzahl Tage wird \emph{offline} so schnell wie möglich
+    durchsimuliert, ohne auf die beschleunigte Uhr zu warten: zwei
+    volle Tage des Vorstadtnetzes rechnen in etwa einer Minute,
+    live wären es 48 Minuten. Gerechnet wird die \emph{echte}
+    Live-Physik der aktuellen Konfiguration: Batterien starten bei
+    50\,\% und integrieren über Mitternacht hinweg, Überlast-Regler
+    regeln im geschlossenen Kreis, bei geladenen PV-Messtagen ist
+    jeder exportierte Tag ein anderer realer Solartag. Das kleine
+    Häkchen neben der Tageszahl entscheidet, ob die
+    Zustandsschätzung mitläuft --- im Modus TAF~9/10/14 rechnet sie
+    minütlich und dominiert dann die Exportdauer deutlich. Während des Exports zeigt die Zeile
+    Fortschritt und Restzeit (\ui{Abbrechen} behält das bereits
+    Gerechnete); die Simulation läuft währenddessen normal weiter,
+    rechts in der Menüleiste erscheint ein Fortschritts-Chip.
+  \item[\ui{Live-Sitzung aufzeichnen}] --- für interaktive
+    Vorführungen: Ab dem Klick wird jeder Simulationsschritt
+    mitgeschrieben, \emph{inklusive aller Eingriffe} (Anlagen
+    dazuklicken, Regler platzieren, Messmodus wechseln). Ein rotes
+    \ui{REC}-Zeichen in der Menüleiste zählt die Schritte mit; ein
+    Netzwechsel beendet die Aufzeichnung automatisch sauber ---
+    eine Aufzeichnung gehört immer zu genau einer Konfiguration.
+\end{description}
+
+Fertige Pakete erscheinen darunter als Liste: Ein Klick lädt das
+ZIP, das $\times$ daneben löscht. Auf dem Server liegen die Pakete
+unter \texttt{data/recordings/}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-export}
+  \caption{\ui{Daten-Export} im Menü \ui{Simulation}: oben der
+    laufende Tages-Export mit Fortschritt und \ui{Abbrechen},
+    darunter der Aufzeichnungs-Umschalter und die fertigen Pakete
+    zum Download; rechts in der Menüleiste der Fortschritts-Chip,
+    der auch bei geschlossenem Menü sichtbar bleibt.}
+  \label{fig:export}
+\end{figure}
+
+\section{Der Inhalt eines Pakets}
+
+Ein Paket ist ein ZIP mit \emph{tidy} CSV-Dateien (Komma-getrennt,
+Punkt als Dezimalzeichen, UTF-8 --- direkt lesbar für pandas \&
+Co.; leere Felder bedeuten \glqq nicht verfügbar\grqq):
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Datei & Inhalt (je Zeile: Tag, Schritt, Uhrzeit, \ldots) \\
+\midrule
+\texttt{metadata.json} & das Rezept: Netz, Lastkonfiguration, Messkonzept, Schätz-Richtlinie, Schrittdauer, Version \\
+\texttt{summary.csv} & Systemkennzahlen je Schritt (U min/max, Auslastungen, Bilanz) \\
+\texttt{buses.csv} & Spannung und Einspeisung je Knoten und Schritt \\
+\texttt{lines.csv} & Strom, Auslastung, Wirkfluss je Leitung und Schritt \\
+\texttt{trafos.csv} & Auslastung und OS-Leistung je Transformator und Schritt \\
+\texttt{batteries.csv}, \texttt{controllers.csv} & SOC/Leistung bzw.\ Live-Stellgrößen \\
+\texttt{measurements\_*.csv} & \emph{nur} Messwerte platzierter Geräte, im TAF-Raster \\
+\texttt{estimated\_*.csv} & die Zustandsschätzung, ein Block je Schätz-Zeitpunkt \\
+\texttt{observed\_summary.csv} & Kennzahlen aus Sicht der Messungen \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Dateien entstehen nur, wenn es etwas zu schreiben gibt --- ein Netz
+ohne Batterien enthält keine \texttt{batteries.csv}. Und die
+Ebenen-Treue aus Kapitel~\ref{ch:observability} gilt auch hier: Im
+strikten Modus (\texttt{NETZSIM\_EXPOSE\_GROUND\_TRUTH=false})
+enthält das Paket \emph{keine} Wahrheitsdateien, sondern nur
+Messwerte und Schätzung.
+
+\begin{beispiel}[Übungsdaten in drei Zeilen auswerten]
+Drei exportierte Tage, geöffnet in Python:
+\begin{lstlisting}
+import pandas as pd
+b = pd.read_csv("buses.csv")
+b[b["index"] == 24].plot(x="step", y="vm_pu")  # Spannung am Strangende
+\end{lstlisting}
+Für Übungsblätter besonders nützlich: Den Studierenden nur
+\texttt{measurements\_nodes.csv} und \texttt{metadata.json}
+aushändigen --- also exakt das, was ein Netzbetreiber hätte --- und
+die Aufgabe stellen, daraus den Netzzustand zu rekonstruieren. Die
+zurückgehaltene \texttt{buses.csv} ist die Musterlösung.
+\end{beispiel}
+
+\emph{Dauerbetrieb:} Mit \texttt{NETZSIM\_RECORD=true} zeichnet der
+Server von sich aus alles auf und beginnt bei jedem Netzwechsel ein
+neues Paket --- praktisch für Laborrechner, auf denen nachträglich
+nachvollziehbar sein soll, was simuliert wurde.
+
+% ===================================================================
 \chapter{Eigene Netze zeichnen (gridedit)}
 \label{ch:gridedit}
 
@@ -1289,6 +1391,9 @@ GET, POST, DEL & \api{/controller\ldots} & Überlast-Regler verwalten (Abschnitt
 GET & \api{/node/\{bus\}/profiles} u.\,ä. & Tagesverläufe je Element; \api{?view=truth|measured|est} wählt die Datenebene der Sicht \\
 GET, POST, DEL & \api{/measurements\ldots} & Messungen platzieren, Presets, TAF-Modus \\
 GET, POST, DEL & \api{/scenarios\ldots} & Szenarien speichern/laden/löschen \\
+POST & \api{/export/days} & ganze Tage offline in ein CSV-Paket exportieren (Kapitel~\ref{ch:export}) \\
+GET, POST & \api{/export}, \api{/export/cancel} & Export-Fortschritt, Abbruch \\
+GET, POST, DEL & \api{/recording\ldots}, \api{/recordings\ldots} & Live-Aufzeichnung steuern; Pakete listen, als ZIP laden, löschen \\
 \bottomrule
 \end{longtable}
 }
