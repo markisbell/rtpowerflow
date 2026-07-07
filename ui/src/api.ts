@@ -17,9 +17,12 @@ import type {
   NodeDer,
   Scenario,
   MeterPreset,
+  ExportStatus,
   NodeProfiles,
   ProfileView,
   PvDays,
+  RecordingStatus,
+  RecordingsResponse,
   StepResult,
   Topology,
   TrafoProfiles,
@@ -139,6 +142,17 @@ export const api = {
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
   meterMode: (name: MeterMode) =>
     post<MeasurementsResponse>(`/measurements/mode?name=${name}`),
+
+  recording: () => get<RecordingStatus>("/recording"),
+  recordingStart: () => post<RecordingStatus>("/recording/start", {}),
+  recordingStop: () => post<RecordingStatus>("/recording/stop"),
+  recordings: () => get<RecordingsResponse>("/recordings"),
+  deleteRecording: (id: string) => del<{ deleted: string }>(`/recordings/${id}`),
+  recordingDownloadUrl: (id: string) => `${API}/recordings/${id}/download`,
+  exportDays: (days: number, estimate: boolean) =>
+    post<ExportStatus>("/export/days", { days, estimate }),
+  exportStatus: () => get<ExportStatus>("/export"),
+  exportCancel: () => post<ExportStatus>("/export/cancel"),
 };
 
 export function wsUrl(): string {
