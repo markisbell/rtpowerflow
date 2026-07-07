@@ -476,6 +476,27 @@ state estimation.
   bypass the observability layer; gate them too if strict end-to-end hiding is
   needed.
 
+### Overload controllers (feature/control branch)
+
+Placeable **netzdienliche Steuerung** (`controller.py`, modelled after §14a
+EnWG dimming + Einspeisemanagement): a controller placed like a battery/meter
+(element menu on a node or the trafo) watches the loading of its domain and
+throttles EV charging or PV feed-in stepwise (−25 pp per violating step) when
+`limit_pct` (default 100 %) is exceeded, releasing with hysteresis (+5 pp per
+step below `release_pct` 80 %). Closed loop: factors from the CURRENT solved
+step act on the NEXT one. The lever follows the flow direction: net-exporting
+domain → PV, net-importing → EV. Scopes: `station` (whole grid, badge at the
+LV busbar) and `bus` (that node's DERs, reacting to its adjacent lines).
+Factors are applied in `_apply_step` BEFORE batteries; `StepResult.controllers`
+carries live factors; scenarios store `controllers` like batteries. API:
+`GET /controllers`, `POST /controller`, `POST /controller/{id}/config`,
+`DELETE /controller/{id}`. UI: 🎛️ menu items, section block (limit input +
+live EV/PV factors + status), 🎛️ badges. Tests: `tests/test_controller.py`.
+Verified on the reference scenarios: #2 evening 107 % → 90 % via EV dimming
+(PV untouched), #3 midday 111 % → 81 % via PV curtailment (EV untouched).
+Known limitation: the daily-sweep curves (day graphs) show the UNCONTROLLED
+day — controllers act only in the live loop.
+
 ### Scenarios (saved live setups for education/demos)
 
 A scenario is a **recipe, not a snapshot** (`scenarios.py`, files under

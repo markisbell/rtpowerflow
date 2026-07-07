@@ -229,8 +229,22 @@ export interface StepResult {
   trafos?: { index: number; name: string; hv_bus: number; lv_bus: number; loading_percent: number; p_hv_mw: number; q_hv_mvar: number; i_hv_ka: number; pl_mw: number }[];
   ext_grids?: { index: number; name: string; p_mw: number; q_mvar: number }[];
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
+  controllers?: GridController[];
   summary?: StepSummary;
   error: string | null;
+}
+
+/** A placed overload controller (netzdienliche Steuerung): throttles EV
+ *  charging / PV feed-in of its scope when the loading limit is exceeded. */
+export interface GridController {
+  id: number;
+  scope: "station" | "bus";
+  bus: number | null;
+  limit_pct: number;
+  release_pct: number;
+  ev_factor: number;
+  pv_factor: number;
+  active: boolean;
 }
 
 export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";

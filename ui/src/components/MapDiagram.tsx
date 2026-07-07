@@ -12,6 +12,7 @@ interface Props {
   onSelectLine?: (line: number, additive: boolean, at?: { x: number; y: number }) => void;
   onSelectTrafo?: (trafo: number, additive: boolean, at?: { x: number; y: number }) => void;
   batteryBuses?: number[];
+  controllerBuses?: number[];   // 🎛 overload controllers (station = LV busbar)
   meterBuses?: number[];
   meterTrafos?: number[];
   evBuses?: number[];          // runtime DER state (falls back to the topology)
@@ -44,7 +45,7 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [], meterBuses = [], meterTrafos = [], evBuses, pvBuses, revealTruth = false }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [], controllerBuses = [], meterBuses = [], meterTrafos = [], evBuses, pvBuses, revealTruth = false }: Props) {
   const { t, i18n } = useTranslation();
   const onSelectRef = useRef(onSelectBus);
   onSelectRef.current = onSelectBus;
@@ -274,12 +275,14 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     equipRef.current.forEach((m) => map.removeLayer(m));
     equipRef.current = [];
     const bats = new Set(batteryBuses);
+    const ctrls = new Set(controllerBuses);
     const mets = new Set(meterBuses);
     const evs = new Set(evBuses ?? topo.ev_buses ?? []);
     const pvs = new Set(pvBuses ?? topo.pv_buses ?? []);
     for (const b of topo.buses) {
       if (!b.geo) continue;
-      const tags = (bats.has(b.id) ? "\u{1F50B}" : "") + (mets.has(b.id) ? "\u{1F4DF}" : "")
+      const tags = (bats.has(b.id) ? "\u{1F50B}" : "") + (ctrls.has(b.id) ? "\u{1F39B}️" : "")
+                 + (mets.has(b.id) ? "\u{1F4DF}" : "")
                  + (evs.has(b.id) ? "\u{1F50C}" : "") + (pvs.has(b.id) ? "☀️" : "");
       if (!tags) continue;
       const m = L.marker([b.geo[1], b.geo[0]], {
@@ -289,7 +292,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       equipRef.current.push(m);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topo, batKey, meterKey, (evBuses ?? []).join(","), (pvBuses ?? []).join(","), i18n.language]);
+  }, [topo, batKey, controllerBuses.join(","), meterKey, (evBuses ?? []).join(","), (pvBuses ?? []).join(","), i18n.language]);
 
   // apply the voltage layer: hide/show buses + lines by level. Station (trafo)
   // markers stay visible in every layer — they anchor both grids. Runs after

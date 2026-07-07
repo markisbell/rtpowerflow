@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
@@ -42,6 +42,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
   const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [controllers, setControllers] = useState<GridController[]>([]);
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
@@ -64,6 +65,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const reloadBatteries = () => api.batteries()
     .then((r) => { setBatteries(r.batteries); setBatModes(r.modes); setBatHasPrices(r.has_prices); })
     .catch(() => {});
+  const reloadControllers = () => api.controllers()
+    .then((r) => setControllers(r.controllers)).catch(() => {});
   const reloadMeasurements = () => api.measurements().then(setPlacement).catch(() => {});
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
     api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadBatteries();
+    reloadControllers();
     reloadMeasurements();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
@@ -99,7 +103,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   }, [measStamp]);
 
   // drop stale sections when the grid changes; batteries + meters reset with it
-  useEffect(() => { setSections([]); setMenu(null); reloadBatteries(); reloadMeasurements(); }, [topo?.name]);
+  useEffect(() => { setSections([]); setMenu(null); reloadBatteries(); reloadControllers(); reloadMeasurements(); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -115,6 +119,11 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     const bus = busForElement(kind, id);
     return bus == null ? undefined : batteries.find((b) => b.bus === bus);
   };
+  // a station controller lives on the trafo, a bus controller on its node
+  const controllerAt = (kind: SelKind, id: number): GridController | undefined =>
+    kind === "trafo" ? controllers.find((c) => c.scope === "station")
+      : kind === "bus" ? controllers.find((c) => c.scope === "bus" && c.bus === id)
+      : undefined;
 
   const pinSection = (kind: SelKind, id: number) =>
     setSections((prev) => {
@@ -137,9 +146,18 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
         (s.kind === "trafo" && topo.trafos.find((tr) => tr.id === s.id)?.lv_bus === bus));
       const add = batteries.filter((b) => !covered(b.bus))
         .map((b) => ({ kind: "bus" as const, id: b.bus, open: false }));
-      return add.length ? [...prev, ...add] : prev;
+      // controllers keep a section alive too (station -> its trafo section)
+      const ctrlSecs = controllers
+        .map((c) => (c.scope === "bus"
+          ? { kind: "bus" as const, id: c.bus ?? -1, open: false }
+          : topo.trafos[0] ? { kind: "trafo" as const, id: topo.trafos[0].id, open: false } : null))
+        .filter((s): s is { kind: "bus" | "trafo"; id: number; open: boolean } =>
+          s !== null && s.id >= 0
+          && !prev.some((p) => p.kind === s.kind && p.id === s.id)
+          && !add.some((a) => a.kind === s.kind && a.id === s.id));
+      return add.length || ctrlSecs.length ? [...prev, ...add, ...ctrlSecs] : prev;
     });
-  }, [batteries, topo]);
+  }, [batteries, controllers, topo]);
 
   // ---- element clicks: plain click opens the action menu, ctrl-click pins -- //
   const elemName = (kind: SelKind, id: number): string => {
@@ -175,6 +193,23 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     // deploys with the default strategy; switched later in the node's section
     try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode: "self" }); } finally { reloadBatteries(); }
     pinSection(kind, id);
+  };
+  const addControllerAt = async (kind: SelKind, id: number) => {
+    try {
+      if (kind === "trafo") await api.addController({ scope: "station" });
+      else if (kind === "bus") await api.addController({ scope: "bus", bus: id });
+      else return;
+    } finally { reloadControllers(); }
+    pinSection(kind, id);
+  };
+  const removeControllerById = async (cid: number) => {
+    try { await api.removeController(cid); } finally { reloadControllers(); }
+  };
+  const setControllerLimitAt = async (cid: number, pct: number) => {
+    try {
+      const r = await api.setControllerLimit(cid, pct);
+      setControllers(r.controllers);
+    } catch { reloadControllers(); }
   };
   const addPvAt = async (bus: number) => {
     await api.addPv(bus, 5);
@@ -282,7 +317,14 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
 
   // menu context (only while open)
   const menuBattery = menu ? batteryAt(menu.kind, menu.id) : undefined;
+  const menuController = menu ? controllerAt(menu.kind, menu.id) : undefined;
   const menuMetered = menu ? meteredElem(menu.kind, menu.id) : false;
+
+  // 🎛 badge positions: bus controllers at their node, the station controller
+  // at the LV busbar of the (first) transformer
+  const controllerBuses = controllers
+    .map((c) => (c.scope === "bus" ? c.bus ?? -1 : topo?.trafos[0]?.lv_bus ?? -1))
+    .filter((b) => b >= 0);
 
   // drag the panel's left edge to widen it (and the graphs, which are width:100%)
   const startResize = (e: React.MouseEvent) => {
@@ -298,11 +340,13 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
       <div className="diagram-wrap">
         {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
+                      controllerBuses={controllerBuses}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         ) : (
           <GridDiagram topo={topo} latest={frame} showValues={showValues} batteryBuses={batteryBuses}
+                       controllerBuses={controllerBuses}
                        onSelectBus={selectBus} selectedBuses={selBuses}
                        onSelectLine={selectLine} selectedLines={selLines}
                        onSelectTrafo={selectTrafo} selectedTrafos={selTrafos}
@@ -318,6 +362,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           hasMeter={menuMetered}
           hasPv={menu.kind === "bus" && pvBuses.includes(menu.id)}
           hasEv={menu.kind === "bus" && evBuses.includes(menu.id)}
+          hasController={!!menuController}
+          onAddController={() => addControllerAt(menu.kind, menu.id)}
+          onRemoveController={() => menuController && removeControllerById(menuController.id)}
           onGraph={() => pinSection(menu.kind, menu.id)}
           onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onAddPv={() => { if (menu.kind === "bus") addPvAt(menu.id); }}
@@ -411,13 +458,16 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           const key = `${sec.kind}${sec.id}`;
           const name = elemName(sec.kind, sec.id);
           const bat = batteryAt(sec.kind, sec.id);
+          const ctrl = controllerAt(sec.kind, sec.id);
+          const liveCtrl = ctrl ? latest?.controllers?.find((c) => c.id === ctrl.id) ?? ctrl : undefined;
           const metered = meteredElem(sec.kind, sec.id);
           const nm = sec.kind === "bus" ? liveNodeMeas.get(sec.id) : undefined;
           const tm = sec.kind === "trafo" ? liveTrafoMeas.get(sec.id) : undefined;
           const live = bat ? batLive[bat.index] : undefined;
           return (
             <Section key={key} title={elemTitle(sec.kind, sec.id)} open={sec.open}
-                     badges={[...(bat ? ["🔋"] : []), ...(metered ? ["📟"] : []),
+                     badges={[...(bat ? ["🔋"] : []), ...(ctrl ? ["🎛️"] : []),
+                              ...(metered ? ["📟"] : []),
                               ...(sec.kind === "bus" && evBuses.includes(sec.id) ? ["🔌"] : []),
                               ...(sec.kind === "bus" && pvBuses.includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
@@ -470,6 +520,24 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                   <BatteryProfile embedded key={`${bat.index}-${bat.mode}`} idx={bat.index} now={nowFrac} day={curDay} />
                   <button className="ghost" style={{ fontSize: "0.68rem", padding: "1px 6px", marginTop: 4 }}
                           onClick={() => removeBattery(bat.index)}>{t("menu.removeBattery")}</button>
+                </div>
+              )}
+
+              {ctrl && liveCtrl && (
+                <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>🎛️ {t("ctrl.title")}</span>
+                    <ControllerLimit ctrl={ctrl} onLimit={(p) => setControllerLimitAt(ctrl.id, p)} />
+                    <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
+                            onClick={() => removeControllerById(ctrl.id)}>✕</button>
+                  </div>
+                  <Stat label={t("ctrl.evF")} value={`${Math.round(liveCtrl.ev_factor * 100)} %`}
+                        color={liveCtrl.ev_factor < 1 ? "#f2ae00" : undefined} />
+                  <Stat label={t("ctrl.pvF")} value={`${Math.round(liveCtrl.pv_factor * 100)} %`}
+                        color={liveCtrl.pv_factor < 1 ? "#f2ae00" : undefined} />
+                  <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
+                    {liveCtrl.active ? `⚡ ${t("ctrl.active")}` : t("ctrl.idle")}
+                  </div>
                 </div>
               )}
             </Section>
@@ -597,6 +665,24 @@ function BatterySize({ bat, free, onSize }: {
           {t("bat.apply")}
         </button>
       )}
+    </span>
+  );
+}
+
+function ControllerLimit({ ctrl, onLimit }: {
+  ctrl: GridController; onLimit: (pct: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [v, setV] = useState(ctrl.limit_pct);
+  useEffect(() => setV(ctrl.limit_pct), [ctrl.limit_pct]);
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: "0.72rem" }}
+          title={t("ctrl.limitTitle")}>
+      {t("ctrl.limit")}
+      <input type="number" min={20} max={150} step={5} value={v} style={{ ...numStyle, width: 52 }}
+             onChange={(e) => setV(+e.target.value)}
+             onBlur={() => v !== ctrl.limit_pct && v >= 20 && v <= 150 && onLimit(v)}
+             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> %
     </span>
   );
 }

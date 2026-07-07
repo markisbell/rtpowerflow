@@ -7,6 +7,7 @@ import type {
   BatteryMode,
   BatteryProfiles,
   EngineStatus,
+  GridController,
   GridPreview,
   GridsResponse,
   LineProfiles,
@@ -122,6 +123,14 @@ export const api = {
     post<BatteriesResponse>(`/battery/${index}/mode?name=${mode}`),
   setBatterySize: (index: number, capacity_kwh: number, power_kw: number) =>
     post<BatteriesResponse>(`/battery/${index}/size?capacity_kwh=${capacity_kwh}&power_kw=${power_kw}`),
+
+  // overload controllers (netzdienliche Steuerung)
+  controllers: () => get<{ controllers: GridController[] }>("/controllers"),
+  addController: (body: { scope: "station" | "bus"; bus?: number | null; limit_pct?: number }) =>
+    post<GridController>("/controller", body),
+  removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
+  setControllerLimit: (id: number, limit_pct: number) =>
+    post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
   meterPreset: (name: MeterPreset) =>
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
   meterMode: (name: MeterMode) =>

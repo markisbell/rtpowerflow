@@ -89,6 +89,15 @@ const en = {
   },
 
   graph: { uhr: "{{time}}", est: "Estimate" },
+  ctrl: {
+    title: "Overload controller",
+    limit: "limit",
+    limitTitle: "Curtail while the loading of the domain exceeds this",
+    evF: "EV charging at",
+    pvF: "PV feed-in at",
+    active: "curtailing (loading above limit)",
+    idle: "standing by — no overload",
+  },
   axis: {
     time: "Time / h",
     power: "Power / kW",
@@ -208,6 +217,8 @@ const en = {
   menu: {
     graph: "Daily profile", addMeter: "Place meter", removeMeter: "Remove meter",
     addBattery: "Add battery", addBatteryTrafo: "Battery @ LV busbar",
+    addController: "Place controller", addControllerTrafo: "Grid controller @ station",
+    removeController: "Remove controller",
     removeBattery: "Remove battery",
     addPv: "Add PV system", addEv: "Add EV charging",
     removePv: "Remove PV system", removeEv: "Remove EV charging",
@@ -347,6 +358,15 @@ const de: typeof en = {
   },
 
   graph: { uhr: "{{time}} Uhr", est: "Schätzung" },
+  ctrl: {
+    title: "Überlast-Regler",
+    limit: "Grenze",
+    limitTitle: "Drosselt, solange die Auslastung im Regelbereich über dieser Grenze liegt",
+    evF: "E-Auto-Ladung auf",
+    pvF: "PV-Einspeisung auf",
+    active: "regelt (Auslastung über Grenze)",
+    idle: "bereit — keine Überlast",
+  },
   axis: {
     time: "Zeit / h",
     power: "Leistung / kW",
@@ -466,6 +486,8 @@ const de: typeof en = {
   menu: {
     graph: "Tagesverlauf", addMeter: "Messung platzieren", removeMeter: "Messung entfernen",
     addBattery: "Batterie hinzufügen", addBatteryTrafo: "Batterie @ NS-Sammelschiene",
+    addController: "Regler platzieren", addControllerTrafo: "Netzregler @ Station",
+    removeController: "Regler entfernen",
     removeBattery: "Batterie entfernen",
     addPv: "PV-Anlage hinzufügen", addEv: "E-Auto-Ladung hinzufügen",
     removePv: "PV-Anlage entfernen", removeEv: "E-Auto-Ladung entfernen",

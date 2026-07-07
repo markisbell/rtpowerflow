@@ -13,6 +13,7 @@ import pandapower as pp
 
 from . import battery as bat
 from .battery import MODES, Battery
+from .controller import SCOPES, Controller
 from .data_loader import InputData
 from .estimator import EstConfig, Estimator
 from .measurements import MeasurementSet
@@ -34,6 +35,8 @@ class StepResult:
     trafos: list[dict[str, Any]] = field(default_factory=list)
     ext_grids: list[dict[str, Any]] = field(default_factory=list)
     batteries: list[dict[str, Any]] = field(default_factory=list)
+    # placed overload controllers with their live curtailment factors
+    controllers: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
     # Observability projection: what the placed measurement devices reveal (see
@@ -122,6 +125,9 @@ class Simulator:
 
         # local battery storage (added at runtime); prices drive the "price" mode.
         self.batteries: list[Battery] = []
+        # placed overload controllers (like batteries: per-simulator, reset on swap)
+        self.controllers: list[Controller] = []
+        self._next_cid = 1
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
         self._loads_at: dict[int, list[int]] = {}
         for i, li in enumerate(self.prof.load_idx):
@@ -252,6 +258,94 @@ class Simulator:
             self._daily_by_day.clear()
             return True
         return False
+
+    # -- overload controllers (netzdienliche Steuerung) -------------------- #
+    def add_controller(self, scope: str = "station", bus: int | None = None,
+                       limit_pct: float = 100.0) -> Controller:
+        """Place an overload controller — ``station`` throttles all EV/PV of
+        the grid on trafo/line overload, ``bus`` only the DERs at one node
+        (reacting to the lines that touch it)."""
+        if scope not in SCOPES:
+            raise ValueError(f"scope must be one of {SCOPES}")
+        if scope == "bus" and (bus is None or bus not in self.net.bus.index):
+            raise KeyError(bus)
+        c = Controller(cid=self._next_cid, scope=scope,
+                       bus=int(bus) if bus is not None else None,
+                       limit_pct=float(limit_pct))
+        self._next_cid += 1
+        self.controllers.append(c)
+        return c
+
+    def remove_controller(self, cid: int) -> bool:
+        n = len(self.controllers)
+        self.controllers = [c for c in self.controllers if c.cid != cid]
+        return len(self.controllers) != n
+
+    def set_controller(self, cid: int, limit_pct: float) -> bool:
+        for c in self.controllers:
+            if c.cid == cid:
+                c.limit_pct = float(limit_pct)
+                c.release_pct = min(c.release_pct, c.limit_pct - 5.0)
+                return True
+        return False
+
+    def _controller_rows(self, c: Controller) -> tuple[list[int], list[int]]:
+        """Profile row indices (EV loads, PV sgens) in the controller's scope."""
+        ev_rows = [i for i, li in enumerate(self.prof.load_idx)
+                   if "EV_" in str(self.net.load.at[li, "name"] or "")
+                   and (c.scope == "station"
+                        or int(self.net.load.at[li, "bus"]) == c.bus)]
+        pv_rows = [i for i, si in enumerate(self.prof.sgen_idx)
+                   if i < len(self._sgen_is_pv) and self._sgen_is_pv[i]
+                   and (c.scope == "station"
+                        or int(self.net.sgen.at[si, "bus"]) == c.bus)]
+        return ev_rows, pv_rows
+
+    def _apply_controller_factors(self) -> None:
+        """Scale EV loads / PV sgens by the strictest covering controller —
+        called after the step profiles are written, before the batteries."""
+        ev_f: dict[int, float] = {}
+        pv_f: dict[int, float] = {}
+        for c in self.controllers:
+            ev_rows, pv_rows = self._controller_rows(c)
+            for i in ev_rows:
+                ev_f[i] = min(ev_f.get(i, 1.0), c.ev_factor)
+            for i in pv_rows:
+                pv_f[i] = min(pv_f.get(i, 1.0), c.pv_factor)
+        for i, f in ev_f.items():
+            if f < 1.0:
+                li = self.prof.load_idx[i]
+                self.net.load.at[li, "p_mw"] *= f
+                self.net.load.at[li, "q_mvar"] *= f
+        for i, f in pv_f.items():
+            if f < 1.0:
+                si = self.prof.sgen_idx[i]
+                self.net.sgen.at[si, "p_mw"] *= f
+                self.net.sgen.at[si, "q_mvar"] *= f
+
+    def _controller_update(self, res: "StepResult") -> None:
+        """One control step per controller from the freshly solved loadings."""
+        for c in self.controllers:
+            if c.scope == "station":
+                s = res.summary
+                vals = [s.get("max_line_loading_percent"),
+                        s.get("max_trafo_loading_percent")]
+                vals = [v for v in vals if v is not None]
+                loading = max(vals) if vals else None
+                exporting = (s.get("total_gen_mw") or 0.0) > (s.get("total_load_mw") or 0.0)
+            else:
+                loading = max((ln["loading_percent"] for ln in res.lines
+                               if ln.get("loading_percent") is not None
+                               and c.bus in (ln.get("from_bus"), ln.get("to_bus"))),
+                              default=None)
+                sg = self.net.sgen
+                ld = self.net.load
+                gen = float(self.net.res_sgen.loc[sg.index[sg["bus"] == c.bus], "p_mw"].sum()) \
+                    if len(self.net.res_sgen) else 0.0
+                load = float(self.net.res_load.loc[ld.index[ld["bus"] == c.bus], "p_mw"].sum()) \
+                    if len(self.net.res_load) else 0.0
+                exporting = gen > load
+            c.update(loading, exporting)
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -566,6 +660,10 @@ class Simulator:
         if p.ext_idx:
             self.net.ext_grid.loc[p.ext_idx, "vm_pu"] = p.ext_vm[:, t]
             self.net.ext_grid.loc[p.ext_idx, "va_degree"] = p.ext_va[:, t]
+        # overload controllers throttle EV/PV before the batteries react, so a
+        # battery sees the actually available (curtailed) local generation/load
+        if self.controllers:
+            self._apply_controller_factors()
         if self.batteries:
             self._apply_batteries(self.net, self.batteries, p, sgen_col, self.day, t,
                                   24.0 / self.steps_per_day, self._loads_at, self._sgens_at,
@@ -608,6 +706,10 @@ class Simulator:
         solve_ms = (time.perf_counter() - t0) * 1000.0
 
         res = self._collect(step, day, t, converged, solve_ms, error)
+        # closed control loop: factors computed from THIS solved step throttle
+        # the NEXT one (a field controller also reacts only after measuring)
+        if converged and self.controllers:
+            self._controller_update(res)
         # state estimation (the operator's calculated view) — only meaningful
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
@@ -698,6 +800,7 @@ class Simulator:
                 "soc_percent": _r(b.soc_frac() * 100.0), "p_mw": _r(p_mw),
                 "capacity_kwh": _r(b.capacity_mwh * 1000.0), "power_kw": _r(b.power_mw * 1000.0),
             })
+        res.controllers = [c.as_dict() for c in self.controllers]
 
         vm = net.res_bus.vm_pu
         loadings = net.res_line.loading_percent
