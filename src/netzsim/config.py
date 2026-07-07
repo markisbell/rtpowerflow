@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # PV days; drive the battery "price" strategy.
     awattar_file: Path = Path("./data/awattar_prices.json")
 
+    # Session recordings (CSV export of every published step, see recorder.py).
+    # record=True starts a recording on startup and after every grid apply /
+    # scenario load (continuous operation); default is opt-in via the API/UI.
+    recordings_dir: Path = Path("./data/recordings")
+    record: bool = False
+
     # CORS (comma-separated origins; "*" allows any)
     cors_origins: str = "*"
 
