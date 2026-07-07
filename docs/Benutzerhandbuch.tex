@@ -70,12 +70,13 @@ Das didaktische Kernkonzept ist die Trennung von drei Sichten auf
 dasselbe Netz:
 
 \begin{description}
-  \item[Wahrheit] Der vollständige, physikalisch gelöste Lastfluss ---
-    das, was im Netz \emph{tatsächlich} passiert. In der Realität kennt
-    ihn niemand.
-  \item[Beobachtung] Nur das, was platzierte Messgeräte (Smart Meter,
-    Trafo-Messungen) tatsächlich erfassen. Ein frisches Netz ist
-    nahezu unbeobachtbar --- genau wie ein reales Ortsnetz.
+  \item[Lastfluss (Wahrheit)] Der vollständige, physikalisch gelöste
+    Lastfluss --- das, was im Netz \emph{tatsächlich} passiert. In der
+    Realität kennt ihn niemand.
+  \item[Gemessen] Nur das, was platzierte Messgeräte (Smart Meter,
+    Trafo-Messungen) tatsächlich erfassen --- und nur in dem Zeitraster,
+    das der gewählte Messmodus liefert. Ein frisches Netz ist nahezu
+    unbeobachtbar, genau wie ein reales Ortsnetz.
   \item[Schätzung] Das, was ein Netzbetreiber aus den wenigen Messwerten
     per WLS-Zustandsschätzung \emph{berechnen} kann --- inklusive des
     Fehlers, den diese Rechnung gegenüber der Wahrheit macht.
@@ -231,7 +232,7 @@ Menüleiste am oberen Rand bündelt alle Funktionen
   \item[\ui{Simulation}] Start/Pause sowie die komplette
     Szenarien-Verwaltung (Kapitel~\ref{ch:scenarios}).
   \item[\ui{Ansicht}] Darstellung (Karte/Schema/Werte) und Sicht
-    (Wahrheit / Nur beobachtet / Schätzung,
+    (Lastfluss / Gemessen / Schätzung,
     Kapitel~\ref{ch:observability}).
   \item[\ui{Messungen}] Mess-Presets, TAF-Modus und die aktuelle
     Abdeckung.
@@ -554,10 +555,18 @@ Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
         Nennleistung in beide Richtungen ($\pm$250~kVA) ---
         Rückspeisung erscheint als negativer Ast.
     \end{itemize}
+    Die Tagesdiagramme folgen der gewählten \ui{Sicht}
+    (Abschnitt~\ref{sec:sichten}): Im \ui{Lastfluss} zeigen sie die
+    volle Wahrheit im Minutenraster, in \ui{Gemessen} nur die
+    Messgrößen des Elements im Messraster, in der \ui{Schätzung}
+    alle Ebenen überlagert.
   \item \ui{Messung platzieren} / \ui{entfernen} --- siehe
     Kapitel~\ref{ch:observability}.
   \item \ui{Batterie hinzufügen}, \ui{PV-Anlage hinzufügen},
     \ui{E-Auto-Ladung hinzufügen} --- siehe Kapitel~\ref{ch:der}.
+  \item \ui{Regler platzieren} (an der Station: \ui{Netzregler}) ---
+    die netzdienliche Steuerung gegen Überlast,
+    Abschnitt~\ref{sec:controller}.
 \end{itemize}
 
 \begin{beispiel}
@@ -612,7 +621,7 @@ in der Übersicht laufend angezeigt (Abbildung~\ref{fig:beobachtet}).
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-beobachtet}
-  \caption{Sicht \ui{Nur beobachtet}: nur vier Knoten
+  \caption{Sicht \ui{Gemessen}: nur vier Knoten
     und der Stations-Trafo tragen Messungen --- alles andere ist grau
     und unbekannt. Die Übersicht zeigt ausschließlich gemessene
     Größen samt Messabdeckung (4/62 Knoten).}
@@ -643,24 +652,53 @@ Diagrammen sichtbar.
 \end{beispiel}
 
 \section{Die drei Ansichtsmodi}
+\label{sec:sichten}
 
 Im Menü \ui{Ansicht} wählt man unter \ui{Sicht}:
 
 \begin{description}
-  \item[\ui{Wahrheit (Lastfluss)}] Der echte Lastfluss wird
+  \item[\ui{Lastfluss (Wahrheit)}] Der echte Lastfluss wird
     vollständig eingeblendet --- die Vergleichs- und Lehransicht.
-  \item[\ui{Nur beobachtet}] Werte nur an platzierten
+  \item[\ui{Gemessen}] Werte nur an platzierten
     Messungen, alles andere grau. Der Standardblick des Betreibers.
   \item[\ui{Schätzung}] Die WLS-Zustandsschätzung wird wie ein
     Lastfluss dargestellt (siehe unten).
 \end{description}
 
+Jede Sicht zeigt --- und lädt --- konsequent nur ihre eigene
+Datenlage. Am deutlichsten wird das in den angehefteten
+Tagesdiagrammen:
+
+\begin{description}[nosep]
+  \item[\ui{Lastfluss}] Alle Größen (Lasten an den Knoten, Ströme in
+    den Leitungen, Trafo-Auslastung) liegen im vollen
+    \textbf{1-Minuten-Raster} der Simulation vor; eine
+    Zustandsschätzung wird hier gar nicht erst gerechnet, die
+    Diagramme laden entsprechend schnell.
+  \item[\ui{Gemessen}] Es erscheint ausschließlich, was das Messgerät
+    des Elements wirklich liefert --- im Raster des gewählten
+    Messmodus: \ui{TAF 9/10/14} minütlich mit Spannung, \ui{TAF 7}
+    nur als \textbf{15-Minuten-Mittelwert der Wirkleistung}, ohne
+    Spannung (die Kurve wird zur Treppenfunktion). Die gemessene
+    Netz-Wirkleistung eines Knotens kann bei PV-Einspeisung negativ
+    werden --- kein Messgerät kennt dagegen die Aufteilung in
+    Haushalt/E-Auto/PV, sie wird hier bewusst nicht gezeigt. Knoten
+    ohne Messung und sämtliche Leitungen zeigen statt eines
+    Diagramms einen Hinweis: Leitungen tragen keine Messgeräte,
+    ihre Ströme existieren nur im Lastfluss oder in der Schätzung.
+  \item[\ui{Schätzung}] Die Diagramme überlagern alle drei Ebenen:
+    die Wahrheitskurve, die Messwerte (fast-weiße \glqq
+    Geräte\grqq-Kurve) und die Schätzkurve --- so ist unmittelbar
+    sichtbar, wie nah die Schätzung an der Wahrheit liegt und
+    welche Stützstellen sie dafür hatte.
+\end{description}
+
 \begin{beispiel}[Die Summe lügt nicht --- sie ist nur unvollständig]
 Im Screenshot (Abbildung~\ref{fig:beobachtet}) meldet die Übersicht
-\glqq gemessene Last ($\Sigma$) 6{,}5~kW\grqq{} --- die Wahrheit im
-selben Moment: 149{,}5~kW. Die 6{,}5~kW sind schlicht die Summe der
+\glqq gemessene Last ($\Sigma$) 10{,}6~kW\grqq{} --- die Wahrheit im
+selben Moment: 154{,}8~kW. Die 10{,}6~kW sind schlicht die Summe der
 vier gemessenen Hausanschlüsse. Wer nur auf Messwerte schaut, sieht
-4\,\% des Geschehens; die \glqq gemessen max Trafo 70{,}4\,\%\grqq{}
+7\,\% des Geschehens; die \glqq gemessen max Trafo 67{,}6\,\%\grqq{}
 der Stationsmessung ist dagegen belastbar, weil durch den Trafo
 \emph{alles} fließt. Diese Asymmetrie --- Summenmessung top,
 Ortsauflösung null --- ist der Kern des Beobachtbarkeitsproblems.
@@ -694,9 +732,16 @@ Betreiber tatsächlich hat:
 Die Übersicht zeigt neben den geschätzten Kennzahlen den
 \ui{Schätzfehler max $|\Delta U|$} gegen die Wahrheit.
 Abbildung~\ref{fig:schaetzung} zeigt die Schätz-Ansicht mit nur fünf
-Messgeräten. Auf großen Netzen wird die Schätzung automatisch
-gedrosselt (sie rechnet dann z.\,B. nur jeden dritten Schritt), damit
-die Simulation flüssig bleibt.
+Messgeräten.
+
+Die Schätzung rechnet dabei im \emph{Messraster}: Im Modus
+\ui{TAF 9/10/14} liefern die Geräte minütlich neue Werte, also wird
+minütlich neu geschätzt. Im Modus \ui{TAF 7} kommt nur alle
+15~Minuten ein neuer Lastgangwert --- eine neue Schätzung entsteht
+folglich nur an den Viertelstundengrenzen, dazwischen hält sie den
+letzten Stand. Auf großen Netzen wird zusätzlich automatisch
+gedrosselt (die Schätzung rechnet dann z.\,B. nur jeden dritten
+Schritt), damit die Simulation flüssig bleibt.
 
 \begin{figure}[htbp]
   \centering
@@ -730,7 +775,7 @@ Messungen schlagen viele schlecht platzierte} --- Strangenden zuerst.
 \end{beispiel}
 
 % ===================================================================
-\chapter{Anlagen: Batterien, PV, E-Autos}
+\chapter{Anlagen und Regler: Batterien, PV, E-Autos, Steuerung}
 \label{ch:der}
 
 Alle Anlagen lassen sich zur Laufzeit über das Element-Menü eines
@@ -799,9 +844,94 @@ gesteuertes Laden (\S\,14a EnWG) im Kleinen --- ohne dass ein
 einziger Kunde weniger Energie bekommt.
 \end{beispiel}
 
-\emph{Wichtig:} Laufzeit-Anlagen gehören zum aktuell geladenen Netz.
-Ein Netzwechsel setzt sie zurück --- wer ein Setup behalten möchte,
-speichert es als Szenario (Kapitel~\ref{ch:scenarios}).
+\section{Überlast-Regler (netzdienliche Steuerung)}
+\label{sec:controller}
+
+Der Überlast-Regler ist das Werkzeug, um Abhilfe \emph{im} Netz zu
+demonstrieren: eine netzdienliche Steuerung nach dem Vorbild von
+\S\,14a~EnWG (Dimmen steuerbarer Verbrauchseinrichtungen) und des
+Einspeisemanagements. Er wird wie eine Batterie oder Messung über
+das Element-Menü platziert:
+
+\begin{itemize}[nosep]
+  \item \textbf{an der Ortsnetzstation} (Klick auf den Transformator,
+    \ui{Netzregler}): überwacht das ganze Netz und drosselt alle
+    E-Auto-Ladungen bzw.\ PV-Anlagen gemeinsam;
+  \item \textbf{an einem Knoten}: überwacht nur dessen angrenzende
+    Leitungen und greift nur auf die Anlagen dieses Knotens zu.
+\end{itemize}
+
+Überschreitet die Auslastung seines Bereichs die einstellbare
+\ui{Grenze} (Vorgabe 100\,\%), drosselt der Regler schrittweise um
+25~Prozentpunkte je Minute --- und zwar den \emph{richtigen} Hebel:
+Speist der Bereich gerade ins vorgelagerte Netz zurück
+(PV-Mittag), wird die \ui{PV-Einspeisung} gedrosselt; bezieht er
+(E-Auto-Abend), wird die \ui{E-Auto-Ladung} gedimmt. Fällt die
+Auslastung wieder unter 80\,\%, gibt er mit Hysterese langsam frei
+(5~Prozentpunkte je Minute) --- volle Drosselung greift so binnen
+vier simulierter Minuten, die Rückkehr zum Normalbetrieb dauert
+bewusst länger.
+
+\textbf{Der Regler sieht nur, was der Betreiber sieht.} Sein
+Regelgesetz erhält ausschließlich Messwerte und die
+Zustandsschätzung --- nie die Wahrheit. Die Regler-Sektion im
+Seitenpanel weist das offen aus: \ui{sieht Auslastung}
+\emph{X\,\% (gemessen} oder \emph{geschätzt)}
+(Abbildung~\ref{fig:regler}). Ohne eine einzige
+Messung meldet sie \glqq blind --- keine Messdaten\grqq{}, und der
+Regler unternimmt nichts, egal wie überlastet das Netz wirklich
+ist. Regelgüte ist damit unmittelbar eine Frage der
+Beobachtbarkeit (Kapitel~\ref{ch:observability}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-regler}
+  \caption{Netzregler an der Station im Referenzszenario~3 (12:52
+    Uhr): Die Regler-Sektion zeigt \ui{sieht Auslastung}
+    87{,}5\,\% (geschätzt) --- über der Grenze von 100\,\% hat er
+    die \ui{PV-Einspeisung auf} 80\,\% gedrosselt, die E-Auto-Ladung
+    blieb unangetastet. Die wahre maximale Leitungsauslastung ist
+    dadurch von $\approx$110 auf 87\,\% gefallen; das mittlere
+    Strangsegment auf der Karte ist noch orange gefärbt.}
+  \label{fig:regler}
+\end{figure}
+
+\begin{beispiel}[Regelgüte = Beobachtbarkeit, an den Referenzszenarien]
+Ein Netzregler an der Station (Grenze 100\,\%) verhält sich in den
+drei Messkonzepten grundverschieden:
+\begin{itemize}[nosep]
+  \item \emph{Szenario 3 mit SMGW an PV und Wallboxen:} Die
+    Schätzung sieht die Strangmitten-Überlast ($\approx$110\,\%),
+    der Regler drosselt die PV auf 80\,\% --- die Wahrheit fällt
+    auf $\approx$88\,\%, die E-Autos bleiben unangetastet.
+  \item \emph{Szenario 3 nur mit Stationsmessung:} Der Regler sieht
+    über die Schätzung nur $\approx$45\,\% und bleibt untätig ---
+    die reale Überlast von $\approx$110\,\% besteht fort. Genau die
+    Pointe des Szenarios: Was niemand misst, kann auch niemand
+    regeln.
+  \item \emph{Szenario 2 nur mit Stationsmessung:} Hier genügt die
+    Stationsmessung --- die Schätzung rekonstruiert den überlasteten
+    Strangkopf aus dem Summenfluss ($\approx$98\,\%), der Regler
+    dimmt die E-Auto-Ladung auf 80\,\% und die Wahrheit sinkt von
+    105 auf 95\,\%.
+\end{itemize}
+\end{beispiel}
+
+Die Regler-Sektion zeigt laufend die aktuellen Stellgrößen
+(\ui{E-Auto-Ladung auf} X\,\%, \ui{PV-Einspeisung auf} X\,\%, gelb
+während der Drosselung) und den Status (\ui{regelt} /
+\ui{bereit}); die \ui{Grenze} ist zwischen 20 und 150\,\%
+einstellbar --- mit 80\,\% lässt sich präventives Engpassmanagement
+zeigen, mit 120\,\% eine tolerante Betriebsführung. Szenarien
+speichern platzierte Regler mit. \emph{Einschränkung:} Die
+Tagesdiagramme zeigen stets den \emph{ungeregelten} Tag --- der
+Regler wirkt in der laufenden Simulation, sein Effekt ist an den
+Live-Werten und der Karte ablesbar.
+
+\emph{Wichtig:} Laufzeit-Anlagen und -Regler gehören zum aktuell
+geladenen Netz. Ein Netzwechsel setzt sie zurück --- wer ein Setup
+behalten möchte, speichert es als Szenario
+(Kapitel~\ref{ch:scenarios}).
 
 % ===================================================================
 \chapter{Reale Messdaten: PV-Tage und Strompreise}
@@ -1155,7 +1285,8 @@ GET & \api{/loadgen/archetypes} & LPG-Archetypen \\
 POST & \api{/loadgen/assign} & Lastzuweisung als Vorschau rechnen \\
 GET, POST, DEL & \api{/battery\ldots} & Batterien verwalten \\
 POST, DEL & \api{/pv\ldots}, \api{/ev\ldots} & PV-Anlagen, E-Auto-Ladungen \\
-GET & \api{/node/\{bus\}/profiles} u.\,ä. & Tagesverläufe je Element \\
+GET, POST, DEL & \api{/controller\ldots} & Überlast-Regler verwalten (Abschnitt~\ref{sec:controller}) \\
+GET & \api{/node/\{bus\}/profiles} u.\,ä. & Tagesverläufe je Element; \api{?view=truth|measured|est} wählt die Datenebene der Sicht \\
 GET, POST, DEL & \api{/measurements\ldots} & Messungen platzieren, Presets, TAF-Modus \\
 GET, POST, DEL & \api{/scenarios\ldots} & Szenarien speichern/laden/löschen \\
 \bottomrule
