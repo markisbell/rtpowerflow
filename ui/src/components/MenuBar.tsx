@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { ActiveGrid, EngineStatus, MeasurementsResponse, MeterMode, MeterPreset, Scenario } from "../types";
+import type { ActiveGrid, EngineStatus, ExportStatus, MeasurementsResponse, MeterMode, MeterPreset, RecordingInfo, RecordingStatus, Scenario } from "../types";
 import { gridDisplayName } from "../gridname";
 import { EstimationPanel } from "./EstimationMenu";
 import type { LiveView } from "../App";
@@ -22,6 +22,22 @@ export default function MenuBar({ tab, onTab, active, live, onLive, onMeasChange
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
   const close = () => setOpen(null);
+
+  // lightweight global poll so an active recording / running bulk export stays
+  // visible even with all menus closed (both endpoints are near-free)
+  const [rec, setRec] = useState<RecordingStatus | null>(null);
+  const [exp, setExp] = useState<ExportStatus | null>(null);
+  useEffect(() => {
+    const load = () => {
+      api.recording().then(setRec).catch(() => {});
+      api.exportStatus().then(setExp).catch(() => {});
+    };
+    load();
+    const iv = setInterval(load, 3000);
+    return () => clearInterval(iv);
+  }, []);
+  const expPct = exp?.active && exp.steps_total
+    ? Math.round(100 * (exp.steps_done ?? 0) / exp.steps_total) : null;
 
   return (
     <nav className="mbar">
@@ -50,6 +66,21 @@ export default function MenuBar({ tab, onTab, active, live, onLive, onMeasChange
           {t("mbar.source")}
         </a>
       </Menu>
+      {(rec?.active || exp?.active) && (
+        <div style={{ marginLeft: 8, display: "flex", gap: 12, alignItems: "center",
+                      fontSize: "0.78rem", fontVariantNumeric: "tabular-nums" }}>
+          {rec?.active && (
+            <span style={{ color: "#f85149" }} title={t("rec.record")}>
+              ⏺ {t("rec.recChip", { n: rec.steps })}
+            </span>
+          )}
+          {exp?.active && (
+            <span className="muted" title={t("rec.exportRunning")}>
+              ⬇ {t("rec.expChip", { pct: expPct ?? 0 })}
+            </span>
+          )}
+        </div>
+      )}
     </nav>
   );
 }
@@ -166,6 +197,95 @@ function SimMenu({ isOpen, onScenarioLoaded }: { isOpen: boolean; onScenarioLoad
           </button>
           <button className="mini" title={t("scen.delete")} disabled={busy}
                   onClick={() => api.deleteScenario(s.id).then(refresh).catch(() => {})}>
+            ✕
+          </button>
+        </div>
+      ))}
+      {note && <div className="mi info muted">{note}</div>}
+      <div className="mi-sep" />
+      <ExportBlock isOpen={isOpen} />
+    </>
+  );
+}
+
+// ---- Export & Aufzeichnung (Bulk-Tagesexport + Live-Rekorder) ---------------
+function fmtBytes(b: number): string {
+  return b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+}
+
+function ExportBlock({ isOpen }: { isOpen: boolean }) {
+  const { t } = useTranslation();
+  const [rec, setRec] = useState<RecordingStatus | null>(null);
+  const [exp, setExp] = useState<ExportStatus | null>(null);
+  const [list, setList] = useState<RecordingInfo[] | null>(null);
+  const [days, setDays] = useState(1);
+  const [estimate, setEstimate] = useState(true);
+  const [note, setNote] = useState<string | null>(null);
+
+  // poll while the menu is open so progress + list stay live
+  useEffect(() => {
+    if (!isOpen) return;
+    setNote(null);
+    const load = () => {
+      api.exportStatus().then(setExp).catch(() => {});
+      api.recordings().then((r) => { setList(r.recordings); setRec(r.active); }).catch(() => {});
+    };
+    load();
+    const iv = setInterval(load, 2000);
+    return () => clearInterval(iv);
+  }, [isOpen]);
+
+  const act = (p: Promise<unknown>) =>
+    p.then(() => setNote(null)).catch((e) => setNote(String(e))).finally(() => {
+      api.exportStatus().then(setExp).catch(() => {});
+      api.recordings().then((r) => { setList(r.recordings); setRec(r.active); }).catch(() => {});
+    });
+
+  const pct = exp?.active && exp.steps_total
+    ? Math.round(100 * (exp.steps_done ?? 0) / exp.steps_total) : 0;
+
+  return (
+    <>
+      <div className="mi-hdr">{t("rec.heading")}</div>
+      {!exp?.active && (
+        <div className="mi row">
+          <input type="number" min={1} max={366} value={days} style={{ width: "3.6em" }}
+                 onChange={(e) => setDays(Math.max(1, Math.min(366, Number(e.target.value) || 1)))} />
+          <label className="muted" style={{ display: "flex", alignItems: "center", gap: 4,
+                                            fontSize: "0.74rem", cursor: "pointer" }}
+                 title={t("rec.estimateTitle")}>
+            <input type="checkbox" checked={estimate}
+                   onChange={(e) => setEstimate(e.target.checked)} />
+            🧮
+          </label>
+          <button className="mini" onClick={() => act(api.exportDays(days, estimate))}>
+            ⬇ {t("rec.exportDays")}
+          </button>
+        </div>
+      )}
+      {exp?.active && (
+        <div className="mi row">
+          <span className="muted grow" style={{ fontSize: "0.76rem", fontVariantNumeric: "tabular-nums" }}>
+            ⬇ {t("rec.expChip", { pct })}{exp.eta_seconds != null && ` · ~${exp.eta_seconds} s`}
+          </span>
+          <button className="mini" onClick={() => act(api.exportCancel())}>{t("rec.cancel")}</button>
+        </div>
+      )}
+      {exp?.error && <div className="mi info muted">{t("rec.error")}: {exp.error}</div>}
+      <button className="mi" onClick={() => act(rec?.active ? api.recordingStop() : api.recordingStart())}>
+        {rec?.active
+          ? <>⏹ {t("rec.recordStop")} <span className="muted sub">{rec.steps} {t("rec.steps")}</span></>
+          : <><span style={{ color: "#f85149" }}>⏺</span> {t("rec.record")}</>}
+      </button>
+      {list !== null && list.length === 0 && <div className="mi info muted">{t("rec.none")}</div>}
+      {list?.map((r) => (
+        <div className="mi row" key={r.id}>
+          <a className="mi grow" href={api.recordingDownloadUrl(r.id)}
+             title={`${r.grid ?? ""} · ${r.steps ?? "?"} ${t("rec.steps")} · ${fmtBytes(r.bytes)}`}>
+            💾 {r.id}
+          </a>
+          <button className="mini" title={t("rec.delete")}
+                  onClick={() => act(api.deleteRecording(r.id))}>
             ✕
           </button>
         </div>

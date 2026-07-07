@@ -648,9 +648,19 @@ Progress via `GET /export` (steps, ETA), `POST /export/cancel` finalizes
 the partial pack (`export.cancelled` in metadata). One export at a time;
 download/delete guard against packs still being written (`_busy_ids`).
 Tests: `tests/test_exporter.py` (3). Verified live: 2 days = 2880 steps in
-62 s while the engine kept ticking (5-MiB ZIP, 2880×62 bus rows). Round 2
-(open): UI ("Tage exportieren…" as the primary button, live recording ⏺/⏹
-secondary, list + download) and a manual chapter.
+62 s while the engine kept ticking (5-MiB ZIP, 2880×62 bus rows).
+
+**UI** (menu Simulation → "Daten-Export", `ExportBlock` in `MenuBar.tsx`):
+day-count input + 🧮 checkbox (include estimate) + "⬇ Tage exportieren" as
+the primary action; while running a progress row (percent + ETA + Abbrechen)
+replaces it; "⏺ Live-Sitzung aufzeichnen" toggles the recorder (live step
+count on the stop button); finished packs are listed as 💾 download links
+(the browser gets the ZIP) with ✕ delete. The menu polls every 2 s while
+open; the menu BAR itself polls every 3 s and shows chips at the right edge
+("⏺ REC n" red / "⬇ Export p %") so activity stays visible with all menus
+closed. Only finished packs appear in the list (metadata.json is written on
+stop, and the listing requires it). Still open: a manual chapter for
+recording/export.
 
 ### Reference scenarios (the committed teaching set, 2026-07-06)
 

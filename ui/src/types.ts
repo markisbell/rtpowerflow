@@ -353,6 +353,40 @@ export interface TrafoProfiles {
                raster_min: number } | null;
 }
 
+/** Session recorder state (live recording of every published step). */
+export interface RecordingStatus {
+  active: boolean;
+  id: string | null;
+  steps: number;
+  started: string | null;
+  bytes: number;
+}
+export interface RecordingInfo {
+  id: string;
+  grid: string | null;
+  started: string | null;
+  ended: string | null;
+  steps: number | null;
+  bytes: number;
+}
+export interface RecordingsResponse {
+  recordings: RecordingInfo[];
+  active: RecordingStatus;
+}
+/** Bulk-export progress (offline replay of whole days). */
+export interface ExportStatus {
+  active: boolean;
+  id?: string | null;
+  days?: number[];
+  estimate?: boolean;
+  steps_total?: number;
+  steps_done?: number;
+  day?: number | null;
+  error?: string | null;
+  cancelled?: boolean;
+  eta_seconds?: number;
+}
+
 export interface EngineStatus {
   running: boolean;
   step: number;
