@@ -301,6 +301,10 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     : viewMode === "est" && !est ? (canReveal ? "truth" : "observed")
     : viewMode;
   const reveal = mode === "truth";
+  // the day graphs load only the layers this perspective may see (the backend
+  // enforces it): Lastfluss = truth curves, Gemessen = the meters' own
+  // readings in the metering raster, Schätzung = all layers overlaid
+  const profileView = mode === "observed" ? "measured" as const : mode;
   // in estimate mode the diagrams render the estimated arrays through the same
   // code path as ground truth (values keyed by element index)
   const frame = mode === "est" && latest && est
@@ -472,9 +476,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                               ...(sec.kind === "bus" && pvBuses.includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
                      onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
-              {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} />}
-              {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} />}
-              {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} />}
+              {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
+              {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
+              {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
 
               {sec.kind === "bus" && (evBuses.includes(sec.id) || pvBuses.includes(sec.id)) && (
                 <DerPanel bus={sec.id} stamp={derStamp} onChanged={() => setDerStamp((v) => v + 1)} />

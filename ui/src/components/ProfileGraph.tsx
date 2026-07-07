@@ -78,9 +78,14 @@ export default function ProfileGraph({
     }
     return segs;
   };
-  // step-after: the value shown at a position is the sample whose plateau it's on
-  const valAt = (s: GSeries, frac: number) =>
-    s.data[Math.min(s.data.length - 1, Math.floor(frac * (s.data.length - 1)))] ?? null;
+  // step-after: the value shown at a position is the sample whose plateau it's
+  // on — for sparse series (e.g. a 15-min estimate raster inside a 1-min day)
+  // that is the last filled sample at or before the position, matching stepPath
+  const valAt = (s: GSeries, frac: number) => {
+    let i = Math.min(s.data.length - 1, Math.floor(frac * (s.data.length - 1)));
+    while (i > 0 && s.data[i] == null) i--;
+    return s.data[i] ?? null;
+  };
 
   const onMove = (e: React.MouseEvent) => {
     const r = ref.current!.getBoundingClientRect();

@@ -142,30 +142,34 @@ def network():
 
 
 @app.get("/node/{bus}/profiles")
-def node_profiles(bus: int):
-    """Daily load/generation + voltage curves at one bus (residential / EV / PV)."""
+def node_profiles(bus: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily curves at one bus. ``view`` picks the layers the caller may see:
+    truth (load/generation split + voltage), measured (only the meter's own
+    quantities in the metering raster), est (all layers overlaid)."""
     sim = runtime.engine.sim
     if bus < 0 or bus not in sim.net.bus.index:
         raise HTTPException(404, f"unknown bus {bus}")
-    return sim.node_profiles(bus)
+    return sim.node_profiles(bus, view=view)
 
 
 @app.get("/line/{line}/profiles")
-def line_profiles(line: int):
-    """Daily current + loading curve for one line, with its rated current."""
+def line_profiles(line: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily current + loading curve for one line, with its rated current.
+    Lines carry no meters — the measured view is deliberately empty."""
     sim = runtime.engine.sim
     if line < 0 or line not in sim.net.line.index:
         raise HTTPException(404, f"unknown line {line}")
-    return sim.line_profiles(line)
+    return sim.line_profiles(line, view=view)
 
 
 @app.get("/trafo/{trafo}/profiles")
-def trafo_profiles(trafo: int):
-    """Daily power exchange + loading curve for one transformer, with its rating."""
+def trafo_profiles(trafo: int, view: Literal["truth", "measured", "est"] = "est"):
+    """Daily power exchange + loading curve for one transformer, with its rating.
+    The measured layer appears only for a metered transformer."""
     sim = runtime.engine.sim
     if trafo < 0 or trafo not in sim.net.trafo.index:
         raise HTTPException(404, f"unknown trafo {trafo}")
-    return sim.trafo_profiles(trafo)
+    return sim.trafo_profiles(trafo, view=view)
 
 
 @app.get("/state")

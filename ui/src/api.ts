@@ -18,6 +18,7 @@ import type {
   Scenario,
   MeterPreset,
   NodeProfiles,
+  ProfileView,
   PvDays,
   StepResult,
   Topology,
@@ -82,9 +83,12 @@ export const api = {
   network: () => get<Topology>("/network"),
   status: () => get<EngineStatus>("/status"),
   state: () => get<StepResult>("/state"),
-  nodeProfiles: (bus: number) => get<NodeProfiles>(`/node/${bus}/profiles`),
-  lineProfiles: (line: number) => get<LineProfiles>(`/line/${line}/profiles`),
-  trafoProfiles: (trafo: number) => get<TrafoProfiles>(`/trafo/${trafo}/profiles`),
+  nodeProfiles: (bus: number, view: ProfileView = "est") =>
+    get<NodeProfiles>(`/node/${bus}/profiles?view=${view}`),
+  lineProfiles: (line: number, view: ProfileView = "est") =>
+    get<LineProfiles>(`/line/${line}/profiles?view=${view}`),
+  trafoProfiles: (trafo: number, view: ProfileView = "est") =>
+    get<TrafoProfiles>(`/trafo/${trafo}/profiles?view=${view}`),
 
   start: () => post<EngineStatus>("/control/start"),
   pause: () => post<EngineStatus>("/control/pause"),

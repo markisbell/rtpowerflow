@@ -540,9 +540,14 @@ model (lines/trafos known), the placed meter readings (+ slack setpoint),
 structural zero-injection knowledge (junctions/cabinets), and profile-based
 pseudo-measurements (per-bus **daily-mean** load, std = 50 % of daily peak;
 battery buses get rating-bounded pseudos since setpoints are unknown). It runs
-on a lazily deep-copied net whenever ≥ 1 meter is placed, **adaptively throttled**
-(spaced 2× its own runtime — every step on LV grids at ~20–90 ms, every ~3 s on
-the 475-bus district at ~1–1.6 s; numba does NOT speed pandapower's SE path).
+on a lazily deep-copied net whenever ≥ 1 meter is placed, **in the metering
+raster** (customer requirement 2026-07-07: the estimate can only be as fine as
+the meters deliver — meter mode "standard"/TAF 7 Lastgang → a new estimate only
+at 15-min window boundaries, held in between; "full"/TAF 9/10/14 → every
+1-min step), additionally **wall-clock throttled** as a pure compute guard
+(spaced 2× its own runtime — every step on LV grids, every ~3 s on the 475-bus
+district at ~1–1.6 s; WLS with full metering on the 62-bus suburban grid costs
+~0.4 s; numba does NOT speed pandapower's SE path).
 `StepResult.estimated = {buses, lines, trafos, solve_ms, step, day, error}`
 mirrors the truth arrays; `error` (max/mean |ΔV|, max |ΔI| vs truth) is stripped
 by `StateStore` in strict mode, the estimate itself survives. UI: a third
@@ -560,11 +565,31 @@ plant size still widens the pseudo std), **no EV pseudo** (stochastic),
 `load_basis` "profile" (idealized per-customer daily means) vs **"slp"**
 (every household the same `slp_annual_kwh`, applies to household rows only —
 RLM customers keep true means; `LoadProfile.household` carries the flag),
-`pseudo_std_pct`, `zero_injection` toggleable. The daily sweep uses the SAME
-policy and its cache is keyed on it (config change → re-sweep); the sweep's
-estimate decimation is **pinned per grid** to clean 15/30/60/120-min tiers
-(decided once from a robust cost measurement) so the estimated day curve keeps
-one consistent resolution. Honesty tripwire:
+`pseudo_std_pct`, `zero_injection` toggleable. **Sweep resolution & view
+layers** (customer requirements 2026-07-07): the TRUTH curves of the day
+graphs solve the power flow at EVERY step — full input raster, 1 min on the
+committed grids — made affordable by pandapower's recycle path (`recycle=
+{"bus_pq": True, ...}`, only bus injections rebuilt; validated bit-identical
+incl. storage, ~5.6 vs ~11 ms/solve on 62 buses; skipped when the slack
+setpoint profile varies). The day-graph data is **layered by view** (profile
+endpoints take `?view=truth|measured|est`, the UI passes its perspective;
+menu label "Nur beobachtet" → **"Gemessen"**): `daily_curves` = truth only
+(bus V/P, line I/loading, trafo P/loading — NO WLS cost, ~10 s first click
+on the 62-bus grid), `measured_curves` = derived array math on the truth
+sweep, ONLY metered elements and only the quantities their device delivers
+in the metering raster (TAF 7 standard: 15-min window means of P, no V/no
+loading; TAF 9/10/14 full: 1-min pass-through; lines: never anything),
+`daily_est` = lazy WLS mini-sweep re-solving only at the estimate raster,
+stored inside the truth cache entry under `_est`, keyed on placement/mode/
+est-config (so only the Schätzung view pays the ~15-25 s WLS; policy change
+drops just this layer). Est raster: `_est_sweep_min` **pinned per grid** to
+clean 15/30/60/120-min tiers (decided once from a robust cost measurement,
+never finer than the metering raster — a 1-min WLS sweep would cost ~9 min
+on the suburban grid). `battery_profiles` also reports the full raster.
+UI: profile components render whatever layers the response carries (measured
+series in near-white "device" color, unmetered elements/lines show a hint);
+`ProfileGraph.valAt` walks back to the last filled sample so hover readouts
+work on the sparse rasters. Honesty tripwire:
 `test_estimation_honesty_pv_rise_unknowable` — rural feeder, strong midday PV,
 5 % metering, no PV knowledge → the estimator MUST miss > 60 % of the voltage
 rise (fails = truth is leaking). Note: the policy is an operator setting —

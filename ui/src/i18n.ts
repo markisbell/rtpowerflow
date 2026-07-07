@@ -88,7 +88,11 @@ const en = {
     estSolve: "estimation time",
   },
 
-  graph: { uhr: "{{time}}", est: "Estimate" },
+  graph: { uhr: "{{time}}", est: "Estimate", meas: "Measured" },
+  view: {
+    noMeter: "no meter at this element — place one to see measured values",
+    noLineMeter: "lines carry no meters — currents only appear in the power-flow or estimate view",
+  },
   ctrl: {
     title: "Overload controller",
     limit: "limit",
@@ -128,8 +132,8 @@ const en = {
     viewOnlyLive: "Applies to the live view.",
     displayHdr: "Display",
     sightHdr: "Perspective",
-    sightTruth: "Ground truth (power flow)",
-    sightObserved: "Observed only",
+    sightTruth: "Power flow (ground truth)",
+    sightObserved: "Measured",
     taf9Sub: "1-min V/P/Q/I",
     taf7Sub: "15-min mean P",
     manual: "User manual (PDF)",
@@ -361,7 +365,11 @@ const de: typeof en = {
     estSolve: "Rechenzeit Schätzung",
   },
 
-  graph: { uhr: "{{time}} Uhr", est: "Schätzung" },
+  graph: { uhr: "{{time}} Uhr", est: "Schätzung", meas: "Messung" },
+  view: {
+    noMeter: "keine Messung an diesem Element — Messgerät platzieren, um Messwerte zu sehen",
+    noLineMeter: "Leitungen tragen keine Messgeräte — Ströme erscheinen nur im Lastfluss oder in der Schätzung",
+  },
   ctrl: {
     title: "Überlast-Regler",
     limit: "Grenze",
@@ -401,8 +409,8 @@ const de: typeof en = {
     viewOnlyLive: "Wirkt in der Live-Ansicht.",
     displayHdr: "Darstellung",
     sightHdr: "Sicht",
-    sightTruth: "Wahrheit (Lastfluss)",
-    sightObserved: "Nur beobachtet",
+    sightTruth: "Lastfluss (Wahrheit)",
+    sightObserved: "Gemessen",
     taf9Sub: "U/P/Q/I minütlich",
     taf7Sub: "15-min-Mittel P",
     manual: "Benutzerhandbuch (PDF)",
