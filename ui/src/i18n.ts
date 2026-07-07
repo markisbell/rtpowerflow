@@ -97,6 +97,10 @@ const en = {
     pvF: "PV feed-in at",
     active: "curtailing (loading above limit)",
     idle: "standing by — no overload",
+    seen: "sees loading",
+    srcMeter: "measured",
+    srcEst: "estimated",
+    blind: "blind — no measurement data (place meters)",
   },
   axis: {
     time: "Time / h",
@@ -366,6 +370,10 @@ const de: typeof en = {
     pvF: "PV-Einspeisung auf",
     active: "regelt (Auslastung über Grenze)",
     idle: "bereit — keine Überlast",
+    seen: "sieht Auslastung",
+    srcMeter: "gemessen",
+    srcEst: "geschätzt",
+    blind: "blind — keine Messdaten (Messungen platzieren)",
   },
   axis: {
     time: "Zeit / h",

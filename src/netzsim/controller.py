@@ -12,6 +12,14 @@ reacts after measuring. With one step per simulated minute the default rates
 mean: full curtailment within ~4 minutes of sustained overload, full release
 within ~20 minutes of healthy loading.
 
+The controller is fed ONLY from the operator's view — meter readings
+(``StepResult.measurements``) and the WLS state estimate
+(``StepResult.estimated``), see ``Simulator._controller_update``. The true
+power flow never reaches the control law: without meters the controller is
+blind (``seen_pct is None``) and holds its factors, and an overload the
+estimate cannot reconstruct (reference scenario 3 without plant SMGWs) is
+not acted upon. That is the point: control quality equals observability.
+
 Which lever the controller pulls follows the flow direction of its domain:
 a net-exporting domain (midday PV) throttles generation, a net-importing one
 (evening EV charging) throttles the controllable loads.
@@ -37,13 +45,18 @@ class Controller:
     step_up: float = 0.05         # factor recovery per healthy step
     ev_factor: float = 1.0        # applied to EV charging loads in scope
     pv_factor: float = 1.0        # applied to PV feed-in in scope
+    # what the controller last saw of its domain (None = blind, no data)
+    seen_pct: float | None = None
+    seen_src: str | None = None   # "meter" | "estimate" | None
 
     @property
     def active(self) -> bool:
         return self.ev_factor < 1.0 or self.pv_factor < 1.0
 
     def update(self, max_loading_pct: float | None, exporting: bool) -> None:
-        """One control step from the freshly solved loading of the domain."""
+        """One control step from the OBSERVED loading of the domain. ``None``
+        means the controller has no data — it holds its factors (a field
+        device without a measurement neither dims nor releases)."""
         if max_loading_pct is None:
             return
         if max_loading_pct > self.limit_pct:
@@ -60,4 +73,6 @@ class Controller:
                 "limit_pct": self.limit_pct, "release_pct": self.release_pct,
                 "ev_factor": round(self.ev_factor, 4),
                 "pv_factor": round(self.pv_factor, 4),
-                "active": self.active}
+                "active": self.active,
+                "seen_pct": round(self.seen_pct, 2) if self.seen_pct is not None else None,
+                "seen_src": self.seen_src}

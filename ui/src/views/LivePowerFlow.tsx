@@ -531,12 +531,18 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                     <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
                             onClick={() => removeControllerById(ctrl.id)}>✕</button>
                   </div>
+                  <Stat label={t("ctrl.seen")}
+                        value={liveCtrl.seen_pct != null
+                          ? `${fmt(liveCtrl.seen_pct, 1)} % (${t(liveCtrl.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
+                          : "—"}
+                        color={liveCtrl.seen_pct != null && liveCtrl.seen_pct > liveCtrl.limit_pct ? "#e05c4a" : undefined} />
                   <Stat label={t("ctrl.evF")} value={`${Math.round(liveCtrl.ev_factor * 100)} %`}
                         color={liveCtrl.ev_factor < 1 ? "#f2ae00" : undefined} />
                   <Stat label={t("ctrl.pvF")} value={`${Math.round(liveCtrl.pv_factor * 100)} %`}
                         color={liveCtrl.pv_factor < 1 ? "#f2ae00" : undefined} />
                   <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
-                    {liveCtrl.active ? `⚡ ${t("ctrl.active")}` : t("ctrl.idle")}
+                    {liveCtrl.seen_pct == null ? `⚠️ ${t("ctrl.blind")}`
+                      : liveCtrl.active ? `⚡ ${t("ctrl.active")}` : t("ctrl.idle")}
                   </div>
                 </div>
               )}

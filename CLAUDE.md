@@ -492,8 +492,28 @@ carries live factors; scenarios store `controllers` like batteries. API:
 `GET /controllers`, `POST /controller`, `POST /controller/{id}/config`,
 `DELETE /controller/{id}`. UI: 🎛️ menu items, section block (limit input +
 live EV/PV factors + status), 🎛️ badges. Tests: `tests/test_controller.py`.
-Verified on the reference scenarios: #2 evening 107 % → 90 % via EV dimming
-(PV untouched), #3 midday 111 % → 81 % via PV curtailment (EV untouched).
+
+**The controller only sees what the operator sees** (customer feedback
+2026-07-07): `_controller_update` is fed exclusively from `res.measurements`
+(meter readings — a trafo meter's `loading_percent` counts as source
+"meter") and `res.estimated` (WLS estimate; line loadings exist ONLY here,
+lines carry no meters), never from the truth arrays. Flow direction: station
+scope = sign of the (measured, else estimated) HV-side trafo flow; bus scope
+= sign of the node's (measured, else estimated) bus injection. In `run_step`
+the estimation therefore runs BEFORE `_controller_update`, and
+`res.controllers` is refreshed after the update. `Controller.seen_pct` /
+`seen_src` ("meter" | "estimate" | null) report what it saw; without meters
+the controller is **blind** and holds its factors (UI: ⚠️ "blind — keine
+Messdaten", plus a "sieht Auslastung" row). Consequence: control quality =
+observability. Scenario #3's mid-feeder overload is only regulated WITH the
+plant/wallbox SMGWs (blind estimate → controller idle, overload persists);
+scenario #2 works with the station meter alone (the estimate reconstructs
+the feeder head from the summed flow).
+`test_controller_blind_without_meters_holds_despite_overload` pins the
+blindness; the regulation tests meter the grid fully and force a fresh
+estimate per step via `sim._est_wall = 0.0` (the estimator's wall-clock
+throttle would starve back-to-back test steps).
+
 Known limitation: the daily-sweep curves (day graphs) show the UNCONTROLLED
 day — controllers act only in the live loop.
 

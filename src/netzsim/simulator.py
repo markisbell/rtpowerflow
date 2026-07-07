@@ -324,28 +324,62 @@ class Simulator:
                 self.net.sgen.at[si, "q_mvar"] *= f
 
     def _controller_update(self, res: "StepResult") -> None:
-        """One control step per controller from the freshly solved loadings."""
+        """One control step per controller — fed ONLY from the operator's view:
+        meter readings (``res.measurements``) and the WLS state estimate
+        (``res.estimated``, the last available run; a field controller also
+        works on the latest received telegram). The true power flow never
+        reaches the control law, so an overload that neither a meter nor the
+        estimate reveals is NOT acted upon: control quality = observability.
+        Without any data a controller is blind and holds its factors."""
+        meas = res.measurements or {}
+        est = res.estimated if isinstance(res.estimated, dict) else {}
+        est_lines = est.get("lines") or []
+        est_trafos = est.get("trafos") or []
         for c in self.controllers:
+            seen: list[tuple[float, str]] = []
             if c.scope == "station":
-                s = res.summary
-                vals = [s.get("max_line_loading_percent"),
-                        s.get("max_trafo_loading_percent")]
-                vals = [v for v in vals if v is not None]
-                loading = max(vals) if vals else None
-                exporting = (s.get("total_gen_mw") or 0.0) > (s.get("total_load_mw") or 0.0)
+                # measured transformer loadings are direct device readings ...
+                for tm in meas.get("trafos", []):
+                    if tm.get("loading_percent") is not None:
+                        seen.append((float(tm["loading_percent"]), "meter"))
+                # ... everything else (line loadings!) exists only estimated
+                for row in (*est_lines, *est_trafos):
+                    if row.get("loading_percent") is not None:
+                        seen.append((float(row["loading_percent"]), "estimate"))
+                # flow direction from the HV-side trafo flow (measured before
+                # estimated): backfeed into the upper grid = domain exports
+                p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                        if tm.get("p_hv_mw") is not None]
+                if not p_hv:
+                    p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                            if tr.get("p_hv_mw") is not None]
+                exporting = bool(p_hv) and sum(p_hv) < 0.0
             else:
-                loading = max((ln["loading_percent"] for ln in res.lines
-                               if ln.get("loading_percent") is not None
-                               and c.bus in (ln.get("from_bus"), ln.get("to_bus"))),
-                              default=None)
-                sg = self.net.sgen
-                ld = self.net.load
-                gen = float(self.net.res_sgen.loc[sg.index[sg["bus"] == c.bus], "p_mw"].sum()) \
-                    if len(self.net.res_sgen) else 0.0
-                load = float(self.net.res_load.loc[ld.index[ld["bus"] == c.bus], "p_mw"].sum()) \
-                    if len(self.net.res_load) else 0.0
-                exporting = gen > load
-            c.update(loading, exporting)
+                ln_df = self.net.line
+                adj = {int(li) for li in ln_df.index
+                       if c.bus in (int(ln_df.at[li, "from_bus"]),
+                                    int(ln_df.at[li, "to_bus"]))}
+                # lines carry no meters in this model — adjacent loadings are
+                # only knowable through the state estimate
+                for ln in est_lines:
+                    if ln.get("index") in adj and ln.get("loading_percent") is not None:
+                        seen.append((float(ln["loading_percent"]), "estimate"))
+                # direction from the node's own meter, else its estimated
+                # injection (res_bus convention: p > 0 consumes, p < 0 feeds in)
+                p_bus = next((n["p_mw"] for n in meas.get("nodes", [])
+                              if n.get("bus") == c.bus and n.get("p_mw") is not None),
+                             None)
+                if p_bus is None:
+                    p_bus = next((b["p_mw"] for b in est.get("buses") or []
+                                  if b.get("index") == c.bus and b.get("p_mw") is not None),
+                                 None)
+                exporting = p_bus is not None and float(p_bus) < 0.0
+            if seen:
+                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
+                c.update(c.seen_pct, exporting)
+            else:
+                c.seen_pct = c.seen_src = None
+                c.update(None, False)
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -706,10 +740,6 @@ class Simulator:
         solve_ms = (time.perf_counter() - t0) * 1000.0
 
         res = self._collect(step, day, t, converged, solve_ms, error)
-        # closed control loop: factors computed from THIS solved step throttle
-        # the NEXT one (a field controller also reacts only after measuring)
-        if converged and self.controllers:
-            self._controller_update(res)
         # state estimation (the operator's calculated view) — only meaningful
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
@@ -732,6 +762,12 @@ class Simulator:
             res.estimated = self._est_last
         else:
             self._est_last = None
+        # closed control loop: factors computed from THIS step's OBSERVED view
+        # (meters + estimate, never the truth) throttle the NEXT step — runs
+        # after the estimation so the controller sees the freshest estimate
+        if converged and self.controllers:
+            self._controller_update(res)
+            res.controllers = [c.as_dict() for c in self.controllers]
         return res
 
     # -- result extraction ---------------------------------------------- #

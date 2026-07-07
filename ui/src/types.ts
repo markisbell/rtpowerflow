@@ -245,6 +245,10 @@ export interface GridController {
   ev_factor: number;
   pv_factor: number;
   active: boolean;
+  /** loading the controller last saw of its domain (meters + estimate);
+   *  null = blind, no measurement data at all */
+  seen_pct: number | null;
+  seen_src: "meter" | "estimate" | null;
 }
 
 export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
