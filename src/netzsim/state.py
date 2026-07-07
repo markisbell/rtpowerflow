@@ -26,6 +26,13 @@ class StateStore:
         self._subscribers: set[WebSocket] = set()
         self._lock = asyncio.Lock()
         self._expose = expose_ground_truth
+        # optional non-blocking consumer of every published (projected) payload
+        # — the session recorder taps in here, so it records exactly what the
+        # wire carries (strict mode included)
+        self._sink = None
+
+    def set_sink(self, fn) -> None:
+        self._sink = fn
 
     def _project(self, payload: dict[str, Any]) -> dict[str, Any]:
         """What actually goes on the wire: full truth when exposed, else only the
@@ -43,7 +50,15 @@ class StateStore:
     async def publish(self, result: StepResult) -> None:
         self._latest = result
         self._history.append(result)
-        await self._broadcast(self._project(asdict(result)))
+        if self._sink is None and not self._subscribers:
+            return
+        payload = self._project(asdict(result))
+        if self._sink is not None:
+            try:
+                self._sink(payload)
+            except Exception:  # noqa: BLE001 — recording must never stall the loop
+                pass
+        await self._broadcast(payload)
 
     def reset(self) -> None:
         """Drop the latest result and history (topology/indices changed).

@@ -67,7 +67,8 @@ EchtzeitNetzSimulator/
 │   ├── simulator.py          # apply one step, run_step() -> StepResult (+ observed projection)
 │   ├── measurements.py       # OBSERVABILITY layer: MeasurementSet (meter placement + observe(net))
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
-│   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip)
+│   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip, recorder sink)
+│   ├── recorder.py           # session recording: published step stream -> tidy CSVs on disk (+ ZIP)
 │   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + measurements + monitor
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
 │   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user)
@@ -206,6 +207,12 @@ default to zeros if omitted.
 | DELETE | `/measurements/trafo/{trafo}` | Remove a transformer meter |
 | POST | `/measurements/preset?name=` | Bulk: `all_nodes` \| `all_trafos` \| `substation_trafos` \| `clear` |
 | GET/POST | `/estimation/config` | Estimation policy (PV/EV pseudo, load basis, std %, zero injection) |
+| GET | `/recording` | Session-recorder status (active id, steps, bytes) |
+| POST | `/recording/start` | Body `{name?}` → record every published step to `data/recordings/<id>/` |
+| POST | `/recording/stop` | Finish the active recording (writes metadata.json) |
+| GET | `/recordings` | Stored recordings + active status |
+| GET | `/recordings/{id}/download` | The recording as a ZIP of CSVs (409 while active) |
+| DELETE | `/recordings/{id}` | Remove a stored recording |
 | WS | `/ws` | Live stream: one JSON `StepResult` per solved step |
 
 **`StepResult`** (see `simulator.py`): `step, day, time_of_day ("HH:MM"),
@@ -240,7 +247,9 @@ default `./data/ding0_grids`), `GRID_LIBRARY` (manifest, default
 `LPG_LIBRARY_DIR` (cached household profiles, default `./data/lpg_library`),
 `EXPOSE_GROUND_TRUTH` (default `true` — set `false` to enforce strict
 observability, stripping the true power flow from `/state`, `/ws`, `/history`;
-see §12).
+see §12), `RECORDINGS_DIR` (default `./data/recordings`, gitignored) and
+`RECORD` (default `false`; `true` = continuous recording from startup on,
+restarting per grid apply / scenario load).
 
 > Note: `STEPS_PER_DAY` exists in config but the simulator currently derives steps
 > from the input files (`InputData.steps_per_day`). Keep the env value and the file
@@ -594,6 +603,30 @@ work on the sparse rasters. Honesty tripwire:
 5 % metering, no PV knowledge → the estimator MUST miss > 60 % of the voltage
 rise (fails = truth is leaking). Note: the policy is an operator setting —
 deliberately NOT part of scenario recipes.
+
+### Session recording (CSV export of live runs, 2026-07-07 — round 1: backend)
+
+`recorder.py` taps `StateStore.publish` via an optional **sink** and receives
+exactly the projected wire payload — strict mode therefore strips the truth
+from recordings automatically. A dedicated writer thread (queue-fed, never
+blocks the engine loop) appends tidy CSVs to `data/recordings/<id>/`:
+`summary` / `observed_summary` (one row per step), `buses` / `lines` /
+`trafos` / `ext_grids` / `batteries` / `controllers` (long format),
+`measurements_nodes` / `measurements_trafos` (the Gemessen layer, TAF
+raster), `estimated_*` (one block per NEW estimate — deduped on the
+estimate's own (day, step)). Files appear lazily on first row; standard CSV
+dialect (comma, dot decimals, UTF-8, None→empty, bool→0/1). Duplicate
+(day, step) publishes are dropped; backward seeks legitimately repeat keys
+(wall-clock `timestamp` column disambiguates). `metadata.json` holds the
+reproducibility recipe (grid + loadgen, meter placement/TAF mode, est
+policy, engine interval, netzsim version). One recording = ONE
+configuration: `/config/apply` and scenario load auto-finish the active
+recording (and start a fresh one when `NETZSIM_RECORD=true`). Download
+packs a cached ZIP (`Recorder.pack`, 409 while active); ids are validated
+against path traversal. Tests: `tests/test_recorder.py` (5). Verified live:
+91 steps on scenario 2 → 91×62 bus rows, 91×12 meter rows, 32 estimate
+blocks, 241-KiB ZIP. Round 2 (open): UI (Simulation menu ⏺/⏹ + list +
+download) and a manual chapter.
 
 ### Reference scenarios (the committed teaching set, 2026-07-06)
 

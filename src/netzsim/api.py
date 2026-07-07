@@ -1,6 +1,8 @@
 """FastAPI application: REST control plane + WebSocket live result stream."""
 from __future__ import annotations
 
+import asyncio
+import dataclasses
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -20,6 +22,7 @@ from .battery import MODES
 from .grid_catalog import GridCatalog, preview
 from .measurements import METER_MODES, PRESETS
 from .realpv import load_prices, load_pv_days
+from .recorder import Recorder
 from .scenarios import ScenarioStore, _slug
 from .loadgen import (
     AssignPolicy,
@@ -43,6 +46,7 @@ class App:
     engine: RealtimeEngine
     catalog: GridCatalog
     library: LoadLibrary
+    recorder: Recorder
     active: dict
     pv_dates: list
     pv_peak_w: float
@@ -96,10 +100,16 @@ async def lifespan(app: FastAPI):
             log.info("aWATTar prices: %d day(s) loaded", len(prices))
     log.info("Grid catalog: %d grid(s); LPG library: %d archetype(s)",
              len(runtime.catalog.list()), len(runtime.library.list()))
+    # session recorder: taps the store's published (projected) payload stream
+    runtime.recorder = Recorder(settings.recordings_dir)
+    runtime.store.set_sink(runtime.recorder.record)
+    if settings.record:                       # continuous operation (env opt-in)
+        runtime.recorder.start(_recording_meta())
     if settings.autostart:
         runtime.engine.start_loop()
     yield
     await runtime.engine.stop()
+    await asyncio.to_thread(runtime.recorder.stop)
 
 
 app = FastAPI(title="netzsim", version="0.2.0", lifespan=lifespan)
@@ -183,6 +193,84 @@ def state():
 @app.get("/history")
 def history(limit: int = Query(default=96, ge=1, le=10_000)):
     return runtime.store.history(limit=limit)
+
+
+# --------------------------------------------------------------------------- #
+# Session recording: every published step -> CSV pack on disk (recorder.py)
+# --------------------------------------------------------------------------- #
+def _recording_meta() -> dict:
+    """The reproducibility recipe stored in a recording's metadata.json: what
+    was simulated (grid + loadgen), what was measurable (placement, TAF mode),
+    which estimation policy ran, and how fast the clock ticked."""
+    sim = runtime.engine.sim
+    return {
+        "netzsim_version": app.version,
+        "grid": runtime.active,
+        "measurements": sim.meters.placement(sim.net),
+        "estimation": dataclasses.asdict(sim.est_config),
+        "engine": runtime.engine.status,
+        "expose_ground_truth": settings.expose_ground_truth,
+    }
+
+
+@app.get("/recording")
+def recording_status():
+    """State of the session recorder (active recording, steps, size)."""
+    return runtime.recorder.status()
+
+
+class RecordingStartRequest(BaseModel):
+    name: str | None = None
+
+
+@app.post("/recording/start")
+def recording_start(req: RecordingStartRequest | None = None):
+    """Start recording every published step to data/recordings/<id>/."""
+    try:
+        return runtime.recorder.start(_recording_meta(),
+                                      name=req.name if req else None)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/recording/stop")
+def recording_stop():
+    """Finish the active recording (flush, close, write metadata.json)."""
+    out = runtime.recorder.stop()
+    if out is None:
+        raise HTTPException(409, "no recording is active")
+    return out
+
+
+@app.get("/recordings")
+def recordings():
+    """Stored recordings (finished ones carry metadata.json)."""
+    return {"recordings": runtime.recorder.list(),
+            "active": runtime.recorder.status()}
+
+
+@app.get("/recordings/{rid}/download")
+def recording_download(rid: str):
+    """The recording as a ZIP of CSVs + metadata.json."""
+    if runtime.recorder.status().get("id") == rid:
+        raise HTTPException(409, "recording is still active — stop it first")
+    try:
+        zp = runtime.recorder.pack(rid)
+    except KeyError:
+        raise HTTPException(404, f"unknown recording '{rid}'")
+    return FileResponse(zp, media_type="application/zip", filename=f"{rid}.zip")
+
+
+@app.delete("/recordings/{rid}")
+def recording_delete(rid: str):
+    """Remove a stored recording (and its cached ZIP)."""
+    if runtime.recorder.status().get("id") == rid:
+        raise HTTPException(409, "recording is still active — stop it first")
+    try:
+        runtime.recorder.delete(rid)
+    except KeyError:
+        raise HTTPException(404, f"unknown recording '{rid}'")
+    return {"deleted": rid}
 
 
 # These run on the event loop (async def) — the engine schedules its loop task
@@ -443,6 +531,8 @@ async def scenarios_load(sid: str):
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(400, f"failed to load scenario '{sid}': {exc}")
 
+    # a recording documents ONE configuration — finish it before the swap
+    await asyncio.to_thread(runtime.recorder.stop)
     await runtime.engine.reconfigure(data, autostart=False)
     sim = runtime.engine.sim
 
@@ -489,6 +579,8 @@ async def scenarios_load(sid: str):
         notes=notes)
     runtime.active.update(load_source=load_source, n_ev=n_ev, n_pv=n_pv,
                           loadgen=doc.get("loadgen"), scenario=doc.get("name"))
+    if settings.record:                 # continuous operation: one file per setup
+        runtime.recorder.start(_recording_meta())
     return {"status": runtime.engine.status, "active": runtime.active, "network": topo}
 
 
@@ -939,6 +1031,8 @@ async def config_apply(req: ApplyGridRequest):
     except Exception as exc:  # conversion / validation failure
         raise HTTPException(400, f"failed to load grid '{req.grid_id}': {exc}")
 
+    # a recording documents ONE configuration — finish it before the swap
+    await asyncio.to_thread(runtime.recorder.stop)
     await runtime.engine.reconfigure(data)
     topo = runtime.engine.sim.topology()
     runtime.active = _active_meta(
@@ -947,6 +1041,8 @@ async def config_apply(req: ApplyGridRequest):
     )
     runtime.active.update(load_source=load_source, n_ev=n_ev, n_pv=n_pv,
                           loadgen=req.loadgen.model_dump() if req.loadgen else None)
+    if settings.record:                 # continuous operation: one file per setup
+        runtime.recorder.start(_recording_meta())
     return {"status": runtime.engine.status, "active": runtime.active, "network": topo}
 
 
