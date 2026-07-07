@@ -41,19 +41,22 @@ export default function App() {
                  onMeasChanged={() => setMeasStamp((n) => n + 1)}
                  onScenarioLoaded={() => { refreshActive(); setTab("live"); setLiveKey((n) => n + 1); }} />
         <div className="active-chip">
-          {active?.grid_id ? (
-            <>
-              <span className="dot" /> {gridDisplayName(active.grid_id, active.name, t)}
-              <span className="muted">
-                {" "}
-                · {active.n_bus} {t("app.busShort")} · {active.load_source ?? "—"} {t("app.loadsShort")}
-                {!!active.n_ev && ` · 🔌 ${active.n_ev}`}
-                {!!active.n_pv && ` · ☀️ ${active.n_pv}`}
-              </span>
-            </>
-          ) : (
-            <span className="muted">{t("app.defaultGrid", { name: active?.name ?? t("app.noGrid") })}</span>
-          )}
+          <button className="chip-btn" title={t("mbar.netzStudio")}
+                  onClick={() => setTab("config")}>
+            {active?.grid_id ? (
+              <>
+                <span className="dot" /> {gridDisplayName(active.grid_id, active.name, t)}
+                <span className="muted">
+                  {" "}
+                  · {active.n_bus} {t("app.busShort")} · {active.load_source ?? "—"} {t("app.loadsShort")}
+                  {!!active.n_ev && ` · 🔌 ${active.n_ev}`}
+                  {!!active.n_pv && ` · ☀️ ${active.n_pv}`}
+                </span>
+              </>
+            ) : (
+              <span className="muted">{t("app.defaultGrid", { name: active?.name ?? t("app.noGrid") })}</span>
+            )}
+          </button>
           <div className="lang-switch">
             {(["de", "en"] as const).map((lng) => (
               <button key={lng} className={i18n.language === lng ? "on" : ""}

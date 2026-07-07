@@ -23,9 +23,9 @@ const VLIMIT = [
 // graph simply renders whatever arrived — so the Gemessen view shows ONLY the
 // metered quantities in the metering raster.
 // `embedded`: rendered inside an accordion Section, which owns title + close.
-export default function NodeProfile({ bus, name, now, day, view = "est", onClose, embedded = false }: {
+export default function NodeProfile({ bus, name, now, day, view = "est", stamp = 0, onClose, embedded = false }: {
   bus: number; name: string; now: number | null; day: number;
-  view?: ProfileView; onClose?: () => void; embedded?: boolean;
+  view?: ProfileView; stamp?: number; onClose?: () => void; embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const [data, setData] = useState<NodeProfiles | null>(null);
@@ -37,7 +37,7 @@ export default function NodeProfile({ bus, name, now, day, view = "est", onClose
     setData(null); setErr(null);
     api.nodeProfiles(bus, view).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [bus, day, view]);
+  }, [bus, day, view, stamp]);
 
   const meas = data?.measured ?? null;
   const powerSeries: GSeries[] = [

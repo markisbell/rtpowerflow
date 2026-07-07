@@ -95,11 +95,15 @@ EchtzeitNetzSimulator/
 │   └── test_ding0_import.py  # ding0 CSV import (geo + solve)
 ├── ui/                       # app 3: React + Vite + TS frontend (served by nginx)
 │   ├── src/views/            # NetzStudio (merged grid+loads workflow), LivePowerFlow
-│   │                         #   — opened via the desktop-style MENU BAR (MenuBar.tsx:
-│   │                         #   Netz · Simulation · Ansicht · Messungen · Schätzung ·
-│   │                         #   Hilfe); app starts in Live; Live display state (layout/
-│   │                         #   values/viewMode) lives in App (LiveView), the
-│   │                         #   transport bar stays at the bottom of Live
+│   │                         #   — opened via the desktop-style MENU BAR (MenuBar.tsx,
+│   │                         #   Variante B since 2026-07-07: Datei · Ansicht ·
+│   │                         #   Messungen · Hilfe + ALWAYS-VISIBLE Sicht segment
+│   │                         #   [Lastfluss|Gemessen|Schätzung]; "…"-items open small
+│   │                         #   dialogs — Szenario speichern, Tage exportieren,
+│   │                         #   Schätz-Richtlinie; Start/Pause only in the transport
+│   │                         #   bar; ⏺/⬇ chips + the grid chip are clickable); app
+│   │                         #   starts in Live; Live display state (layout/values/
+│   │                         #   viewMode) lives in App (LiveView)
 │   ├── src/components/       # GridDiagram (SVG), MapDiagram (Leaflet/OSM), Sparkline
 │   ├── src/api.ts · types.ts · useWebSocket.ts · scales.ts
 │   ├── Dockerfile · nginx.conf   # build static -> nginx, proxies /api + /ws
@@ -207,6 +211,7 @@ default to zeros if omitted.
 | POST | `/measurements/trafo` | Body `{trafo}` → install a transformer meter |
 | DELETE | `/measurements/trafo/{trafo}` | Remove a transformer meter |
 | POST | `/measurements/preset?name=` | Bulk: `all_nodes` \| `all_trafos` \| `substation_trafos` \| `clear` |
+| POST | `/measurements/node\|trafo` | Upsert: optional `mode` sets the DEVICE's TAF fidelity (per-device since 2026-07-07: TAF-7 household meters mix with 1-min SMGWs; `/measurements/mode` = bulk switch + default for new devices; `placement()` carries `node_modes`/`trafo_modes`, scenarios persist them, `MeasurementSet.all_standard` gates the estimation raster, `measured_curves` rasters per device; UI: TAF mini-segment in the section's Messwerte block. TAF-7 granularity is STRICT: no intra-window updates — the reading is absent until the first completed 15-min window (also right after switching), and the estimator treats a data-less meter as unmetered so its pseudo-load survives and the WLS stays observable; toggling bumps `meterStamp` so the day graphs refetch in the new raster) |
 | GET/POST | `/estimation/config` | Estimation policy (PV/EV pseudo, load basis, std %, zero injection) |
 | GET | `/recording` | Session-recorder status (active id, steps, bytes) |
 | POST | `/recording/start` | Body `{name?}` → record every published step to `data/recordings/<id>/` |
@@ -560,9 +565,10 @@ pseudo-measurements (per-bus **daily-mean** load, std = 50 % of daily peak;
 battery buses get rating-bounded pseudos since setpoints are unknown). It runs
 on a lazily deep-copied net whenever ≥ 1 meter is placed, **in the metering
 raster** (customer requirement 2026-07-07: the estimate can only be as fine as
-the meters deliver — meter mode "standard"/TAF 7 Lastgang → a new estimate only
-at 15-min window boundaries, held in between; "full"/TAF 9/10/14 → every
-1-min step), additionally **wall-clock throttled** as a pure compute guard
+the meters deliver — when ALL devices are "standard"/TAF 7 Lastgang
+(`meters.all_standard`) → a new estimate only at 15-min window boundaries,
+held in between; a single "full"/TAF 9/10/14 device → every 1-min step),
+additionally **wall-clock throttled** as a pure compute guard
 (spaced 2× its own runtime — every step on LV grids, every ~3 s on the 475-bus
 district at ~1–1.6 s; WLS with full metering on the 62-bus suburban grid costs
 ~0.4 s; numba does NOT speed pandapower's SE path).
@@ -655,17 +661,18 @@ download/delete guard against packs still being written (`_busy_ids`).
 Tests: `tests/test_exporter.py` (3). Verified live: 2 days = 2880 steps in
 62 s while the engine kept ticking (5-MiB ZIP, 2880×62 bus rows).
 
-**UI** (menu Simulation → "Daten-Export", `ExportBlock` in `MenuBar.tsx`):
-day-count input + 🧮 checkbox (include estimate) + "⬇ Tage exportieren" as
-the primary action; while running a progress row (percent + ETA + Abbrechen)
-replaces it; "⏺ Live-Sitzung aufzeichnen" toggles the recorder (live step
-count on the stop button); finished packs are listed as 💾 download links
-(the browser gets the ZIP) with ✕ delete. The menu polls every 2 s while
-open; the menu BAR itself polls every 3 s and shows chips at the right edge
-("⏺ REC n" red / "⬇ Export p %") so activity stays visible with all menus
-closed. Only finished packs appear in the list (metadata.json is written on
-stop, and the listing requires it). Still open: a manual chapter for
-recording/export.
+**UI** (since the Variante-B menu rework: menu Datei → "Daten-Export" in
+`DateiMenu`, `MenuBar.tsx`): "⬇ Tage exportieren…" opens a dialog (day
+count + include-estimate checkbox + cost hint); while running a progress
+row (percent + ETA + Abbrechen) replaces the item; "⏺ Live-Sitzung
+aufzeichnen" toggles the recorder (live step count on the stop button);
+finished packs are listed as 💾 download links with ✕ delete. The menu
+polls every 2 s while open; the menu BAR itself polls every 3 s and shows
+clickable chips ("⏺ REC n" red / "⬇ Export p %" — click opens the Datei
+menu) so activity stays visible with all menus closed. Only finished packs
+appear in the list (metadata.json is written on stop, and the listing
+requires it). Manual chapter exists (ch:export) — its screenshots/text
+still show the pre-Variante-B menu ("Simulation") and need a refresh.
 
 ### Reference scenarios (the committed teaching set, 2026-07-06)
 

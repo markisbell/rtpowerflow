@@ -542,7 +542,10 @@ async def scenarios_save(req: ScenarioSaveRequest):
                         for c in sim.controllers],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
-                         "mode": sim.meters.mode},
+                         "mode": sim.meters.mode,
+                         # per-device TAF overrides (only where they differ)
+                         "node_modes": {str(b): m for b, m in sorted(sim.meters.node_modes.items())},
+                         "trafo_modes": {str(tr): m for tr, m in sorted(sim.meters.trafo_modes.items())}},
         "engine": {"day": st["day"], "step": st["step"],
                    "interval_seconds": st["interval_seconds"]},
     }
@@ -630,6 +633,16 @@ async def scenarios_load(sid: str):
     sim.meters.prune(sim.net)
     if m.get("mode") in ("full", "standard"):
         sim.meters.set_mode(m["mode"])
+    for bus, md in (m.get("node_modes") or {}).items():   # per-device overrides
+        try:
+            sim.meters.set_node_mode(int(bus), md)
+        except (KeyError, ValueError):
+            log.warning("scenario '%s': skipped node meter mode %s=%s", sid, bus, md)
+    for tr, md in (m.get("trafo_modes") or {}).items():
+        try:
+            sim.meters.set_trafo_mode(int(tr), md)
+        except (KeyError, ValueError):
+            log.warning("scenario '%s': skipped trafo meter mode %s=%s", sid, tr, md)
 
     # 3) the engine clock, then run
     eng = doc.get("engine") or {}
@@ -745,10 +758,12 @@ def _measurements_response() -> dict:
 
 class NodeMeterRequest(BaseModel):
     bus: int
+    mode: Literal["full", "standard"] | None = None   # per-device TAF mode
 
 
 class TrafoMeterRequest(BaseModel):
     trafo: int
+    mode: Literal["full", "standard"] | None = None   # per-device TAF mode
 
 
 # --------------------------------------------------------------------------- #
@@ -788,9 +803,13 @@ def measurements():
 
 @app.post("/measurements/node")
 async def place_node_meter(req: NodeMeterRequest):
-    """Install a smart meter at a bus (reveals its voltage, P, Q, current)."""
+    """Install a smart meter at a bus (upsert: an optional ``mode`` sets or
+    changes the device's TAF fidelity — full = TAF 9/10/14 1-min telemetry,
+    standard = TAF 7 15-min Lastgang)."""
     try:
         runtime.engine.sim.place_node_meter(req.bus)
+        if req.mode:
+            runtime.engine.sim.set_node_meter_mode(req.bus, req.mode)
     except KeyError:
         raise HTTPException(404, f"unknown bus {req.bus}")
     return _measurements_response()
@@ -804,9 +823,12 @@ async def remove_node_meter(bus: int):
 
 @app.post("/measurements/trafo")
 async def place_trafo_meter(req: TrafoMeterRequest):
-    """Install a measurement at a transformer (reveals its loading, HV P/Q/I)."""
+    """Install a measurement at a transformer (upsert; optional per-device
+    TAF ``mode``, see /measurements/node)."""
     try:
         runtime.engine.sim.place_trafo_meter(req.trafo)
+        if req.mode:
+            runtime.engine.sim.set_trafo_meter_mode(req.trafo, req.mode)
     except KeyError:
         raise HTTPException(404, f"unknown transformer {req.trafo}")
     return _measurements_response()

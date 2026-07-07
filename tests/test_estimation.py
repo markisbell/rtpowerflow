@@ -62,13 +62,20 @@ def test_sparse_metering_stays_sane(lv_sim):
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")
 def test_standard_metering_p_only_degrades_estimate(lv_sim):
     """Standard metering (Lastgang): meters deliver only the 15-min mean active
-    power — no voltage, no reactive power. The estimate must still work (from
-    P readings + pseudo knowledge), just with degraded quality."""
+    power — no voltage, no reactive power, and nothing at all until the first
+    window completes. The estimate must still work (from P readings + pseudo
+    knowledge), just with degraded quality."""
     lv_sim.meters.clear()
     lv_sim.meters.apply_preset("all_nodes", lv_sim.net)
     lv_sim.meters.set_mode("standard")
     try:
-        res = lv_sim.run_step(76)
+        # strictly no intra-window granularity: right after switching, a
+        # Lastgang meter has no completed window and delivers NO reading
+        first = lv_sim.run_step(60)
+        assert all(n["p_mw"] is None for n in first.measurements["nodes"])
+        for t in range(61, 76):                 # fill one window (steps 60..74)
+            lv_sim.run_step(t)
+        res = lv_sim.run_step(76)               # window published at t=75
         assert res.converged
         readings = [n for n in res.measurements["nodes"] if n["p_mw"] is not None]
         assert readings, "standard meters delivered no P at all"
@@ -336,13 +343,25 @@ def test_estimate_raster_follows_metering_taf():
         return sim.run_step(t)
 
     assert step(76).estimated is None               # 01:16 — no boundary yet
+    for t in range(60, 75):                         # fill one Lastgang window
+        step(t)
     assert step(75).estimated["step"] == 75         # 75 = window boundary
     assert step(76).estimated["step"] == 75         # held between boundaries
+    for t in range(77, 90):                         # keep the windows flowing
+        step(t)
     assert step(90).estimated["step"] == 90         # next boundary refreshes
 
     sim.meters.set_mode("full")                     # TAF 9/10/14: every minute
     assert step(76).estimated["step"] == 76
     assert step(77).estimated["step"] == 77
+
+    # MIXED modes: a single 1-min device makes every step worth estimating,
+    # even when every other meter is a TAF-7 Lastgang device
+    sim.meters.set_mode("standard")
+    one = next(iter(sim.meters.node_buses))
+    sim.meters.set_node_mode(one, "full")
+    assert sim.meters.all_standard is False
+    assert step(76).estimated["step"] == 76
 
 
 @pytest.mark.skipif(not LV_GRID.exists(), reason="no committed LV grid")

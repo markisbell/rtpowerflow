@@ -17,9 +17,9 @@ const MEAS_COLOR = "#e6edf3";
 // view may see — the Gemessen view carries ONLY the trafo meter's readings in
 // the metering raster (TAF 7: 15-min P means, no loading; TAF 9/10/14: 1-min).
 // `embedded`: rendered inside an accordion Section, which owns title + close.
-export default function TrafoProfile({ trafo, name, now, day, view = "est", onClose, embedded = false }: {
+export default function TrafoProfile({ trafo, name, now, day, view = "est", stamp = 0, onClose, embedded = false }: {
   trafo: number; name: string; now: number | null; day: number;
-  view?: ProfileView; onClose?: () => void; embedded?: boolean;
+  view?: ProfileView; stamp?: number; onClose?: () => void; embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const [data, setData] = useState<TrafoProfiles | null>(null);
@@ -30,7 +30,7 @@ export default function TrafoProfile({ trafo, name, now, day, view = "est", onCl
     setData(null); setErr(null);
     api.trafoProfiles(trafo, view).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [trafo, day, view]);
+  }, [trafo, day, view, stamp]);
 
   const sn = data?.sn_mva ?? null;
   // apparent power, signed by the flow direction (falls back to |P| where the
