@@ -94,6 +94,51 @@ def test_unknown_bus_rejected(data_dir):
         _sim(data_dir).place_node_meter(999)
 
 
+# --- per-device metering mode (TAF 7 vs TAF 9/10/14) ------------------------- #
+def test_mixed_meter_modes_per_device(data_dir):
+    """A TAF-7 household meter and a 1-min SMGW coexist: the standard device
+    delivers only the windowed P (no V/Q/I, nothing until its first window
+    completes), the full device everything every step."""
+    sim = _sim(data_dir)
+    sim.place_node_meter(1)
+    sim.place_node_meter(2)
+    sim.set_node_meter_mode(2, "standard")
+
+    first = sim.run_step(705)
+    by_bus = {n["bus"]: n for n in first.measurements["nodes"]}
+    assert by_bus[1]["p_mw"] is not None               # 1-min device: instant
+    assert by_bus[2]["p_mw"] is None                   # TAF 7: no window yet
+    for t in range(706, 720):                          # fill window 705..719
+        sim.run_step(t)
+    res = sim.run_step(720)                            # boundary: mean published
+
+    by_bus = {n["bus"]: n for n in res.measurements["nodes"]}
+    full, std = by_bus[1], by_bus[2]
+    assert full["vm_pu"] is not None and full["q_mvar"] is not None
+    assert std["vm_pu"] is None and std["q_mvar"] is None and std["i_ka"] is None
+    assert std["p_mw"] is not None                     # the Lastgang P survives
+
+    pl = sim.measurement_placement()
+    assert pl["node_modes"][1] == "full" and pl["node_modes"][2] == "standard"
+    assert sim.meters.all_standard is False
+
+
+def test_bulk_mode_clears_device_overrides(data_dir):
+    sim = _sim(data_dir)
+    sim.place_node_meter(1)
+    sim.place_node_meter(2)
+    sim.set_node_meter_mode(2, "standard")
+    sim.set_meter_mode("full")                          # bulk: alle auf TAF 9
+    assert sim.meters.mode_of_node(2) == "full"
+    sim.set_meter_mode("standard")                      # bulk: alle auf TAF 7
+    assert sim.meters.mode_of_node(1) == "standard"
+    assert sim.meters.all_standard is True
+    with pytest.raises(KeyError):                       # mode only on placed meters
+        sim.set_node_meter_mode(3, "standard")
+    with pytest.raises(ValueError):
+        sim.set_node_meter_mode(1, "bogus")
+
+
 # --- transformer meters (inline net, since the sample grid has no trafo) ---- #
 def test_trafo_meter_observation():
     import pandapower as pp

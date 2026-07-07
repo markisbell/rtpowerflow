@@ -644,9 +644,18 @@ class Simulator:
         self.meters.apply_preset(name, self.net)
 
     def set_meter_mode(self, name: str) -> None:
-        """Meter fidelity: "full" (V/P/Q/I per step) or "standard" (15-min mean
-        P only). The daily-sweep cache re-keys on it automatically."""
+        """Bulk meter fidelity: switch EVERY placed device and the default for
+        new ones — "full" (TAF 9/10/14: V/P/Q/I per step) or "standard"
+        (TAF 7 Lastgang: 15-min mean P only). Per-device overrides via
+        ``set_node_meter_mode`` / ``set_trafo_meter_mode``; the daily-sweep
+        estimate cache re-keys on the modes automatically."""
         self.meters.set_mode(name)
+
+    def set_node_meter_mode(self, bus: int, name: str) -> None:
+        self.meters.set_node_mode(bus, name)
+
+    def set_trafo_meter_mode(self, trafo: int, name: str) -> None:
+        self.meters.set_trafo_mode(trafo, name)
 
     def _price_ctx(self, day: int, t: int) -> dict:
         if self.prices is None or not len(self.prices):
@@ -751,13 +760,14 @@ class Simulator:
                     self.net, self.prof, self._loads_at, self._sgens_at,
                     ev_rows=ev_rows, household_rows=household_rows,
                     household_counts=hh_counts, config=self.est_config)
-            # the estimate can only be as fine as the METERING raster: standard
-            # mode (TAF 7 Lastgang) delivers new readings once per 15-min
-            # window, so a new estimate is only due at window boundaries; full
-            # mode (TAF 9/10/14) delivers every step (1 min). The wall-clock
-            # spacing below is purely a compute guard for very large grids.
+            # the estimate can only be as fine as the METERING raster: when
+            # EVERY device is a TAF-7 Lastgang meter, new readings arrive only
+            # once per 15-min window, so a new estimate is only due at window
+            # boundaries; a single TAF-9/10/14 device (1-min) makes every step
+            # worth estimating. The wall-clock spacing below is purely a
+            # compute guard for very large grids.
             raster = (max(1, round(15 * self.steps_per_day / 1440))
-                      if self.meters.mode == "standard" else 1)
+                      if self.meters.all_standard else 1)
             now = time.monotonic()
             if t % raster == 0 and now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
@@ -1070,17 +1080,18 @@ class Simulator:
 
     def measured_curves(self, day: int | None = None) -> dict:
         """The MEASURED layer of the day graphs, derived from the truth sweep:
-        only elements that carry a device, only the quantities that device
-        delivers, in the metering raster — full mode (TAF 9/10/14) passes the
-        1-min values through, standard mode (TAF 7 Lastgang) reduces to the
-        15-min window mean of the ACTIVE power (voltage/loading unknown).
-        Cheap array math on the cached truth arrays — never cached itself, so
+        only elements that carry a device, only the quantities THAT device
+        delivers, in ITS metering raster — a full-mode device (TAF 9/10/14)
+        passes the 1-min values through, a standard-mode device (TAF 7
+        Lastgang) reduces to the 15-min window mean of the ACTIVE power
+        (voltage/loading unknown). Modes mix freely per device. Cheap array
+        math on the cached truth arrays — never cached itself, so
         placement/mode changes take effect immediately."""
         d = self.day if day is None else day
         truth = self.daily_curves(d)
         spd = self.steps_per_day
-        standard = self.meters.mode == "standard"
         win = self._raster_steps(15)
+        full_raster = round(1440 / spd)
 
         def window_mean(row: list) -> list:
             out: list = [None] * spd
@@ -1097,17 +1108,22 @@ class Simulator:
             p = truth["bus_p"].get(b)
             if p is None:
                 continue
-            nodes[b] = ({"p_mw": window_mean(p), "vm": None} if standard
-                        else {"p_mw": p, "vm": truth["bus_vm"].get(b)})
+            if self.meters.mode_of_node(b) == "standard":
+                nodes[b] = {"p_mw": window_mean(p), "vm": None, "raster_min": 15}
+            else:
+                nodes[b] = {"p_mw": p, "vm": truth["bus_vm"].get(b),
+                            "raster_min": full_raster}
         trafos: dict[int, dict] = {}
         for tr in sorted(self.meters.trafo_idxs):
             p = truth["trafo_p_hv"].get(tr)
             if p is None:
                 continue
-            trafos[tr] = ({"p_hv": window_mean(p), "loading": None} if standard
-                          else {"p_hv": p, "loading": truth["trafo_loading"].get(tr)})
-        return {"raster_min": 15 if standard else round(1440 / spd),
-                "nodes": nodes, "trafos": trafos}
+            if self.meters.mode_of_trafo(tr) == "standard":
+                trafos[tr] = {"p_hv": window_mean(p), "loading": None, "raster_min": 15}
+            else:
+                trafos[tr] = {"p_hv": p, "loading": truth["trafo_loading"].get(tr),
+                              "raster_min": full_raster}
+        return {"nodes": nodes, "trafos": trafos}
 
     def daily_est(self, day: int | None = None) -> dict:
         """The ESTIMATED layer of the day graphs: a lazy WLS mini-sweep that
@@ -1120,7 +1136,7 @@ class Simulator:
         d = self.day if day is None else day
         truth = self.daily_curves(d)
         sig = (frozenset(self.meters.node_buses), frozenset(self.meters.trafo_idxs),
-               self.meters.mode, dataclasses.astuple(self.est_config))
+               self.meters.modes_signature(), dataclasses.astuple(self.est_config))
         cached = truth.get("_est")
         if cached is not None and cached.get("_sig") == sig:
             return cached
@@ -1147,9 +1163,11 @@ class Simulator:
             # must not disturb the live meters' state
             sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),
                                           trafo_idxs=set(self.meters.trafo_idxs),
-                                          mode=self.meters.mode)
+                                          mode=self.meters.mode,
+                                          node_modes=dict(self.meters.node_modes),
+                                          trafo_modes=dict(self.meters.trafo_modes))
             est_bats = {b.bus: b.power_mw for b in self.batteries}
-            meter_raster = self._raster_steps(15) if self.meters.mode == "standard" else 1
+            meter_raster = self._raster_steps(15) if self.meters.all_standard else 1
             est_steps = max(self._raster_steps(self._est_sweep_min or 15), meter_raster)
             redo: list[int] = []
             for t, solved in self._sweep_solves(net, bs, d,
@@ -1226,7 +1244,7 @@ class Simulator:
             m = self.measured_curves(self.day)
             node = m["nodes"].get(bus)
             if node is not None:
-                out["measured"] = {**node, "raster_min": m["raster_min"]}
+                out["measured"] = dict(node)
         if view == "est":
             out["est_voltage"] = self.daily_est(self.day)["est_bus_vm"].get(bus)
         return out
@@ -1272,7 +1290,7 @@ class Simulator:
             m = self.measured_curves(self.day)
             tm = m["trafos"].get(trafo)
             if tm is not None:
-                out["measured"] = {**tm, "raster_min": m["raster_min"]}
+                out["measured"] = dict(tm)
         if view == "est":
             out["est_power"] = self.daily_est(self.day)["est_trafo_p_hv"].get(trafo)
         return out

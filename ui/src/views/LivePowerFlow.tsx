@@ -52,6 +52,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [evBuses, setEvBuses] = useState<number[]>([]);
   const [pvBuses, setPvBuses] = useState<number[]>([]);
   const [derStamp, setDerStamp] = useState(0);
+  // meter placement / per-device TAF changes -> day graphs refetch (the
+  // measured layer rasters per device, so stale data would lie)
+  const [meterStamp, setMeterStamp] = useState(0);
   // Three parallel views of the grid: ground truth (default, so a fresh session
   // sees a normal colored grid), the strict observed-only projection, and the
   // WLS state estimate computed from the placed meters (estimator.py).
@@ -253,14 +256,26 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const placeMeterAt = async (kind: SelKind, id: number) => {
     if (kind === "bus") setPlacement(await api.placeNodeMeter(id));
     else if (kind === "trafo") setPlacement(await api.placeTrafoMeter(id));
+    setMeterStamp((s) => s + 1);
     pinSection(kind, id);
   };
   const removeMeterAt = async (kind: SelKind, id: number) => {
     if (kind === "bus") setPlacement(await api.removeNodeMeter(id));
     else if (kind === "trafo") setPlacement(await api.removeTrafoMeter(id));
+    setMeterStamp((s) => s + 1);
   };
   const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
   const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
+  // per-device TAF fidelity (the upsert POST also changes an existing meter)
+  const meterModeAt = (kind: SelKind, id: number): MeterMode =>
+    ((kind === "trafo" ? placement?.trafo_modes?.[String(id)]
+                       : placement?.node_modes?.[String(id)])
+     ?? placement?.mode ?? "full");
+  const setMeterModeAt = async (kind: SelKind, id: number, m: MeterMode) => {
+    if (kind === "bus") setPlacement(await api.placeNodeMeter(id, m));
+    else if (kind === "trafo") setPlacement(await api.placeTrafoMeter(id, m));
+    setMeterStamp((s) => s + 1);   // day graphs refetch in the device's new raster
+  };
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -345,6 +360,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
         {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       controllerBuses={controllerBuses}
+                      selectedBuses={selBuses} selectedTrafos={selTrafos}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
@@ -476,9 +492,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                               ...(sec.kind === "bus" && pvBuses.includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
                      onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
-              {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
-              {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
-              {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} />}
+              {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
+              {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
+              {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
 
               {sec.kind === "bus" && (evBuses.includes(sec.id) || pvBuses.includes(sec.id)) && (
                 <DerPanel bus={sec.id} stamp={derStamp} onChanged={() => setDerStamp((v) => v + 1)} />
@@ -486,18 +502,28 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
 
               {metered && (
                 <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
                     <span style={{ fontWeight: 600 }}>📟 {t("sec.readings")}</span>
+                    <span className="mbar-seg mini" title={t("meas.deviceModeTitle")}>
+                      <button className={meterModeAt(sec.kind, sec.id) === "full" ? "on" : ""}
+                              onClick={() => setMeterModeAt(sec.kind, sec.id, "full")}>
+                        {t("meas.modeFull")}
+                      </button>
+                      <button className={meterModeAt(sec.kind, sec.id) === "standard" ? "on" : ""}
+                              onClick={() => setMeterModeAt(sec.kind, sec.id, "standard")}>
+                        {t("meas.modeStd")}
+                      </button>
+                    </span>
                     <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
                             onClick={() => removeMeterAt(sec.kind, sec.id)}>{t("menu.removeMeter")}</button>
                   </div>
                   <div className="muted" style={{ fontSize: "0.74rem", fontVariantNumeric: "tabular-nums" }}>
                     {sec.kind === "bus" && (nm
-                      ? [nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu * V_BASE, 1) }) : null,
+                      ? ([nm.vm_pu != null ? t("tip.voltA", { v: fmt(nm.vm_pu * V_BASE, 1) }) : null,
                          nm.p_mw != null ? t("tip.meterP", { v: fmt(nm.p_mw * 1000, 1) }) : null,
                          nm.q_mvar != null ? t("tip.meterQ", { v: fmt(nm.q_mvar * 1000, 1) }) : null,
                          nm.i_ka != null ? t("tip.meterI", { v: fmt(nm.i_ka * 1000, 1) }) : null,
-                        ].filter(Boolean).join(" · ")
+                        ].filter(Boolean).join(" · ") || "—")
                       : "—")}
                     {sec.kind === "trafo" && (tm
                       ? `${tm.loading_percent != null ? `${fmt(tm.loading_percent, 1)} %` : "—"}${tm.p_hv_mw != null ? ` · ${t("tip.meterP", { v: fmt(tm.p_hv_mw * 1000, 1) })}` : ""}`

@@ -257,7 +257,11 @@ export interface MeasurementsResponse {
   node_buses: number[];
   trafo_idxs: number[];
   coverage: Coverage;
+  /** default TAF mode for newly placed devices (set_mode = bulk switch) */
   mode?: MeterMode;
+  /** per-device TAF mode, default resolved (JSON keys are stringified ids) */
+  node_modes?: Record<string, MeterMode>;
+  trafo_modes?: Record<string, MeterMode>;
   presets: MeterPreset[];
   expose_ground_truth: boolean;
 }

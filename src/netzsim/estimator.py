@@ -148,11 +148,17 @@ class Estimator:
             pp.create_measurement(net, "v", "bus", float(row["vm_pu"]), STD_V_SLACK,
                                   element=int(row["bus"]))
 
-        # node meters: whatever quantities the device delivered
+        # node meters: whatever quantities the device delivered. A device that
+        # delivered NOTHING (a TAF-7 Lastgang meter before its first completed
+        # 15-min window) counts as unmetered — it keeps its pseudo-load below,
+        # otherwise the WLS loses that bus's injection knowledge entirely and
+        # the system can turn unobservable.
         metered: set[int] = set()
         for nm in observed.get("nodes", []):
             b = int(nm["bus"])
             if b not in net.bus.index:
+                continue
+            if nm.get("vm_pu") is None and nm.get("p_mw") is None:
                 continue
             metered.add(b)
             full = nm.get("q_mvar") is not None

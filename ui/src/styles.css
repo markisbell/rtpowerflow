@@ -38,6 +38,11 @@ body { background: var(--bg); color: var(--text); }
 .tabs button:disabled { color: #555; cursor: not-allowed; }
 .active-chip { margin-left: auto; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+/* the grid chip acts like a status-bar item: click opens Netz & Lasten */
+.chip-btn { background: transparent; border: none; color: inherit; font: inherit;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 6px; border-radius: 6px; }
+.chip-btn:hover { background: var(--panel-2); }
 .lang-switch { display: inline-flex; gap: 2px; margin-left: 0.6rem; }
 .lang-switch button {
   background: transparent; color: var(--muted); border: 1px solid var(--border);
@@ -54,8 +59,8 @@ body { background: var(--bg); color: var(--text); }
 .mbar-menu { position: relative; z-index: 1200; }
 .mbar-menu > button {
   background: transparent; color: var(--muted); border: 1px solid transparent;
-  padding: 0.45rem 0.9rem; border-radius: 8px; cursor: pointer;
-  font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em;
+  padding: 0.32rem 0.7rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.87rem; font-weight: 500; letter-spacing: 0.01em;
 }
 .mbar-menu > button:hover { background: var(--panel-2); color: var(--text); }
 .mbar-menu > button.on { background: var(--panel-2); border-color: var(--border); color: var(--text); }
@@ -89,6 +94,55 @@ body { background: var(--bg); color: var(--text); }
 .mbar-drop .mi-hdr { color: var(--muted); font-size: 0.68rem; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px 2px; }
 .mbar-drop .dot { width: 7px; height: 7px; flex: none; }
+
+/* flyout submenus ("Szenario laden ▸", "Aufzeichnungen ▸") keep the parent
+   dropdown a short command list */
+.mi-sub { position: relative; }
+.mi-sub > .mi { width: 100%; }
+.mi-sub .grow-label { flex: 1; min-width: 0; }
+.mi-sub .sub-arrow { color: var(--muted); flex: none; font-size: 0.78rem; }
+.mbar-drop.sub { position: absolute; left: calc(100% + 2px); top: -6px;
+  min-width: 260px; max-width: 360px; }
+
+/* the always-visible Sicht segment (Lastfluss / Gemessen / Schätzung) */
+.mbar-seg { display: inline-flex; margin-left: 10px; border: 1px solid var(--border);
+  border-radius: 7px; overflow: hidden; flex: none; }
+.mbar-seg button { background: transparent; color: var(--muted); border: none;
+  padding: 4px 11px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+.mbar-seg button + button { border-left: 1px solid var(--border); }
+.mbar-seg button:hover:not(:disabled):not(.on) { color: var(--text); background: var(--panel-2); }
+.mbar-seg button.on { background: var(--accent-2, #4c8dff); color: #fff; }
+.mbar-seg button:disabled { opacity: 0.4; cursor: default; }
+/* compact variant: the per-device TAF switch in a section's readings block */
+.mbar-seg.mini { margin-left: 0; border-radius: 5px; }
+.mbar-seg.mini button { padding: 1px 7px; font-size: 0.66rem; }
+
+/* activity chips (recording / bulk export) — click jumps into the Datei menu */
+.mbar-chip { background: transparent; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--muted); font-size: 0.76rem; padding: 2px 8px; cursor: pointer;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mbar-chip:hover { color: var(--text); }
+.mbar-chip.rec { color: #f85149; border-color: rgba(248, 81, 73, 0.45); }
+
+/* small modal dialogs opened by "…" menu items */
+.dlg-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 1500; }
+.dlg { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); z-index: 1501;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  min-width: 340px; max-width: 92vw; padding: 12px 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); font-size: 0.85rem; }
+.dlg-head { display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; margin-bottom: 10px; gap: 12px; }
+.dlg-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.dlg-row input:not([type="checkbox"]) { flex: 1; min-width: 0; background: var(--panel-2);
+  color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 8px; font-size: 0.85rem; }
+.dlg-note { color: var(--muted); font-size: 0.76rem; margin: 6px 0; max-width: 340px; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.dlg button.mini { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
+.dlg button.mini:hover:not(:disabled) { color: var(--text); }
+.dlg button.mini:disabled { opacity: 0.5; cursor: default; }
+.dlg button.mini.primary { background: var(--accent-2, #4c8dff); color: #fff; border-color: transparent; }
 
 /* Estimation panel (inside the Schätzung menu) */
 .est-body { width: 320px; padding: 4px 6px; display: flex; flex-direction: column; gap: 6px; }
@@ -250,7 +304,10 @@ button.ghost {
 .map-layers button.on { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
 .map-colorbars {
   position: absolute; right: 10px; bottom: 14px; z-index: 650;
-  display: flex; gap: 20px; align-items: flex-end;
+  /* flex-start: both ramps begin flush at the top, right under their
+     100 % / ±10 % labels — a two-line caption below must not push a
+     column (and with it the ramp) downwards */
+  display: flex; gap: 20px; align-items: flex-start;
   background: #ffffffe6; border: 1px solid #d0d0d0; border-radius: 8px;
   padding: 11px 15px 10px; box-shadow: 0 1px 6px #00000033;
 }
@@ -258,7 +315,7 @@ button.ghost {
 .cb-ramp { width: 18px; height: 138px; border: 1px solid #00000033; border-radius: 2px; }
 .cb-top, .cb-bot, .cb-cap { font-size: 0.93rem; color: #222; font-variant-numeric: tabular-nums; }
 .cb-cap { margin-top: 4px; max-width: 90px; text-align: center; line-height: 1.1;
-          overflow-wrap: anywhere; hyphens: auto; }
+          overflow-wrap: anywhere; hyphens: auto; min-height: 2.2em; }
 .layout-toggle { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 2px; }
 .layout-toggle button {
   background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);

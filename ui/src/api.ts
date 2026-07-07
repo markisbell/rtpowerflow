@@ -108,9 +108,11 @@ export const api = {
 
   // observability: measurement device placement
   measurements: () => get<MeasurementsResponse>("/measurements"),
-  placeNodeMeter: (bus: number) => post<MeasurementsResponse>("/measurements/node", { bus }),
+  placeNodeMeter: (bus: number, mode?: MeterMode) =>
+    post<MeasurementsResponse>("/measurements/node", { bus, mode: mode ?? null }),
   removeNodeMeter: (bus: number) => del<MeasurementsResponse>(`/measurements/node/${bus}`),
-  placeTrafoMeter: (trafo: number) => post<MeasurementsResponse>("/measurements/trafo", { trafo }),
+  placeTrafoMeter: (trafo: number, mode?: MeterMode) =>
+    post<MeasurementsResponse>("/measurements/trafo", { trafo, mode: mode ?? null }),
   removeTrafoMeter: (trafo: number) => del<MeasurementsResponse>(`/measurements/trafo/${trafo}`),
   scenarios: () => get<{ scenarios: Scenario[] }>("/scenarios"),
   saveScenario: (name: string, description: string) =>

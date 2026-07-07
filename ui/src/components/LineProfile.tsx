@@ -10,9 +10,9 @@ import ProfileGraph from "./ProfileGraph";
 // view deliberately shows nothing but a hint — a line current only becomes
 // visible through the power flow (truth) or the state estimate.
 // `embedded`: rendered inside an accordion Section, which owns title + close.
-export default function LineProfile({ line, name, now, day, view = "est", onClose, embedded = false }: {
+export default function LineProfile({ line, name, now, day, view = "est", stamp = 0, onClose, embedded = false }: {
   line: number; name: string; now: number | null; day: number;
-  view?: ProfileView; onClose?: () => void; embedded?: boolean;
+  view?: ProfileView; stamp?: number; onClose?: () => void; embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const [data, setData] = useState<LineProfiles | null>(null);
@@ -23,7 +23,7 @@ export default function LineProfile({ line, name, now, day, view = "est", onClos
     setData(null); setErr(null);
     api.lineProfiles(line, view).then((d) => alive && setData(d)).catch((e) => alive && setErr(String(e)));
     return () => { alive = false; };
-  }, [line, day, view]);
+  }, [line, day, view, stamp]);
 
   const hasData = (data?.current?.length ?? 0) > 0 && data!.current.some((v) => v != null);
   const hasEst = (data?.est_current?.length ?? 0) > 0 && data!.est_current!.some((v) => v != null);
