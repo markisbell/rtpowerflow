@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import dataclasses
 import json
 import logging
@@ -21,6 +22,7 @@ from .estimator import EstConfig
 from .battery import MODES
 from .grid_catalog import GridCatalog, preview
 from .measurements import METER_MODES, PRESETS
+from .exporter import BulkExporter
 from .realpv import load_prices, load_pv_days
 from .recorder import Recorder
 from .scenarios import ScenarioStore, _slug
@@ -47,6 +49,7 @@ class App:
     catalog: GridCatalog
     library: LoadLibrary
     recorder: Recorder
+    exporter: BulkExporter
     active: dict
     pv_dates: list
     pv_peak_w: float
@@ -103,12 +106,15 @@ async def lifespan(app: FastAPI):
     # session recorder: taps the store's published (projected) payload stream
     runtime.recorder = Recorder(settings.recordings_dir)
     runtime.store.set_sink(runtime.recorder.record)
+    runtime.exporter = BulkExporter(settings.recordings_dir)
     if settings.record:                       # continuous operation (env opt-in)
         runtime.recorder.start(_recording_meta())
     if settings.autostart:
         runtime.engine.start_loop()
     yield
     await runtime.engine.stop()
+    if runtime.exporter.active_id:
+        await asyncio.to_thread(runtime.exporter.cancel)
     await asyncio.to_thread(runtime.recorder.stop)
 
 
@@ -249,11 +255,16 @@ def recordings():
             "active": runtime.recorder.status()}
 
 
+def _busy_ids() -> set:
+    """Packs that are being written right now (live recording or bulk export)."""
+    return {runtime.recorder.status().get("id"), runtime.exporter.active_id} - {None}
+
+
 @app.get("/recordings/{rid}/download")
 def recording_download(rid: str):
     """The recording as a ZIP of CSVs + metadata.json."""
-    if runtime.recorder.status().get("id") == rid:
-        raise HTTPException(409, "recording is still active — stop it first")
+    if rid in _busy_ids():
+        raise HTTPException(409, "recording is still being written — stop it first")
     try:
         zp = runtime.recorder.pack(rid)
     except KeyError:
@@ -264,13 +275,69 @@ def recording_download(rid: str):
 @app.delete("/recordings/{rid}")
 def recording_delete(rid: str):
     """Remove a stored recording (and its cached ZIP)."""
-    if runtime.recorder.status().get("id") == rid:
-        raise HTTPException(409, "recording is still active — stop it first")
+    if rid in _busy_ids():
+        raise HTTPException(409, "recording is still being written — stop it first")
     try:
         runtime.recorder.delete(rid)
     except KeyError:
         raise HTTPException(404, f"unknown recording '{rid}'")
     return {"deleted": rid}
+
+
+# --------------------------------------------------------------------------- #
+# Bulk export: replay whole days offline into a recording pack (exporter.py)
+# --------------------------------------------------------------------------- #
+class ExportDaysRequest(BaseModel):
+    """``days`` is either a count (3 → days 0..2) or an explicit list of day
+    indices (real-PV days, e.g. [0, 5, 11]); day indices wrap modulo the
+    available PV days, exactly like the live day counter."""
+    days: int | list[int] = Field(..., description="count or explicit day indices")
+    name: str | None = None
+    estimate: bool = True
+
+
+@app.post("/export/days")
+async def export_days(req: ExportDaysRequest):
+    """Simulate whole days of the CURRENT setup as fast as possible and store
+    them as a recording pack (appears under /recordings when finished)."""
+    if runtime.exporter.active_id:
+        raise HTTPException(409, "a bulk export is already running")
+    days = list(range(req.days)) if isinstance(req.days, int) else [int(d) for d in req.days]
+    if not days or len(days) > 366 or any(d < 0 for d in days):
+        raise HTTPException(400, "days must be 1..366 or a list of day indices >= 0")
+
+    # take a CLEAN copy: briefly park the engine so no solve is mid-flight,
+    # deep-copy off the event loop, then let the live clock tick on
+    eng = runtime.engine
+    was_running = eng.status["running"]
+    if was_running:
+        eng.pause()
+        await asyncio.sleep(min(eng.interval, 1.0) + 0.1)   # drain in-flight step
+    try:
+        sim_copy = await asyncio.to_thread(copy.deepcopy, eng.sim)
+    finally:
+        if was_running:
+            eng.resume()
+    try:
+        return runtime.exporter.start(sim_copy, _recording_meta(), days,
+                                      estimate=req.estimate, name=req.name)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.get("/export")
+def export_status():
+    """Progress of the bulk export (steps done/total, ETA, errors)."""
+    return runtime.exporter.status()
+
+
+@app.post("/export/cancel")
+def export_cancel():
+    """Stop the running bulk export; the partial pack is kept and finalized."""
+    try:
+        return runtime.exporter.cancel()
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
 
 
 # These run on the event loop (async def) — the engine schedules its loop task

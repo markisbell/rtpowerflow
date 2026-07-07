@@ -69,6 +69,7 @@ EchtzeitNetzSimulator/
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
 │   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip, recorder sink)
 │   ├── recorder.py           # session recording: published step stream -> tidy CSVs on disk (+ ZIP)
+│   ├── exporter.py           # bulk export: offline replay of whole days into a recorder pack
 │   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + measurements + monitor
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
 │   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user)
@@ -211,8 +212,11 @@ default to zeros if omitted.
 | POST | `/recording/start` | Body `{name?}` → record every published step to `data/recordings/<id>/` |
 | POST | `/recording/stop` | Finish the active recording (writes metadata.json) |
 | GET | `/recordings` | Stored recordings + active status |
-| GET | `/recordings/{id}/download` | The recording as a ZIP of CSVs (409 while active) |
+| GET | `/recordings/{id}/download` | The recording as a ZIP of CSVs (409 while being written) |
 | DELETE | `/recordings/{id}` | Remove a stored recording |
+| POST | `/export/days` | Body `{days: n\|[..], name?, estimate?}` → replay whole days offline into a pack |
+| GET | `/export` | Bulk-export progress (steps done/total, ETA, error) |
+| POST | `/export/cancel` | Stop the running bulk export (partial pack is finalized) |
 | WS | `/ws` | Live stream: one JSON `StepResult` per solved step |
 
 **`StepResult`** (see `simulator.py`): `step, day, time_of_day ("HH:MM"),
@@ -622,11 +626,31 @@ reproducibility recipe (grid + loadgen, meter placement/TAF mode, est
 policy, engine interval, netzsim version). One recording = ONE
 configuration: `/config/apply` and scenario load auto-finish the active
 recording (and start a fresh one when `NETZSIM_RECORD=true`). Download
-packs a cached ZIP (`Recorder.pack`, 409 while active); ids are validated
-against path traversal. Tests: `tests/test_recorder.py` (5). Verified live:
-91 steps on scenario 2 → 91×62 bus rows, 91×12 meter rows, 32 estimate
-blocks, 241-KiB ZIP. Round 2 (open): UI (Simulation menu ⏺/⏹ + list +
-download) and a manual chapter.
+packs a cached ZIP (`Recorder.pack`, 409 while being written); ids are
+validated against path traversal. Tests: `tests/test_recorder.py` (5).
+Verified live: 91 steps on scenario 2 → 91×62 bus rows, 91×12 meter rows,
+32 estimate blocks, 241-KiB ZIP.
+
+**Bulk export** (`exporter.py`, the primary teaching path — customer
+decision: "give me N days as one pack" beats waiting for the accelerated
+clock): `POST /export/days {days: n|[indices], name?, estimate?}` REPLAYS
+the current setup offline — the endpoint briefly pauses the engine, deep-
+copies the live Simulator (runtime DERs, batteries, controllers, meters,
+policy included; no locks per project convention, the pause drains the
+in-flight step), resumes the clock and drives `run_step` over every step of
+the requested days in a worker thread, feeding a private `Recorder`. Output
+is byte-compatible with a live recording and appears under `/recordings`.
+Replay = LIVE physics: batteries start at 50 % SOC and integrate across
+midnight, controllers really regulate, the estimate runs forced-fresh in
+the metering raster (`estimate=false` skips WLS — much faster on TAF-9
+setups where SE dominates). Day indices wrap modulo the real-PV days.
+Progress via `GET /export` (steps, ETA), `POST /export/cancel` finalizes
+the partial pack (`export.cancelled` in metadata). One export at a time;
+download/delete guard against packs still being written (`_busy_ids`).
+Tests: `tests/test_exporter.py` (3). Verified live: 2 days = 2880 steps in
+62 s while the engine kept ticking (5-MiB ZIP, 2880×62 bus rows). Round 2
+(open): UI ("Tage exportieren…" as the primary button, live recording ⏺/⏹
+secondary, list + download) and a manual chapter.
 
 ### Reference scenarios (the committed teaching set, 2026-07-06)
 
