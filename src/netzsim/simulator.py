@@ -14,6 +14,7 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .controller import SCOPES, Controller
+from .ront import RONT_STEP_PERCENT, RONT_TAP_MAX, RONT_TAP_MIN, Ront
 from .data_loader import InputData
 from .estimator import EstConfig, Estimator, HierarchicalEstimator, wants_hierarchy
 from .measurements import MeasurementSet
@@ -37,6 +38,8 @@ class StepResult:
     batteries: list[dict[str, Any]] = field(default_factory=list)
     # placed overload controllers with their live curtailment factors
     controllers: list[dict[str, Any]] = field(default_factory=list)
+    # activated rONTs (on-load tap changers) with their live tap positions
+    ronts: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
     # Observability projection: what the placed measurement devices reveal (see
@@ -166,6 +169,11 @@ class Simulator:
         # placed overload controllers (like batteries: per-simulator, reset on swap)
         self.controllers: list[Controller] = []
         self._next_cid = 1
+        # activated rONTs (per-simulator, reset on swap); originals keep the
+        # transformer's shipped tap data for a clean removal
+        self.ronts: list[Ront] = []
+        self._next_rid = 1
+        self._ront_orig: dict[int, dict[str, Any]] = {}
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
         self._loads_at: dict[int, list[int]] = {}
         for i, li in enumerate(self.prof.load_idx):
@@ -524,6 +532,86 @@ class Simulator:
                                  None)
                 exporting = p_bus is not None and float(p_bus) < 0.0
             _act(c, seen, exporting)
+
+    # -- rONT: on-load tap changer per station transformer ------------------ #
+    def add_ront(self, trafo: int, v_target: float = 1.0,
+                 deadband: float = 0.015) -> Ront:
+        """Activate an rONT on a transformer: upgrade its tap data in place
+        (±4 × 1.5 %, neutral start) and regulate the LV busbar from now on."""
+        if trafo not in self.net.trafo.index:
+            raise KeyError(trafo)
+        if any(r.trafo == trafo for r in self.ronts):
+            raise ValueError(f"trafo {trafo} already has an rONT")
+        tap_cols = ("tap_side", "tap_neutral", "tap_min", "tap_max",
+                    "tap_step_percent", "tap_pos")
+        self._ront_orig[int(trafo)] = {
+            c: self.net.trafo.at[trafo, c] for c in tap_cols
+            if c in self.net.trafo.columns}
+        self.net.trafo.at[trafo, "tap_side"] = "hv"
+        self.net.trafo.at[trafo, "tap_neutral"] = 0
+        self.net.trafo.at[trafo, "tap_min"] = RONT_TAP_MIN
+        self.net.trafo.at[trafo, "tap_max"] = RONT_TAP_MAX
+        self.net.trafo.at[trafo, "tap_step_percent"] = RONT_STEP_PERCENT
+        self.net.trafo.at[trafo, "tap_pos"] = 0
+        cell = next((cid for cid, ts in self._cell_trafos.items() if trafo in ts), None)
+        r = Ront(rid=self._next_rid, trafo=int(trafo),
+                 busbar=int(self.net.trafo.at[trafo, "lv_bus"]), cell=cell,
+                 v_target=float(v_target), deadband=float(deadband))
+        self._next_rid += 1
+        self.ronts.append(r)
+        self._solved_once = False       # ratio changed: solve cold next step
+        self._estimator = None          # est model copies the tap data lazily
+        self._est_last = None
+        return r
+
+    def remove_ront(self, rid: int) -> bool:
+        r = next((x for x in self.ronts if x.rid == rid), None)
+        if r is None:
+            return False
+        for c, v in self._ront_orig.pop(r.trafo, {}).items():
+            self.net.trafo.at[r.trafo, c] = v
+        self.ronts = [x for x in self.ronts if x.rid != rid]
+        self._solved_once = False
+        self._estimator = None
+        self._est_last = None
+        return True
+
+    def set_ront(self, rid: int, v_target: float | None = None,
+                 deadband: float | None = None) -> bool:
+        for r in self.ronts:
+            if r.rid == rid:
+                if v_target is not None:
+                    r.v_target = float(v_target)
+                if deadband is not None:
+                    r.deadband = float(deadband)
+                return True
+        return False
+
+    def _ront_update(self, res: "StepResult") -> None:
+        """One regulation step per rONT — fed ONLY from the operator's view of
+        its busbar: the smart-meter voltage where one delivers V, else the
+        state estimate. Estimate-fed regulators act once per new telegram;
+        without data the rONT is blind and holds. The chosen tap acts on the
+        NEXT step (written to the net here)."""
+        est = res.estimated if isinstance(res.estimated, dict) else {}
+        est_stamp = est.get("seq") if est else None
+        for r in self.ronts:
+            v = next((n["vm_pu"] for n in (res.measurements or {}).get("nodes", [])
+                      if n.get("bus") == r.busbar and n.get("vm_pu") is not None),
+                     None)
+            src = "meter" if v is not None else None
+            if v is None:
+                v = next((b["vm_pu"] for b in est.get("buses") or []
+                          if b.get("index") == r.busbar and b.get("vm_pu") is not None),
+                         None)
+                src = "estimate" if v is not None else None
+            r.seen_v, r.seen_src = (float(v) if v is not None else None), src
+            if src == "estimate":
+                if r.est_stamp == est_stamp:
+                    continue                     # stale telegram: hold
+                r.est_stamp = est_stamp
+            if r.update(r.seen_v):
+                self.net.trafo.at[r.trafo, "tap_pos"] = r.tap_pos
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -927,6 +1015,11 @@ class Simulator:
         if converged and self.controllers:
             self._controller_update(res)
             res.controllers = [c.as_dict() for c in self.controllers]
+        # the rONT closes its loop the same way: observed busbar voltage of
+        # THIS step decides the tap position of the NEXT one
+        if converged and self.ronts:
+            self._ront_update(res)
+            res.ronts = [r.as_dict() for r in self.ronts]
         return res
 
     # -- result extraction ---------------------------------------------- #
@@ -996,6 +1089,7 @@ class Simulator:
                 "capacity_kwh": _r(b.capacity_mwh * 1000.0), "power_kw": _r(b.power_mw * 1000.0),
             })
         res.controllers = [c.as_dict() for c in self.controllers]
+        res.ronts = [r.as_dict() for r in self.ronts]
 
         vm = net.res_bus.vm_pu
         loadings = net.res_line.loading_percent

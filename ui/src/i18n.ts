@@ -214,6 +214,15 @@ const en = {
     hierHint: "Hierarchical = every secondary-substation cell estimates locally; its boundary flow feeds the MV-level estimate — the way a DSO actually layers it. Only affects grids with cells.",
   },
 
+  ront: {
+    title: "rONT",
+    tap: "tap position",
+    seenV: "sees busbar voltage",
+    band: "holds the busbar between {{lo}} and {{hi}} V",
+    target: "setpoint",
+    targetTitle: "Busbar voltage setpoint — the OLTC steps until the observed voltage is inside the deadband",
+  },
+
   ampel: {
     heading: "Grid traffic light",
     coordinator: "MV coordinator",
@@ -276,6 +285,8 @@ const en = {
     addControllerCell: "Steuerbox (cell controller)",
     addControllerMv: "Netzampel coordinator (MV)",
     removeController: "Remove controller",
+    addRont: "Activate rONT (OLTC)",
+    removeRont: "Remove rONT",
     removeBattery: "Remove battery",
     addPv: "Add PV system", addEv: "Add EV charging",
     removePv: "Remove PV system", removeEv: "Remove EV charging",
@@ -542,6 +553,15 @@ const de: typeof en = {
     hierHint: "Hierarchisch = jede Ortsnetz-Zelle schätzt lokal; ihr Randfluss speist die MS-Schätzung — so schichtet es ein VNB tatsächlich. Wirkt nur auf Netzen mit Zellen.",
   },
 
+  ront: {
+    title: "rONT",
+    tap: "Stufenstellung",
+    seenV: "sieht Sammelschiene",
+    band: "hält die Sammelschiene zwischen {{lo}} und {{hi}} V",
+    target: "Sollwert",
+    targetTitle: "Spannungs-Sollwert der Sammelschiene — der Stufensteller schaltet, bis die beobachtete Spannung im Totband liegt",
+  },
+
   ampel: {
     heading: "Netzampel",
     coordinator: "MS-Koordinator",
@@ -604,6 +624,8 @@ const de: typeof en = {
     addControllerCell: "Steuerbox (Zellenregler) platzieren",
     addControllerMv: "Netzampel-Koordinator (MS) platzieren",
     removeController: "Regler entfernen",
+    addRont: "rONT aktivieren (Stufensteller)",
+    removeRont: "rONT entfernen",
     removeBattery: "Batterie entfernen",
     addPv: "PV-Anlage hinzufügen", addEv: "E-Auto-Ladung hinzufügen",
     removePv: "PV-Anlage entfernen", removeEv: "E-Auto-Ladung entfernen",

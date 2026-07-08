@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, RontInfo, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
@@ -44,6 +44,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [controllers, setControllers] = useState<GridController[]>([]);
+  const [ronts, setRonts] = useState<RontInfo[]>([]);
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
@@ -71,6 +72,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     .catch(() => {});
   const reloadControllers = () => api.controllers()
     .then((r) => setControllers(r.controllers)).catch(() => {});
+  const reloadRonts = () => api.ronts()
+    .then((r) => setRonts(r.ronts)).catch(() => {});
   const reloadMeasurements = () => api.measurements().then(setPlacement).catch(() => {});
 
   useEffect(() => {
@@ -81,6 +84,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadBatteries();
     reloadControllers();
+    reloadRonts();
     reloadMeasurements();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
@@ -238,6 +242,16 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
       } else return;
     } finally { reloadControllers(); }
     pinSection(kind, id);
+  };
+  const addRontAt = async (trafo: number) => {
+    try { await api.addRont({ trafo }); } finally { reloadRonts(); }
+    pinSection("trafo", trafo);
+  };
+  const removeRontById = async (rid: number) => {
+    try { await api.removeRont(rid); } finally { reloadRonts(); }
+  };
+  const setRontTargetAt = async (rid: number, v_target: number) => {
+    try { await api.setRont(rid, v_target); } finally { reloadRonts(); }
   };
   const removeControllerById = async (cid: number) => {
     try { await api.removeController(cid); } finally { reloadControllers(); }
@@ -438,6 +452,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
             : undefined}
           onAddController={() => addControllerAt(menu.kind, menu.id)}
           onRemoveController={() => menuController && removeControllerById(menuController.id)}
+          hasRont={menu.kind === "trafo" && ronts.some((r) => r.trafo === menu.id)}
+          onAddRont={menu.kind === "trafo" ? () => addRontAt(menu.id) : undefined}
+          onRemoveRont={() => { const r = ronts.find((x) => x.trafo === menu.id); if (r) removeRontById(r.id); }}
           onGraph={() => pinSection(menu.kind, menu.id)}
           onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onAddPv={() => { if (menu.kind === "bus") addPvAt(menu.id); }}
@@ -566,6 +583,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           const bat = batteryAt(sec.kind, sec.id);
           const ctrl = controllerAt(sec.kind, sec.id);
           const liveCtrl = ctrl ? latest?.controllers?.find((c) => c.id === ctrl.id) ?? ctrl : undefined;
+          const ront = sec.kind === "trafo" ? ronts.find((r) => r.trafo === sec.id) : undefined;
+          const liveRont = ront ? latest?.ronts?.find((r) => r.id === ront.id) ?? ront : undefined;
           const metered = meteredElem(sec.kind, sec.id);
           const nm = sec.kind === "bus" ? liveNodeMeas.get(sec.id) : undefined;
           const tm = sec.kind === "trafo" ? liveTrafoMeas.get(sec.id) : undefined;
@@ -636,6 +655,28 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                   <BatteryProfile embedded key={`${bat.index}-${bat.mode}`} idx={bat.index} now={nowFrac} day={curDay} />
                   <button className="ghost" style={{ fontSize: "0.68rem", padding: "1px 6px", marginTop: 4 }}
                           onClick={() => removeBattery(bat.index)}>{t("menu.removeBattery")}</button>
+                </div>
+              )}
+
+              {ront && liveRont && (
+                <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>🔧 {t("ront.title")}</span>
+                    <RontTarget ront={ront} onTarget={(v) => setRontTargetAt(ront.id, v)} />
+                    <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
+                            onClick={() => removeRontById(ront.id)}>✕</button>
+                  </div>
+                  <Stat label={t("ront.tap")}
+                        value={`${liveRont.tap_pos > 0 ? "+" : ""}${liveRont.tap_pos} / ±${liveRont.tap_max} (à ${fmt(liveRont.tap_step_percent, 1)} %)`}
+                        color={liveRont.tap_pos !== 0 ? "#f2ae00" : undefined} />
+                  <Stat label={t("ront.seenV")}
+                        value={liveRont.seen_v != null
+                          ? `${fmt(liveRont.seen_v * V_BASE, 1)} V (${t(liveRont.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
+                          : `⚠️ ${t("ctrl.blind")}`} />
+                  <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
+                    {t("ront.band", { lo: fmt((liveRont.v_target - liveRont.deadband) * V_BASE, 1),
+                                      hi: fmt((liveRont.v_target + liveRont.deadband) * V_BASE, 1) })}
+                  </div>
                 </div>
               )}
 
@@ -805,6 +846,28 @@ function ControllerLimit({ ctrl, onLimit }: {
              onChange={(e) => setV(+e.target.value)}
              onBlur={() => v !== ctrl.limit_pct && v >= 20 && v <= 150 && onLimit(v)}
              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> %
+    </span>
+  );
+}
+
+function RontTarget({ ront, onTarget }: {
+  ront: RontInfo; onTarget: (v_target: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [v, setV] = useState(Math.round(ront.v_target * V_BASE * 10) / 10);
+  useEffect(() => setV(Math.round(ront.v_target * V_BASE * 10) / 10), [ront.v_target]);
+  const commit = () => {
+    const pu = v / V_BASE;
+    if (pu >= 0.9 && pu <= 1.1 && Math.abs(pu - ront.v_target) > 1e-6) onTarget(pu);
+  };
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: "0.72rem" }}
+          title={t("ront.targetTitle")}>
+      {t("ront.target")}
+      <input type="number" min={207} max={253} step={0.5} value={v} style={{ ...numStyle, width: 58 }}
+             onChange={(e) => setV(+e.target.value)}
+             onBlur={commit}
+             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> V
     </span>
   );
 }

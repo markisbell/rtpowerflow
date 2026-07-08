@@ -15,6 +15,7 @@ export interface MenuTarget {
  *  offer the profile. */
 export default function ElementMenu({
   target, hasBattery, hasMeter, hasPv, hasEv, hasController, controllerLabel,
+  hasRont, onAddRont, onRemoveRont,
   onGraph, onAddBattery, onRemoveBattery, onPlaceMeter, onRemoveMeter,
   onAddPv, onAddEv, onRemovePv, onRemoveEv,
   onAddController, onRemoveController, onClose,
@@ -27,6 +28,10 @@ export default function ElementMenu({
   hasController: boolean;
   /** overrides the add-controller label (vertical scopes: Steuerbox / Netzampel) */
   controllerLabel?: string;
+  /** rONT (on-load tap changer) — transformers only */
+  hasRont?: boolean;
+  onAddRont?: () => void;
+  onRemoveRont?: () => void;
   onGraph: () => void;
   onAddBattery: () => void;
   onRemoveBattery: () => void;
@@ -72,6 +77,9 @@ export default function ElementMenu({
           : item(`🎛️ ${controllerLabel
                        ?? (target.kind === "trafo" ? t("menu.addControllerTrafo") : t("menu.addController"))}`,
                  onAddController))}
+        {target.kind === "trafo" && onAddRont && (hasRont
+          ? item(`🔧 ${t("menu.removeRont")}`, onRemoveRont ?? (() => {}))
+          : item(`🔧 ${t("menu.addRont")}`, onAddRont))}
         {target.kind === "bus" && (hasPv
           ? item(`☀️ ${t("menu.removePv")}`, onRemovePv)
           : item(`☀️ ${t("menu.addPv")}`, onAddPv))}
