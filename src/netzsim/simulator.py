@@ -629,7 +629,7 @@ class Simulator:
     # -- observability / measurement placement --------------------------- #
     def measurement_placement(self) -> dict:
         """Current meter placement + coverage (no power-flow results needed)."""
-        return self.meters.placement(self.net)
+        return self.meters.placement(self.net, cells=self.cells)
 
     def place_node_meter(self, bus: int) -> bool:
         if bus not in self.net.bus.index:
@@ -647,8 +647,8 @@ class Simulator:
     def remove_trafo_meter(self, trafo: int) -> bool:
         return self.meters.remove_trafo(trafo)
 
-    def apply_meter_preset(self, name: str) -> None:
-        self.meters.apply_preset(name, self.net)
+    def apply_meter_preset(self, name: str, cell: str | None = None) -> None:
+        self.meters.apply_preset(name, self.net, cells=self.cells, cell=cell)
 
     def set_meter_mode(self, name: str) -> None:
         """Bulk meter fidelity: switch EVERY placed device and the default for

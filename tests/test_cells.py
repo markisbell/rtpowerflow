@@ -67,11 +67,16 @@ def test_district_cells_structure(district):
         assert c["mv_bus"] is not None and 0 <= c["mv_bus"] < n_bus
 
 
-def test_district_cells_reach_simulator_and_topology(district):
+@pytest.fixture(scope="module")
+def district_sim(district) -> Simulator:
     data = input_data_from_dicts(district.grid_structure, district.lines,
                                  district.load, district.generation,
                                  district.substation, cells=district.cells)
-    sim = Simulator(data)
+    return Simulator(data)
+
+
+def test_district_cells_reach_simulator_and_topology(district, district_sim):
+    sim = district_sim
     assert sim.cells == district.cells
     for c in district.cells:
         if not c["lumped"]:
@@ -80,6 +85,43 @@ def test_district_cells_reach_simulator_and_topology(district):
             assert c["mv_bus"] not in sim.cell_of_bus  # MV bus belongs to no cell
     topo = sim.topology()
     assert topo["cells"] == district.cells
+
+
+def test_digital_stations_preset(district, district_sim):
+    """One station measurement per ONS cell: the trafo meter where a station
+    transformer exists, the MV-bus stand-in for lumped stations."""
+    sim = district_sim
+    sim.meters.clear()
+    sim.apply_meter_preset("digital_stations")
+    for c in district.cells:
+        if c["station_trafos"]:
+            assert all(t in sim.meters.trafo_idxs for t in c["station_trafos"])
+        else:
+            assert c["mv_bus"] in sim.meters.node_buses
+    p = sim.measurement_placement()
+    assert len(p["cells"]) == len(district.cells)
+    assert all(cc["station_metered"] for cc in p["cells"])
+    # no SMGWs inside the cells — the stations alone don't meter households
+    spliced_buses = {b for c in district.cells for b in c["buses"]}
+    assert not spliced_buses & sim.meters.node_buses
+
+
+def test_cell_full_preset(district, district_sim):
+    """Full SMGW rollout of exactly ONE cell (incl. its station trafo)."""
+    sim = district_sim
+    sim.meters.clear()
+    target = next(c for c in district.cells if not c["lumped"])
+    sim.apply_meter_preset("cell_full", cell=target["id"])
+    assert sim.meters.node_buses == set(target["buses"])
+    assert sim.meters.trafo_idxs == set(target["station_trafos"])
+    p = sim.measurement_placement()
+    mine = next(cc for cc in p["cells"] if cc["id"] == target["id"])
+    others = [cc for cc in p["cells"] if cc["id"] != target["id"]]
+    assert mine["n_node_meter"] == mine["n_buses"] and mine["station_metered"]
+    assert all(cc["n_node_meter"] == 0 for cc in others)
+    with pytest.raises(KeyError):
+        sim.apply_meter_preset("cell_full", cell="no-such-cell")
+    sim.meters.clear()
 
 
 def test_osm_lv_grid_is_exactly_one_cell(catalog):

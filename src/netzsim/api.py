@@ -851,11 +851,19 @@ async def measurements_mode(name: str = Query(...)):
 
 
 @app.post("/measurements/preset")
-async def measurements_preset(name: str = Query(...)):
-    """Bulk placement: all_nodes | all_trafos | substation_trafos | clear."""
+async def measurements_preset(name: str = Query(...), cell: str | None = Query(None)):
+    """Bulk placement: all_nodes | all_trafos | substation_trafos |
+    digital_stations | cell_full | clear. ``digital_stations`` = one station
+    measurement per ONS cell; ``cell_full`` (requires ``cell=<id>``) = full
+    SMGW rollout of that one cell."""
     if name not in PRESETS:
         raise HTTPException(422, f"name must be one of {PRESETS}")
-    runtime.engine.sim.apply_meter_preset(name)
+    if name == "cell_full" and not cell:
+        raise HTTPException(422, "preset 'cell_full' requires the 'cell' parameter")
+    try:
+        runtime.engine.sim.apply_meter_preset(name, cell=cell)
+    except KeyError:
+        raise HTTPException(404, f"unknown cell '{cell}'")
     return _measurements_response()
 
 

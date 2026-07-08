@@ -317,6 +317,12 @@ function MeasMenu({ isOpen, onChanged, onDialog }: {
       <button className="mi" onClick={() => preset("all_nodes")}>{t("meas.presetAllNodes")}</button>
       <button className="mi" onClick={() => preset("substation_trafos")}>{t("meas.presetSubstations")}</button>
       <button className="mi" onClick={() => preset("all_trafos")}>{t("meas.presetAllTrafos")}</button>
+      {(placement?.cells?.length ?? 0) > 0 && (
+        <button className="mi" onClick={() => preset("digital_stations")}>
+          {t("meas.presetDigitalStations")}
+          <span className="muted sub">{t("meas.presetDigitalStationsSub", { n: placement!.cells!.length })}</span>
+        </button>
+      )}
       <button className="mi" onClick={() => preset("clear")}>🗑 {t("meas.clear")}</button>
       <div className="mi-sep" />
       <button className="mi" onClick={() => mode("full")}>

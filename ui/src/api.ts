@@ -140,8 +140,9 @@ export const api = {
   removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
   setControllerLimit: (id: number, limit_pct: number) =>
     post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
-  meterPreset: (name: MeterPreset) =>
-    post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
+  meterPreset: (name: MeterPreset, cell?: string) =>
+    post<MeasurementsResponse>(`/measurements/preset?name=${name}`
+      + (cell ? `&cell=${encodeURIComponent(cell)}` : "")),
   meterMode: (name: MeterMode) =>
     post<MeasurementsResponse>(`/measurements/mode?name=${name}`),
 

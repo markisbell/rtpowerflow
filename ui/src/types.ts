@@ -251,8 +251,21 @@ export interface GridController {
   seen_src: "meter" | "estimate" | null;
 }
 
-export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
+export type MeterPreset =
+  "all_nodes" | "all_trafos" | "substation_trafos"
+  | "digital_stations" | "cell_full" | "clear";
 export type MeterMode = "full" | "standard";
+
+/** Per-ONS-cell metering coverage (vertical MV/LV integration). */
+export interface CellCoverage {
+  id: string;
+  lumped: boolean;
+  n_buses: number;
+  n_node_meter: number;
+  /** the cell's station measurement (trafo meter / stand-in) is in place */
+  station_metered: boolean;
+}
+
 export interface MeasurementsResponse {
   node_buses: number[];
   trafo_idxs: number[];
@@ -262,6 +275,8 @@ export interface MeasurementsResponse {
   /** per-device TAF mode, default resolved (JSON keys are stringified ids) */
   node_modes?: Record<string, MeterMode>;
   trafo_modes?: Record<string, MeterMode>;
+  /** per-cell coverage; empty for grids without cells */
+  cells?: CellCoverage[];
   presets: MeterPreset[];
   expose_ground_truth: boolean;
 }
