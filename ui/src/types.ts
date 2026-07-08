@@ -122,6 +122,17 @@ export interface TopoTrafo {
   sn_mva: number;
 }
 
+/** One MV/LV secondary-substation (ONS) cell — the vertical structure. */
+export interface TopoCell {
+  id: string;
+  name: string;
+  buses: number[];              // member buses (empty for a lumped station)
+  lv_busbar: number | null;
+  mv_bus: number | null;
+  station_trafos: number[];
+  lumped: boolean;
+}
+
 export interface Topology {
   name: string;
   f_hz: number;
@@ -136,6 +147,7 @@ export interface Topology {
   cabinet_buses?: number[];
   ev_buses?: number[];          // buses with EV charging loads
   pv_buses?: number[];          // buses with rooftop-PV systems
+  cells?: TopoCell[];           // ONS cells (empty for legacy/file grids)
   n_load: number;
   n_sgen: number;
   n_trafo: number;

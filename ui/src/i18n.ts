@@ -213,6 +213,17 @@ const en = {
     hierOff: "Monolithic (one WLS over everything)",
     hierHint: "Hierarchical = every secondary-substation cell estimates locally; its boundary flow feeds the MV-level estimate — the way a DSO actually layers it. Only affects grids with cells.",
   },
+
+  ampel: {
+    heading: "Grid traffic light",
+    coordinator: "MV coordinator",
+    signalEv: "EV signal (all cells)",
+    signalPv: "PV signal (all cells)",
+    noCoord: "No MV coordinator placed — click the substation (UW) bus to add one.",
+    cells: "ONS cells",
+    boxes: "Steuerboxen (cell controllers)",
+    dimming: "currently dimming",
+  },
   node: {
     title: "Node {{name}}", power: "Power", voltage: "Voltage",
     none: "No load or generation at this node.",
@@ -262,6 +273,8 @@ const en = {
     graph: "Daily profile", addMeter: "Place meter", removeMeter: "Remove meter",
     addBattery: "Add battery", addBatteryTrafo: "Battery @ LV busbar",
     addController: "Place controller", addControllerTrafo: "Grid controller @ station",
+    addControllerCell: "Steuerbox (cell controller)",
+    addControllerMv: "Netzampel coordinator (MV)",
     removeController: "Remove controller",
     removeBattery: "Remove battery",
     addPv: "Add PV system", addEv: "Add EV charging",
@@ -528,6 +541,17 @@ const de: typeof en = {
     hierOff: "Monolithisch (eine WLS über alles)",
     hierHint: "Hierarchisch = jede Ortsnetz-Zelle schätzt lokal; ihr Randfluss speist die MS-Schätzung — so schichtet es ein VNB tatsächlich. Wirkt nur auf Netzen mit Zellen.",
   },
+
+  ampel: {
+    heading: "Netzampel",
+    coordinator: "MS-Koordinator",
+    signalEv: "EV-Signal (alle Zellen)",
+    signalPv: "PV-Signal (alle Zellen)",
+    noCoord: "Kein MS-Koordinator platziert — dafür den UW-Bus anklicken.",
+    cells: "Ortsnetz-Zellen",
+    boxes: "Steuerboxen (Zellenregler)",
+    dimming: "dimmen gerade",
+  },
   node: {
     title: "Knoten {{name}}", power: "Leistung", voltage: "Spannung",
     none: "Keine Last oder Erzeugung an diesem Knoten.",
@@ -577,6 +601,8 @@ const de: typeof en = {
     graph: "Tagesverlauf", addMeter: "Messung platzieren", removeMeter: "Messung entfernen",
     addBattery: "Batterie hinzufügen", addBatteryTrafo: "Batterie @ NS-Sammelschiene",
     addController: "Regler platzieren", addControllerTrafo: "Netzregler @ Station",
+    addControllerCell: "Steuerbox (Zellenregler) platzieren",
+    addControllerMv: "Netzampel-Koordinator (MS) platzieren",
     removeController: "Regler entfernen",
     removeBattery: "Batterie entfernen",
     addPv: "PV-Anlage hinzufügen", addEv: "E-Auto-Ladung hinzufügen",

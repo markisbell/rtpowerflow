@@ -1,10 +1,15 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2 und 6 (Backend + Szenario) umgesetzt** (Branch
-> `feature/vertical`, Stand 2026-07-08); offen: Phase 3 (rONT), Phase 4
-> (UI-Drill-down inkl. Koordinator-Platzierung per Klick — Szenario 4 wird
-> bis dahin per API/Kaskade demonstriert), Phase 5 (gridedit `lv_ref`),
-> Handbuchkapitel. Szenario 4 liegt unter `data/scenarios/4-feierabend-…`,
+> Status: **Phasen 0, 1, 2, 4 (Kaskaden-Scheibe) und 6 (Backend + Szenario)
+> umgesetzt** (Branch `feature/vertical`, Stand 2026-07-08); offen: Phase 3
+> (rONT), Rest von Phase 4 (Zellen-Tabelle, Drill-down/`focusCell`,
+> Ampelfarbe je Station statt nur Dimm-Ring), Phase 5 (gridedit `lv_ref`),
+> Handbuchkapitel. Die Phase-4-Scheibe liefert den Klick-Lehrpfad für
+> Szenario 4: Steuerbox per Element-Menü an jeder Zellstation (gesplicet:
+> Sammelschiene/Trafo, Summenlast: MS-Bus), Netzampel-Koordinator per Klick
+> auf den UW-Bus, Seitenpanel-Sektion „Netzampel" (Koordinator-Status,
+> EV/PV-Signal, Zellen/Boxen/dimmen-Statistik) und rote Signal-Ringe an
+> dimmenden Stationen auf der Karte. Szenario 4 liegt unter `data/scenarios/4-feierabend-…`,
 > der Picker (`data/grid_library.json`) trägt dafür den Bezirk
 > `mv_rural_3150` + seine zwei weiteren NS-Netze (E5). Wesentliche
 > Erkenntnis aus der Kalibrierung: Die ding0-MS-Ringe sind geschlossen

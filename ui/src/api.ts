@@ -137,7 +137,8 @@ export const api = {
 
   // overload controllers (netzdienliche Steuerung)
   controllers: () => get<{ controllers: GridController[] }>("/controllers"),
-  addController: (body: { scope: "station" | "bus"; bus?: number | null; limit_pct?: number }) =>
+  addController: (body: { scope: "station" | "bus" | "cell" | "mv";
+                          bus?: number | null; cell?: string; limit_pct?: number }) =>
     post<GridController>("/controller", body),
   removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
   setControllerLimit: (id: number, limit_pct: number) =>

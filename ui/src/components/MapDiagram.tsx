@@ -13,6 +13,7 @@ interface Props {
   onSelectTrafo?: (trafo: number, additive: boolean, at?: { x: number; y: number }) => void;
   batteryBuses?: number[];
   controllerBuses?: number[];   // 🎛 overload controllers (station = LV busbar)
+  signalBuses?: number[];       // 🚦 stations whose Steuerbox is dimming → red ring
   selectedBuses?: number[];     // pinned sections (Übersicht) → gold ring
   selectedTrafos?: number[];
   meterBuses?: number[];
@@ -47,7 +48,7 @@ const TILES = {
  *  grids). Styled to mimic ding0's plot_mv_topology: light basemap, lines on a
  *  jet colormap by loading, nodes on a Reds ramp by voltage, amber MV station.
  *  All vector layers are Leaflet canvas markers restyled in place every tick. */
-export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [], controllerBuses = [], selectedBuses = [], selectedTrafos = [], meterBuses = [], meterTrafos = [], evBuses, pvBuses, revealTruth = false }: Props) {
+export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, onSelectTrafo, batteryBuses = [], controllerBuses = [], signalBuses = [], selectedBuses = [], selectedTrafos = [], meterBuses = [], meterTrafos = [], evBuses, pvBuses, revealTruth = false }: Props) {
   const { t, i18n } = useTranslation();
   const onSelectRef = useRef(onSelectBus);
   onSelectRef.current = onSelectBus;
@@ -187,17 +188,21 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   // pinned sections (their graphs sit in the side panel) get the same gold
   // ring as in the schematic — declared AFTER the theme effect so the ring
   // survives a light/dark flip (both write the outline color)
-  const selKey = `${selectedBuses.join(",")}|${selectedTrafos.join(",")}`;
+  const selKey = `${selectedBuses.join(",")}|${selectedTrafos.join(",")}|${signalBuses.join(",")}`;
   useEffect(() => {
     const theme = light ? TILES.light : TILES.dark;
     const ext = new Set(topo.ext_grids.map((e) => e.bus));
     const cabs = new Set(topo.cabinet_buses ?? []);
     const selB = new Set(selectedBuses);
+    const sigB = new Set(signalBuses);   // Netzampel: dimming Steuerbox → red ring
     for (const [id, cm] of busRef.current) {
       const isExt = ext.has(id);
       const isCab = cabs.has(id);
       if (selB.has(id)) {
         cm.setStyle({ color: "#ffd166", weight: 3 });
+        cm.setRadius(isExt ? 9 : isCab ? 7 : 6);
+      } else if (sigB.has(id)) {
+        cm.setStyle({ color: "#f85149", weight: 3 });
         cm.setRadius(isExt ? 9 : isCab ? 7 : 6);
       } else {
         cm.setStyle({ color: isExt ? "#7a5400" : isCab ? "#1a7a1a" : theme.stroke,

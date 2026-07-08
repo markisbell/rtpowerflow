@@ -38,6 +38,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [ovOpen, setOvOpen] = useState(true);          // "Overview" section
   const [measOpen, setMeasOpen] = useState(false);     // bulk "Measurements" section
+  const [ampelOpen, setAmpelOpen] = useState(true);    // Netzampel (coordinator)
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
@@ -122,11 +123,37 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     const bus = busForElement(kind, id);
     return bus == null ? undefined : batteries.find((b) => b.bus === bus);
   };
-  // a station controller lives on the trafo, a bus controller on its node
-  const controllerAt = (kind: SelKind, id: number): GridController | undefined =>
-    kind === "trafo" ? controllers.find((c) => c.scope === "station")
-      : kind === "bus" ? controllers.find((c) => c.scope === "bus" && c.bus === id)
-      : undefined;
+  // vertical structure: ONS cells — a Steuerbox (cell controller) is placed
+  // at a cell's station (busbar of a spliced cell / MV bus of a lumped one),
+  // the Netzampel coordinator at the slack/UW bus
+  const cells = topo?.cells ?? [];
+  const cellAtBus = (id: number) =>
+    cells.find((c) => (c.lumped ? c.mv_bus === id : c.lv_busbar === id));
+  const cellAtTrafo = (id: number) => cells.find((c) => c.station_trafos.includes(id));
+  const extBuses = (topo?.ext_grids ?? []).map((e) => e.bus);
+  const cellBusOf = (c: GridController): number => {
+    const cc = cells.find((x) => x.id === c.cell);
+    return cc ? (cc.lumped ? cc.mv_bus ?? -1 : cc.lv_busbar ?? -1) : -1;
+  };
+
+  // a station controller lives on the trafo, a bus controller on its node;
+  // vertical: the cell controller on its station, the coordinator on the UW
+  const controllerAt = (kind: SelKind, id: number): GridController | undefined => {
+    if (kind === "trafo") {
+      const cc = cellAtTrafo(id);
+      return (cc && controllers.find((c) => c.scope === "cell" && c.cell === cc.id))
+        || controllers.find((c) => c.scope === "station");
+    }
+    if (kind === "bus") {
+      const own = controllers.find((c) => c.scope === "bus" && c.bus === id);
+      if (own) return own;
+      const cc = cellAtBus(id);
+      if (cc) return controllers.find((c) => c.scope === "cell" && c.cell === cc.id);
+      if (extBuses.includes(id)) return controllers.find((c) => c.scope === "mv");
+      return undefined;
+    }
+    return undefined;
+  };
 
   const pinSection = (kind: SelKind, id: number) =>
     setSections((prev) => {
@@ -199,9 +226,16 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   };
   const addControllerAt = async (kind: SelKind, id: number) => {
     try {
-      if (kind === "trafo") await api.addController({ scope: "station" });
-      else if (kind === "bus") await api.addController({ scope: "bus", bus: id });
-      else return;
+      if (kind === "trafo") {
+        const cc = cellAtTrafo(id);
+        if (cc) await api.addController({ scope: "cell", cell: cc.id });
+        else await api.addController({ scope: "station" });
+      } else if (kind === "bus") {
+        const cc = cellAtBus(id);
+        if (cc) await api.addController({ scope: "cell", cell: cc.id });
+        else if (extBuses.includes(id) && cells.length) await api.addController({ scope: "mv" });
+        else await api.addController({ scope: "bus", bus: id });
+      } else return;
     } finally { reloadControllers(); }
     pinSection(kind, id);
   };
@@ -339,11 +373,26 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const menuController = menu ? controllerAt(menu.kind, menu.id) : undefined;
   const menuMetered = menu ? meteredElem(menu.kind, menu.id) : false;
 
-  // 🎛 badge positions: bus controllers at their node, the station controller
-  // at the LV busbar of the (first) transformer
+  // 🎛 badge positions: bus controllers at their node, cell controllers at
+  // their station, the coordinator at the UW, the station controller at the
+  // LV busbar of the (first) transformer
   const controllerBuses = controllers
-    .map((c) => (c.scope === "bus" ? c.bus ?? -1 : topo?.trafos[0]?.lv_bus ?? -1))
+    .map((c) => c.scope === "bus" ? c.bus ?? -1
+      : c.scope === "cell" ? cellBusOf(c)
+      : c.scope === "mv" ? extBuses[0] ?? -1
+      : topo?.trafos[0]?.lv_bus ?? -1)
     .filter((b) => b >= 0);
+
+  // 🚦 stations whose Steuerbox is currently dimming (live factors from the
+  // last frame) — the map marks them with a signal ring
+  const liveCtrls = latest?.controllers ?? controllers;
+  const signalBuses = liveCtrls
+    .filter((c) => c.scope === "cell" && (c.ev_factor < 1 || c.pv_factor < 1))
+    .map((c) => cellBusOf(c))
+    .filter((b) => b >= 0);
+  const coordLive = liveCtrls.find((c) => c.scope === "mv")
+    ?? controllers.find((c) => c.scope === "mv");
+  const cellCtrlCount = controllers.filter((c) => c.scope === "cell").length;
 
   // drag the panel's left edge to widen it (and the graphs, which are width:100%)
   const startResize = (e: React.MouseEvent) => {
@@ -359,7 +408,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
       <div className="diagram-wrap">
         {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
-                      controllerBuses={controllerBuses}
+                      controllerBuses={controllerBuses} signalBuses={signalBuses}
                       selectedBuses={selBuses} selectedTrafos={selTrafos}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
@@ -383,6 +432,10 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           hasPv={menu.kind === "bus" && pvBuses.includes(menu.id)}
           hasEv={menu.kind === "bus" && evBuses.includes(menu.id)}
           hasController={!!menuController}
+          controllerLabel={menu.kind === "trafo" && cellAtTrafo(menu.id) ? t("menu.addControllerCell")
+            : menu.kind === "bus" && cellAtBus(menu.id) ? t("menu.addControllerCell")
+            : menu.kind === "bus" && extBuses.includes(menu.id) && cells.length ? t("menu.addControllerMv")
+            : undefined}
           onAddController={() => addControllerAt(menu.kind, menu.id)}
           onRemoveController={() => menuController && removeControllerById(menuController.id)}
           onGraph={() => pinSection(menu.kind, menu.id)}
@@ -471,6 +524,39 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           <Section title={t("meas.heading")} open={measOpen} onToggle={() => setMeasOpen((v) => !v)}
                    badges={[`📟 ${placement.coverage.n_node_meter + placement.coverage.n_trafo_meter}`]}>
             <MeasurementPanel placement={placement} onPreset={meterPreset} onMode={meterMode} />
+          </Section>
+        )}
+
+        {(coordLive || cellCtrlCount > 0) && (
+          <Section title={`🚦 ${t("ampel.heading")}`} open={ampelOpen}
+                   onToggle={() => setAmpelOpen((v) => !v)}
+                   badges={signalBuses.length ? [`⚡ ${signalBuses.length}`] : []}>
+            {coordLive ? (
+              <>
+                <div className="row" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontWeight: 600 }}>{t("ampel.coordinator")}</span>
+                  <ControllerLimit ctrl={coordLive}
+                                   onLimit={(p) => setControllerLimitAt(coordLive.id, p)} />
+                  <button className="mini" title={t("ctrl.remove")} style={{ marginLeft: "auto" }}
+                          onClick={() => removeControllerById(coordLive.id)}>✕</button>
+                </div>
+                <Stat label={t("ctrl.seen")}
+                      value={coordLive.seen_pct != null
+                        ? `${fmt(coordLive.seen_pct, 1)} % (${t(coordLive.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
+                        : `⚠️ ${t("ctrl.blind")}`}
+                      color={coordLive.seen_pct != null && coordLive.seen_pct > coordLive.limit_pct ? "#e05c4a" : undefined} />
+                <Stat label={t("ampel.signalEv")} value={`${Math.round(coordLive.ev_factor * 100)} %`}
+                      color={coordLive.ev_factor < 1 ? "#e0a83a" : undefined} />
+                <Stat label={t("ampel.signalPv")} value={`${Math.round(coordLive.pv_factor * 100)} %`}
+                      color={coordLive.pv_factor < 1 ? "#e0a83a" : undefined} />
+              </>
+            ) : (
+              <div className="muted" style={{ fontSize: "0.78rem" }}>{t("ampel.noCoord")}</div>
+            )}
+            <Stat label={t("ampel.cells")} value={`${cells.length}`} />
+            <Stat label={t("ampel.boxes")} value={`${cellCtrlCount}`} />
+            <Stat label={t("ampel.dimming")} value={`${signalBuses.length}`}
+                  color={signalBuses.length ? "#e0a83a" : undefined} />
           </Section>
         )}
 
