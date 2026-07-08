@@ -39,6 +39,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [ovOpen, setOvOpen] = useState(true);          // "Overview" section
   const [measOpen, setMeasOpen] = useState(false);     // bulk "Measurements" section
   const [ampelOpen, setAmpelOpen] = useState(true);    // Netzampel (coordinator)
+  const [cellsOpen, setCellsOpen] = useState(false);   // ONS cell table
+  const [focusCell, setFocusCell] = useState<string | null>(null); // map drill-down
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
@@ -408,6 +410,18 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     ?? controllers.find((c) => c.scope === "mv");
   const cellCtrlCount = controllers.filter((c) => c.scope === "cell").length;
 
+  // drill-down: the focused cell's buses drive the map's fitBounds
+  const focused = focusCell ? cells.find((c) => c.id === focusCell) : undefined;
+  const focusBuses = focused
+    ? (focused.lumped ? (focused.mv_bus != null ? [focused.mv_bus] : [])
+                      : focused.buses)
+    : [];
+  const openCell = (c: (typeof cells)[number]) => {
+    setFocusCell(c.id);
+    if (!c.lumped && c.station_trafos.length) pinSection("trafo", c.station_trafos[0]);
+    else if (c.mv_bus != null) pinSection("bus", c.mv_bus);
+  };
+
   // drag the panel's left edge to widen it (and the graphs, which are width:100%)
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -423,6 +437,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
         {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
                       controllerBuses={controllerBuses} signalBuses={signalBuses}
+                      focusBuses={focusBuses}
                       selectedBuses={selBuses} selectedTrafos={selTrafos}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
@@ -574,6 +589,65 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
             <Stat label={t("ampel.boxes")} value={`${cellCtrlCount}`} />
             <Stat label={t("ampel.dimming")} value={`${signalBuses.length}`}
                   color={signalBuses.length ? "#e0a83a" : undefined} />
+          </Section>
+        )}
+
+        {cells.length > 0 && (
+          <Section title={t("cells.heading")} open={cellsOpen}
+                   onToggle={() => setCellsOpen((v) => !v)}
+                   badges={[`${cells.length}`]}>
+            {focusCell && (
+              <button className="ghost" style={{ fontSize: "0.72rem", marginBottom: 4 }}
+                      onClick={() => setFocusCell(null)}>← {t("cells.back")}</button>
+            )}
+            <div style={{ maxHeight: 280, overflowY: "auto", fontSize: "0.74rem" }}>
+              {(() => {
+                const trafoRead = new Map((latest?.measurements?.trafos ?? [])
+                  .map((m) => [m.trafo, m]));
+                const nodeRead = new Map((latest?.measurements?.nodes ?? [])
+                  .map((m) => [m.bus, m]));
+                const sigSet = new Set(signalBuses);
+                const boxSet = new Set(controllers
+                  .filter((c) => c.scope === "cell").map((c) => c.cell));
+                return cells.map((c) => {
+                  const tm = c.station_trafos.length
+                    ? trafoRead.get(c.station_trafos[0]) : undefined;
+                  const nm = c.lumped && c.mv_bus != null
+                    ? nodeRead.get(c.mv_bus) : undefined;
+                  const stationBus = c.lumped ? c.mv_bus : c.lv_busbar;
+                  const dimming = stationBus != null && sigSet.has(stationBus);
+                  const overload = tm?.loading_percent != null && tm.loading_percent > 100;
+                  const noData = !tm && !nm;
+                  const dot = overload ? "#f85149" : dimming ? "#f2ae00"
+                    : noData ? "#8b949e" : "#3fb950";
+                  const reading = tm?.loading_percent != null
+                    ? `${fmt(tm.loading_percent, 0)} %`
+                    : nm?.p_mw != null ? `${fmt(nm.p_mw * 1000, 0)} kW` : "—";
+                  return (
+                    <div key={c.id} className="cell-row"
+                         onClick={() => openCell(c)}
+                         style={{ display: "flex", alignItems: "center", gap: 6,
+                                  cursor: "pointer", padding: "1px 2px",
+                                  background: focusCell === c.id ? "var(--border)" : undefined }}>
+                      <span style={{ color: dot }}>●</span>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis",
+                                     whiteSpace: "nowrap" }}
+                            title={c.name}>{c.name.replace(/^lv_/, "")}</span>
+                      <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>{reading}</span>
+                      <span style={{ width: 30, textAlign: "right" }}>
+                        {c.station_trafos.some((tId) => (placement?.trafo_idxs ?? []).includes(tId))
+                          || (c.lumped && c.mv_bus != null && (placement?.node_buses ?? []).includes(c.mv_bus))
+                          ? "📟" : ""}
+                        {boxSet.has(c.id) ? "🎛" : ""}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>
+              {t("cells.hint")}
+            </div>
           </Section>
         )}
 

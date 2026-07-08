@@ -473,8 +473,17 @@ provisioned datasource + dashboard, all in compose.
     Tests: `tests/test_ront.py` (3); suite 128 passed. Live: tap −3 lifts
     the suburban busbar to 235.6 V (in band), feeder min +10 V. Manual:
     rONT section in ch. "Anlagen und Regler".
-  STILL OPEN: rest of phase 4 (cell table, drill-down `focusCell`,
-  per-station ampel colors), gridedit `lv_ref` (phase 5).
+  - *Phase 4 complete — Zellen section + drill-down*: side-panel section
+    "Zellen" (scrollable table of all ONS cells: ampel dot [green quiet /
+    amber dimming-on-signal / red station-meter overload / grey no
+    reading], live station reading [trafo % for spliced, node kW for
+    lumped], 📟/🎛 icons; closed by default — 157 rows re-render per WS
+    frame only while open). Click zooms the map to the cell
+    (`MapDiagram.focusBuses` → fitBounds, transition-based zoom-out via
+    "← Bezirkssicht") and pins its station section. Ampel deliberately
+    lives in the TABLE; the map keeps the red dimm-ring (a marker FILL
+    would clash with the voltage coloring).
+  STILL OPEN: gridedit `lv_ref` (phase 5).
 
 ---
 

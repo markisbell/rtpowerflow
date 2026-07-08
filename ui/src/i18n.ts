@@ -223,6 +223,12 @@ const en = {
     targetTitle: "Busbar voltage setpoint — the OLTC steps until the observed voltage is inside the deadband",
   },
 
+  cells: {
+    heading: "Cells",
+    back: "district view",
+    hint: "Click a cell: the map zooms to it and its station is pinned. ● green = quiet, amber = dimming on signal, red = station overloaded, grey = no reading.",
+  },
+
   ampel: {
     heading: "Grid traffic light",
     coordinator: "MV coordinator",
@@ -560,6 +566,12 @@ const de: typeof en = {
     band: "hält die Sammelschiene zwischen {{lo}} und {{hi}} V",
     target: "Sollwert",
     targetTitle: "Spannungs-Sollwert der Sammelschiene — der Stufensteller schaltet, bis die beobachtete Spannung im Totband liegt",
+  },
+
+  cells: {
+    heading: "Zellen",
+    back: "Bezirkssicht",
+    hint: "Zelle anklicken: Die Karte zoomt hinein, ihre Station wird angeheftet. ● grün = unauffällig, gelb = dimmt auf Signal, rot = Station überlastet, grau = kein Messwert.",
   },
 
   ampel: {
