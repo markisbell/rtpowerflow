@@ -456,8 +456,9 @@ async def remove_battery(idx: int):
 # Overload controllers (netzdienliche Steuerung, placed like batteries/meters)
 # --------------------------------------------------------------------------- #
 class ControllerRequest(BaseModel):
-    scope: Literal["station", "bus"] = "station"
+    scope: Literal["station", "bus", "cell", "mv"] = "station"
     bus: int | None = None                            # required for scope "bus"
+    cell: str | None = None                           # required for scope "cell"
     limit_pct: float = Field(100.0, ge=20, le=150)    # curtail above this loading
 
 
@@ -469,11 +470,13 @@ def controllers():
 
 @app.post("/controller")
 async def add_controller(req: ControllerRequest):
-    """Place an overload controller (station = whole grid, bus = one node)."""
+    """Place an overload controller (station = whole grid, bus = one node,
+    cell = one spliced ONS cell, mv = the coordinating MV level)."""
     try:
-        c = runtime.engine.sim.add_controller(req.scope, req.bus, req.limit_pct)
-    except KeyError:
-        raise HTTPException(404, f"unknown bus {req.bus}")
+        c = runtime.engine.sim.add_controller(req.scope, req.bus, req.limit_pct,
+                                              cell=req.cell)
+    except KeyError as exc:
+        raise HTTPException(404, f"unknown domain {exc}")
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     return c.as_dict()
@@ -538,7 +541,8 @@ async def scenarios_save(req: ScenarioSaveRequest):
         "batteries": [{"bus": b.bus, "capacity_kwh": round(b.capacity_mwh * 1000, 3),
                        "power_kw": round(b.power_mw * 1000, 3), "mode": b.mode}
                       for b in sim.batteries],
-        "controllers": [{"scope": c.scope, "bus": c.bus, "limit_pct": c.limit_pct}
+        "controllers": [{"scope": c.scope, "bus": c.bus, "cell": c.cell,
+                         "limit_pct": c.limit_pct}
                         for c in sim.controllers],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
@@ -593,7 +597,7 @@ async def scenarios_load(sid: str):
             else:
                 load_doc = g.load
             data = input_data_from_dicts(g.grid_structure, g.lines, load_doc,
-                                         gen_doc, g.substation)
+                                         gen_doc, g.substation, cells=g.cells)
         else:
             data = load_inputs(settings.data_dir)
     except HTTPException:
@@ -621,7 +625,8 @@ async def scenarios_load(sid: str):
     for c in doc.get("controllers", []):
         try:
             sim.add_controller(c.get("scope", "station"), c.get("bus"),
-                               float(c.get("limit_pct", 100.0)))
+                               float(c.get("limit_pct", 100.0)),
+                               cell=c.get("cell"))
         except Exception:  # noqa: BLE001
             log.warning("scenario '%s': skipped controller %s", sid, c)
     m = doc.get("measurements") or {}
@@ -777,6 +782,9 @@ class EstimationConfigModel(BaseModel):
     slp_annual_kwh: float = Field(4000.0, ge=500, le=20000)
     pseudo_std_pct: float = Field(50.0, ge=5, le=300)
     zero_injection: bool = True
+    # vertical estimation: two-stage cell/MV WLS on districts ("auto" uses it
+    # whenever the grid has spliced ONS cells and a real MV level)
+    hierarchy: Literal["auto", "monolithic", "hierarchical"] = "auto"
 
 
 @app.get("/estimation/config")
@@ -851,11 +859,19 @@ async def measurements_mode(name: str = Query(...)):
 
 
 @app.post("/measurements/preset")
-async def measurements_preset(name: str = Query(...)):
-    """Bulk placement: all_nodes | all_trafos | substation_trafos | clear."""
+async def measurements_preset(name: str = Query(...), cell: str | None = Query(None)):
+    """Bulk placement: all_nodes | all_trafos | substation_trafos |
+    digital_stations | cell_full | clear. ``digital_stations`` = one station
+    measurement per ONS cell; ``cell_full`` (requires ``cell=<id>``) = full
+    SMGW rollout of that one cell."""
     if name not in PRESETS:
         raise HTTPException(422, f"name must be one of {PRESETS}")
-    runtime.engine.sim.apply_meter_preset(name)
+    if name == "cell_full" and not cell:
+        raise HTTPException(422, "preset 'cell_full' requires the 'cell' parameter")
+    try:
+        runtime.engine.sim.apply_meter_preset(name, cell=cell)
+    except KeyError:
+        raise HTTPException(404, f"unknown cell '{cell}'")
     return _measurements_response()
 
 
@@ -1113,7 +1129,8 @@ async def config_apply(req: ApplyGridRequest):
             load_doc = g.load
             load_source = "placeholder"
         data = input_data_from_dicts(
-            g.grid_structure, g.lines, load_doc, gen_doc, g.substation
+            g.grid_structure, g.lines, load_doc, gen_doc, g.substation,
+            cells=g.cells,
         )
     except HTTPException:
         raise

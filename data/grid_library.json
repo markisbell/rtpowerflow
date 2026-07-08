@@ -21,6 +21,37 @@
       "scope": "lv",
       "lv_grid_id": "265991",
       "osm_grid": "lv_osm/lv_suburban_1864_265991.json"
+    },
+    {
+      "id": "lv_rural_3150_300668",
+      "name": "Rural LV grid · 300668",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 49,
+      "source_dir": "ding0_oep_3150",
+      "scope": "lv",
+      "lv_grid_id": "300668",
+      "osm_grid": "lv_osm/lv_rural_3150_300668.json"
+    },
+    {
+      "id": "lv_rural_3150_300575",
+      "name": "Rural LV grid · 300575",
+      "voltage": "LV",
+      "character": "rural",
+      "nodes": 150,
+      "source_dir": "ding0_oep_3150",
+      "scope": "lv",
+      "lv_grid_id": "300575",
+      "osm_grid": "lv_osm/lv_rural_3150_300575.json"
+    },
+    {
+      "id": "mv_rural_3150",
+      "name": "Rural MV grid · district 3150",
+      "voltage": "MV",
+      "character": "rural",
+      "nodes": 250,
+      "source_dir": "ding0_oep_3150",
+      "scope": "mv"
     }
   ]
 }

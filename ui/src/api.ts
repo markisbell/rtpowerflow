@@ -60,6 +60,8 @@ export interface EstimationConfig {
   slp_annual_kwh: number;
   pseudo_std_pct: number;
   zero_injection: boolean;
+  /** vertical estimation: two-stage cell/MV WLS on districts */
+  hierarchy: "auto" | "monolithic" | "hierarchical";
 }
 
 export const api = {
@@ -135,13 +137,15 @@ export const api = {
 
   // overload controllers (netzdienliche Steuerung)
   controllers: () => get<{ controllers: GridController[] }>("/controllers"),
-  addController: (body: { scope: "station" | "bus"; bus?: number | null; limit_pct?: number }) =>
+  addController: (body: { scope: "station" | "bus" | "cell" | "mv";
+                          bus?: number | null; cell?: string; limit_pct?: number }) =>
     post<GridController>("/controller", body),
   removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
   setControllerLimit: (id: number, limit_pct: number) =>
     post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
-  meterPreset: (name: MeterPreset) =>
-    post<MeasurementsResponse>(`/measurements/preset?name=${name}`),
+  meterPreset: (name: MeterPreset, cell?: string) =>
+    post<MeasurementsResponse>(`/measurements/preset?name=${name}`
+      + (cell ? `&cell=${encodeURIComponent(cell)}` : "")),
   meterMode: (name: MeterMode) =>
     post<MeasurementsResponse>(`/measurements/mode?name=${name}`),
 
