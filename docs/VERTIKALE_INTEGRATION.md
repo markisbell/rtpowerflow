@@ -1,9 +1,13 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2, 3, 4, 6 und 5/netzsim umgesetzt** (Branch
-> `feature/vertical`, Stand 2026-07-08); offen: nur noch die
-> gridedit-Editorseite von Phase 5 (Station-Panel-Auswahl + Export/Reload
-> von `lv_ref` + E-Check-Warnung). netzsim konsumiert `lv_ref` bereits
+> Status: **ALLE Phasen (0–6) umgesetzt** (Branch `feature/vertical`,
+> Stand 2026-07-08). Die gridedit-Editorseite von Phase 5 verdrahtet die
+> Referenzen beim Export AUTOMATISCH (gridedit `d6c16e6`): jede Station,
+> deren gezeichnetes NS-Netz Häuser enthält, bekommt `lv_ref` auf genau
+> die gridformat-Datei, die derselbe Export für sie schreibt (Namenslogik
+> + Slugging identisch zum Backend, TS/Python-Parität verifiziert) — ein
+> manueller Picker entfällt. `fromMvDoc` ignoriert `lv_ref` bewusst
+> (Export-Zeit-Artefakt, wird je Export aus der Zeichnung neu berechnet). netzsim konsumiert `lv_ref` bereits
 > vollständig: `gridedit_mv_import` löst die Referenz relativ zur MV-Datei
 > auf (user_grids), splict das gridformat-NS-Netz durch seinen eigenen, auf
 > die MS-Spannung des Zielnetzes umgeschnappten Stationstrafo, macht die
