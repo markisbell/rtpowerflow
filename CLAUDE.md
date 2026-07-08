@@ -449,10 +449,16 @@ provisioned datasource + dashboard, all in compose.
     dynamics. The trimmed picker manifest now carries the district + its
     two extra LV grids (E5): 4 LV + 1 MV entries. Tests:
     `tests/test_scenario4.py` (2); suite 125 passed.
-  STILL OPEN: rONT (phase 3), UI drill-down (phase 4: cell KPIs/ampel,
-  Zellen section, coordinator signal table AND click-placement of cell/mv
-  controllers — until then scenario 4's coordinator is placed via API),
-  gridedit `lv_ref` (phase 5), the manual chapter for the vertical story.
+  - *Phase 4 (cascade slice) + manual chapter*: element menu places
+    Steuerboxen at cell stations (spliced: busbar/trafo; lumped: mv_bus)
+    and the Netzampel coordinator at the UW/slack bus; side-panel section
+    "🚦 Netzampel" (coordinator status incl. editable limit, EV/PV signal,
+    cells/boxes/dimming stats); dimming stations get a red canvas ring on
+    the map (gold pin ring wins on overlap). Manual chapter "Vertikale
+    Integration: vom Ortsnetz zum Bezirk" (ch:vertikal) walks scenario 4
+    with verified numbers + 2 screenshots (ui-vertikal-schaetzung/-ampel).
+  STILL OPEN: rONT (phase 3), rest of phase 4 (cell table, drill-down
+  `focusCell`, per-station ampel colors), gridedit `lv_ref` (phase 5).
 
 ---
 

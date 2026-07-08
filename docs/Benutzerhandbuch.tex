@@ -1056,6 +1056,9 @@ an den Anlagen) mit.
     Ohne SMGW schätzt der Netzbetreiber das Segment auf
     $\approx$4\,\% --- mit SMGW an PV und Wallboxen exakt. Das
     Kernargument für die Messung dezentraler Anlagen.
+  \item \textbf{Feierabend im Bezirk --- Engpass unsichtbar für jede
+    Zelle:} das vertikale Szenario auf dem ganzen MS-Bezirk ---
+    ausführlich in Kapitel~\ref{ch:vertikal}.
 \end{enumerate}
 
 \begin{beispiel}[Ein Rezept von innen]
@@ -1085,6 +1088,108 @@ verschärft die Überhöhung, ein Eintrag in \texttt{"batteries"}
 (z.\,B. \texttt{\{"bus": 24, "capacity\_kwh": 20, "power\_kw": 10,
 "mode": "self"\}}) stellt die Gegenmaßnahme gleich mit ins Rezept.
 \end{beispiel}
+
+% ===================================================================
+\chapter{Vertikale Integration: vom Ortsnetz zum Bezirk}
+\label{ch:vertikal}
+
+Bisher spielte alles in \emph{einem} Ortsnetz. Reale Smart Grids sind
+aber vertikal geschichtet: Unter einem Mittelspannungsring hängen
+Dutzende \textbf{Ortsnetz-Zellen} --- jede mit eigener Station, eigener
+Messung, eigenen flexiblen Anlagen. netzsim bildet diese Schichtung
+vollständig ab: Der Picker bietet dafür den \emph{ländlichen MS-Bezirk
+3150} an --- 475 Knoten, ein 10-kV-Ring, 157 Ortsnetz-Zellen, davon
+drei als voll ausgebaute Straßennetze (die übrigen als Summenlast an
+ihrer Station, wie es auch ein Netzberechnungsprogramm täte).
+
+\section{Drei vertikale Bausteine}
+
+\begin{description}
+  \item[Digitale Ortsnetzstationen.] Das Messungen-Preset
+    \ui{Digitale Ortsnetzstationen} setzt genau \emph{eine}
+    Stationsmessung je Zelle --- den Trafo-Zähler, wo die Station
+    ausgebaut ist, sonst die Messung am speisenden MS-Bus. Mehr
+    Messtechnik hat ein Verteilnetzbetreiber flächig selten.
+  \item[Hierarchische Schätzung.] Auf Bezirken schätzt die WLS
+    \emph{zweistufig}, wie ein VNB es schichtet: Jede ausgebaute
+    Zelle schätzt lokal; ihr \emph{Randfluss} --- gemessen, sonst
+    zellgeschätzt, sonst Profilannahme --- speist die Schätzung auf
+    dem MS-Ring. Einstellbar in der \ui{Schätz-Richtlinie}
+    (\ui{Vertikale Schätzung}: automatisch/hierarchisch/monolithisch).
+  \item[Netzampel-Kaskade.] An jeder Zellstation lässt sich per
+    Element-Menü eine \textbf{Steuerbox} (Zellenregler) platzieren;
+    am UW-Bus der \textbf{MS-Koordinator}. Der Koordinator sieht nur
+    die MS-Ebene (Messung und Schätzung, nie die Wahrheit), drosselt
+    aber nichts selbst: Er sendet sein Ampel-Signal an alle
+    Steuerboxen, die es lokal als Obergrenze übernehmen --- der
+    Befehlsweg braucht eine Steuerbox, kein Messgerät. Die
+    Seitenpanel-Sektion \ui{Netzampel} zeigt Koordinator-Status,
+    Signale und wie viele Zellen gerade dimmen; dimmende Stationen
+    tragen auf der Karte einen roten Ring.
+\end{description}
+
+\section{Referenzszenario 4: Feierabend im Bezirk}
+
+Das Szenario \ui{4 Feierabend im Bezirk} lädt den Bezirk mit
+LPG-Haushalten und legt ab 17~Uhr an die 42 Stationen eines
+Ringstrangs gestaffelte Wallbox-Blöcke von je 200~kW --- zusammen
+eine 8,4-MW-Feierabendwelle, wie sie ein E-Mobilitäts-Hochlauf
+erzeugt. Steuerboxen an diesen 42 Stationen und digitale
+Ortsnetzstationen überall sind im Rezept enthalten; die Uhr startet
+17:40.
+
+\begin{enumerate}[nosep]
+  \item \textbf{Jede Zelle für sich: unauffällig.} Die höchste
+    Stationsmessung im ganzen Bezirk zeigt \textbf{60,8\,\%}, die
+    drei ausgebauten Zellen liegen bei 10--65\,\% --- kein einziges
+    Messgerät meldet ein Problem.
+  \item \textbf{Die MS-Sicht sieht ihn doch.} In der Sicht
+    \ui{Schätzung} rekonstruiert die hierarchische WLS aus den 157
+    Randflüssen den Ring --- und färbt ein Segment rot:
+    \textbf{108,3\,\%} (die Wahrheit: 108,3\,\% --- die Schätzung
+    trifft exakt, denn durch die Stationsmessungen ist jeder
+    Randfluss bekannt). Der Engpass liegt \emph{zwischen} den
+    Stationen: Genau wie die NH-Sicherung in Szenario~3 kann keine
+    einzelne Zellmessung ihn sehen (Abbildung~\ref{fig:vertsch}).
+  \item \textbf{Die Netzampel regelt ihn ab.} Klick auf den UW-Bus
+    $\to$ \ui{Netzampel-Koordinator (MS) platzieren} (Grenze
+    100\,\%). Der Koordinator sieht die Überlast über die Schätzung,
+    setzt das EV-Signal auf \textbf{75\,\%}, alle 42 Steuerboxen
+    führen es aus --- das Segment fällt auf \textbf{87\,\%} und
+    bleibt stabil im Hystereseband; auf der Karte markieren rote
+    Ringe die dimmenden Stationen (Abbildung~\ref{fig:vertampel}).
+    Jede Zelle hat nur ein Viertel ihrer Wallbox-Leistung verloren
+    --- \emph{gemeinsam} reicht das.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-vertikal-schaetzung}
+  \caption{Sicht \ui{Schätzung} auf dem Bezirk um 18:34: Die
+    hierarchische Schätzung rekonstruiert aus den Randflüssen der
+    digitalen Ortsnetzstationen das überlastete Ringsegment
+    (108\,\%, rot) --- das keine einzelne Stationsmessung sieht
+    (Maximum: 60,8\,\%). Die \ui{Netzampel}-Sektion rechts zählt
+    157 Zellen und 42 Steuerboxen, noch dimmt keine.}
+  \label{fig:vertsch}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-vertikal-ampel}
+  \caption{Nach dem Platzieren des MS-Koordinators (19:21): Er sieht
+    87\,\% (geschätzt), sein EV-Signal steht auf 75\,\%, alle 42
+    Steuerboxen dimmen (rote Ringe an den Stationen des Strangs) ---
+    das Segment ist zurück unter der Grenze und pendelt sich im
+    Hystereseband ein.}
+  \label{fig:vertampel}
+\end{figure}
+
+Merksatz des Kapitels: \emph{Beobachtbarkeit und Steuerbarkeit müssen
+dieselbe Ebene erreichen.} Die Zellenmessungen allein sehen den
+MS-Engpass nicht; erst ihre Randflüsse machen ihn auf der Ebene
+darüber sichtbar --- und erst die Kaskade zurück in die Zellen kann
+ihn beheben.
 
 % ===================================================================
 \chapter{Daten exportieren}
