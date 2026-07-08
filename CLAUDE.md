@@ -375,6 +375,14 @@ provisioned datasource + dashboard, all in compose.
   If pinning for reproducibility, pin to the tested 3.x.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
+- **Vertical MV/LV smart-grid integration is PLANNED, not built**: see
+  `docs/VERTIKALE_INTEGRATION.md` (2026-07-08) — phased plan for first-class
+  ONS cells on `GridInputs`, hierarchical two-stage WLS (cell estimates feed
+  the MV estimate as boundary pseudo-measurements), a grid-traffic-light
+  control cascade (MV coordinator scope `"mv"` → cell controllers scope
+  `"cell"`; today's `station` scope covers the WHOLE grid and is wrong on
+  districts), rONT, UI drill-down, gridedit `lv_ref` station references, and
+  reference scenario 4. Start with Phase 0 (cells).
 
 ---
 
