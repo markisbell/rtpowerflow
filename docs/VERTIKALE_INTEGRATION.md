@@ -1,8 +1,14 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2, 3, 4 und 6 (inkl. Handbuchkapitel) umgesetzt**
-> (Branch `feature/vertical`, Stand 2026-07-08); offen: nur noch Phase 5
-> (gridedit `lv_ref`). Phase 4 komplett: Seitenpanel-Sektion **„Zellen"**
+> Status: **Phasen 0, 1, 2, 3, 4, 6 und 5/netzsim umgesetzt** (Branch
+> `feature/vertical`, Stand 2026-07-08); offen: nur noch die
+> gridedit-Editorseite von Phase 5 (Station-Panel-Auswahl + Export/Reload
+> von `lv_ref` + E-Check-Warnung). netzsim konsumiert `lv_ref` bereits
+> vollständig: `gridedit_mv_import` löst die Referenz relativ zur MV-Datei
+> auf (user_grids), splict das gridformat-NS-Netz durch seinen eigenen, auf
+> die MS-Spannung des Zielnetzes umgeschnappten Stationstrafo, macht die
+> Gebäudelasten zu LPG-Haushalten und die Station zur echten Zelle;
+> fehlende Referenz → Summenlast + Warnhinweis in den Notes. Phase 4 komplett: Seitenpanel-Sektion **„Zellen"**
 > (scrollbare Tabelle aller ONS mit Ampel-Punkt [grün ruhig · gelb dimmt
 > auf Signal · rot Station überlastet · grau kein Messwert], Stations-
 > Messwert, 📟/🎛-Icons; Klick zoomt die Karte per `focusBuses`/fitBounds

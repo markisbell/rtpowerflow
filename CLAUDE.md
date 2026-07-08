@@ -483,7 +483,18 @@ provisioned datasource + dashboard, all in compose.
     "← Bezirkssicht") and pins its station section. Ampel deliberately
     lives in the TABLE; the map keeps the red dimm-ring (a marker FILL
     would clash with the voltage coloring).
-  STILL OPEN: gridedit `lv_ref` (phase 5).
+  - *Phase 5 (netzsim side) — `lv_ref`*: a drawn MV station may carry
+    `lv_ref` (filename of a gridformat LV export, resolved RELATIVE to the
+    MV file — the way user_grids/ lays out); `gridedit_mv_import` splices
+    the referenced grid via `convert_osm_lv` (its own station trafo,
+    re-snapped to the MV grid's voltage via `_pick_trafo(sn, mv_kv)`),
+    building loads become `household: true` LPG targets, the station is a
+    real spliced cell (all vertical actors work: Steuerbox, rONT,
+    hierarchy). Missing file → station stays lumped + warning note. Tests:
+    `tests/test_lv_ref.py` (6). Suite 134 passed.
+  STILL OPEN: the gridedit EDITOR side of phase 5 (station-panel picker for
+  the reference, `toMvDocs` export + reload of `lv_ref`, E-Check warning —
+  until then users hand-edit `lv_ref` into their exported MV JSON).
 
 ---
 
