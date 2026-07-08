@@ -8,6 +8,7 @@ import type {
   BatteryProfiles,
   EngineStatus,
   GridController,
+  RontInfo,
   GridPreview,
   GridsResponse,
   LineProfiles,
@@ -143,6 +144,12 @@ export const api = {
   removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
   setControllerLimit: (id: number, limit_pct: number) =>
     post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
+  ronts: () => get<{ ronts: RontInfo[] }>("/ronts"),
+  addRont: (body: { trafo: number; v_target?: number; deadband?: number }) =>
+    post<RontInfo>("/ront", body),
+  setRont: (id: number, v_target: number) =>
+    post<{ ronts: RontInfo[] }>(`/ront/${id}/config?v_target=${v_target}`),
+  removeRont: (id: number) => del<{ removed: number }>(`/ront/${id}`),
   meterPreset: (name: MeterPreset, cell?: string) =>
     post<MeasurementsResponse>(`/measurements/preset?name=${name}`
       + (cell ? `&cell=${encodeURIComponent(cell)}` : "")),

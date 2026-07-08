@@ -497,6 +497,50 @@ async def remove_controller(cid: int):
     return {"removed": cid}
 
 
+# --------------------------------------------------------------------------- #
+# rONT (regelbarer Ortsnetztrafo): on-load tap changer per station transformer
+# --------------------------------------------------------------------------- #
+class RontRequest(BaseModel):
+    trafo: int
+    v_target: float = Field(1.0, ge=0.9, le=1.1)      # busbar setpoint, pu
+    deadband: float = Field(0.015, ge=0.005, le=0.05)  # half band, pu
+
+
+@app.get("/ronts")
+def ronts():
+    """Activated rONTs with their live tap positions."""
+    return {"ronts": [r.as_dict() for r in runtime.engine.sim.ronts]}
+
+
+@app.post("/ront")
+async def add_ront(req: RontRequest):
+    """Activate an rONT on a station transformer (one per trafo)."""
+    try:
+        r = runtime.engine.sim.add_ront(req.trafo, req.v_target, req.deadband)
+    except KeyError:
+        raise HTTPException(404, f"unknown trafo {req.trafo}")
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    return r.as_dict()
+
+
+@app.post("/ront/{rid}/config")
+async def ront_config(rid: int,
+                      v_target: float | None = Query(None, ge=0.9, le=1.1),
+                      deadband: float | None = Query(None, ge=0.005, le=0.05)):
+    """Change an rONT's voltage setpoint / deadband."""
+    if not runtime.engine.sim.set_ront(rid, v_target, deadband):
+        raise HTTPException(404, f"no rONT {rid}")
+    return ronts()
+
+
+@app.delete("/ront/{rid}")
+async def remove_ront(rid: int):
+    if not runtime.engine.sim.remove_ront(rid):
+        raise HTTPException(404, f"no rONT {rid}")
+    return {"removed": rid}
+
+
 @app.get("/battery/{idx}/profiles")
 def battery_profiles(idx: int):
     """Daily SOC + charge/discharge curve (+ price) for one battery, current day."""
@@ -544,6 +588,9 @@ async def scenarios_save(req: ScenarioSaveRequest):
         "controllers": [{"scope": c.scope, "bus": c.bus, "cell": c.cell,
                          "limit_pct": c.limit_pct}
                         for c in sim.controllers],
+        "ronts": [{"trafo": r.trafo, "v_target": r.v_target,
+                   "deadband": r.deadband}
+                  for r in sim.ronts],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
                          "mode": sim.meters.mode,
@@ -629,6 +676,12 @@ async def scenarios_load(sid: str):
                                cell=c.get("cell"))
         except Exception:  # noqa: BLE001
             log.warning("scenario '%s': skipped controller %s", sid, c)
+    for r in doc.get("ronts", []):
+        try:
+            sim.add_ront(int(r["trafo"]), float(r.get("v_target", 1.0)),
+                         float(r.get("deadband", 0.015)))
+        except Exception:  # noqa: BLE001
+            log.warning("scenario '%s': skipped rONT %s", sid, r)
     m = doc.get("measurements") or {}
     sim.meters.clear()
     for bus in m.get("node_buses", []):

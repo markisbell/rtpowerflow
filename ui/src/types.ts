@@ -242,6 +242,7 @@ export interface StepResult {
   ext_grids?: { index: number; name: string; p_mw: number; q_mvar: number }[];
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
   controllers?: GridController[];
+  ronts?: RontInfo[];
   summary?: StepSummary;
   error: string | null;
 }
@@ -269,6 +270,22 @@ export interface GridController {
   /** loading the controller last saw of its domain (meters + estimate);
    *  null = blind, no measurement data at all */
   seen_pct: number | null;
+  seen_src: "meter" | "estimate" | null;
+}
+
+/** An activated rONT (on-load tap changer on a station transformer). */
+export interface RontInfo {
+  id: number;
+  trafo: number;
+  busbar: number;
+  cell?: string | null;
+  v_target: number;             // pu
+  deadband: number;             // pu (half band)
+  tap_pos: number;
+  tap_min: number;
+  tap_max: number;
+  tap_step_percent: number;
+  seen_v: number | null;        // observed busbar voltage (meter/estimate)
   seen_src: "meter" | "estimate" | null;
 }
 

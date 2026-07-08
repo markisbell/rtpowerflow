@@ -948,6 +948,33 @@ drei Messkonzepten grundverschieden:
 \end{itemize}
 \end{beispiel}
 
+\section{rONT: der regelbare Ortsnetztransformator}
+
+Der zweite netzdienliche Aktor ist der \textbf{rONT} --- ein
+Ortsnetztrafo mit Laststufensteller. Im Element-Menü eines
+Transformators aktiviert ihn \ui{rONT aktivieren (Stufensteller)}:
+Der Trafo erhält den typischen rONT-Stellbereich ($\pm 4$ Stufen à
+1,5\,\%) und hält fortan die Spannung seiner NS-Sammelschiene in
+einem Totband um den einstellbaren \ui{Sollwert} (Standard 230~V
+$\pm$ 3,5~V). Auch der rONT sieht nur die Betreibersicht: die
+Sammelschienen-Spannung aus dem dortigen Smart Meter, sonst aus der
+Zustandsschätzung --- ohne Daten hält er seine Stufe. Pro
+Regelhandlung schaltet er genau eine Stufe (ein mechanischer
+Stufensteller springt nicht), schätzungsgespeist eine je neuem
+Telegramm.
+
+\begin{beispiel}[Spannung heben zur Abendspitze]
+Vorstadtnetz zur Abendspitze: Die Sammelschiene liegt bei 225~V, das
+tiefste Strangende bei 215~V. Sollwert auf 236~V stellen --- der rONT
+schaltet in drei Schritten auf Stufe $-3$ ($+4{,}5\,\%$), die
+Sammelschiene steht bei 235,6~V, und das Strangende gewinnt dieselben
+$\approx$10~V (im Versuch: min.\ 225,6~V statt 215,4~V). Umgekehrt
+schafft ein abgesenkter Sollwert mittags Platz für PV-Einspeisung ---
+die Spannungsentkopplung der NS-Zelle von der MS-Ebene, ganz ohne
+Netzausbau. Die Tagesgraphen zeigen wie bei den Überlast-Reglern den
+\emph{ungeregelten} Tag; der rONT wirkt im Live-Lauf.
+\end{beispiel}
+
 Die Regler-Sektion zeigt laufend die aktuellen Stellgrößen
 (\ui{E-Auto-Ladung auf} X\,\%, \ui{PV-Einspeisung auf} X\,\%, gelb
 während der Drosselung) und den Status (\ui{regelt} /

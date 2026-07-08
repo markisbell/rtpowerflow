@@ -1,10 +1,14 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2, 4 (Kaskaden-Scheibe) und 6 (Backend + Szenario)
-> umgesetzt** (Branch `feature/vertical`, Stand 2026-07-08); offen: Phase 3
-> (rONT), Rest von Phase 4 (Zellen-Tabelle, Drill-down/`focusCell`,
-> Ampelfarbe je Station statt nur Dimm-Ring), Phase 5 (gridedit `lv_ref`),
-> Handbuchkapitel. Die Phase-4-Scheibe liefert den Klick-Lehrpfad für
+> Status: **Phasen 0, 1, 2, 3 (rONT), 4 (Kaskaden-Scheibe) und 6 (inkl.
+> Handbuchkapitel) umgesetzt** (Branch `feature/vertical`, Stand
+> 2026-07-08); offen: Rest von Phase 4 (Zellen-Tabelle,
+> Drill-down/`focusCell`, Ampelfarbe je Station statt nur Dimm-Ring) und
+> Phase 5 (gridedit `lv_ref`). Der rONT (ront.py) stuft ±4 × 1,5 % auf der
+> HS-Seite, hält die Sammelschiene im Totband um den Sollwert, sieht nur
+> Messung/Schätzung (Telegramm-Taktung wie die Regler, blind hält) und
+> synchronisiert seine Stufenstellung als Betreiber-Sollwert in die
+> Schätzmodelle (Estimator/Zellstufen kopieren die tap-Spalten je Lauf). Die Phase-4-Scheibe liefert den Klick-Lehrpfad für
 > Szenario 4: Steuerbox per Element-Menü an jeder Zellstation (gesplicet:
 > Sammelschiene/Trafo, Summenlast: MS-Bus), Netzampel-Koordinator per Klick
 > auf den UW-Bus, Seitenpanel-Sektion „Netzampel" (Koordinator-Status,

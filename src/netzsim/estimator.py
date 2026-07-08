@@ -156,6 +156,13 @@ class Estimator:
         net.measurement.drop(net.measurement.index, inplace=True)
         t0 = time.perf_counter()
 
+        # transformer tap positions are the operator's OWN setpoints (rONT):
+        # keep the estimation model's ratios in sync with the live net
+        for col in ("tap_side", "tap_neutral", "tap_min", "tap_max",
+                    "tap_step_percent", "tap_pos"):
+            if col in source_net.trafo.columns and len(net.trafo):
+                net.trafo[col] = source_net.trafo[col].reindex(net.trafo.index)
+
         # slack voltage: the operator's own setpoint, always known
         for _, row in source_net.ext_grid.iterrows():
             pp.create_measurement(net, "v", "bus", float(row["vm_pu"]), STD_V_SLACK,
@@ -374,6 +381,11 @@ class HierarchicalEstimator:
             sub = self._cell_net[cid]
             cest = self._cell_est[cid]
             sub.ext_grid["vm_pu"] = float(self._last_mv_vm.get(int(c["mv_bus"]), 1.0))
+            # keep the cell model's station-trafo tap in sync (rONT setpoints)
+            for col in ("tap_side", "tap_neutral", "tap_min", "tap_max",
+                        "tap_step_percent", "tap_pos"):
+                if col in source_net.trafo.columns and len(sub.trafo):
+                    sub.trafo[col] = source_net.trafo[col].reindex(sub.trafo.index)
             c_obs = {"nodes": [n for n in nodes if int(n["bus"]) in member],
                      "trafos": [tm for tm in trafos if int(tm["trafo"]) in st]}
             r = cest.run(sub, c_obs, sgen_day_mean,

@@ -462,8 +462,24 @@ provisioned datasource + dashboard, all in compose.
     the map (gold pin ring wins on overlap). Manual chapter "Vertikale
     Integration: vom Ortsnetz zum Bezirk" (ch:vertikal) walks scenario 4
     with verified numbers + 2 screenshots (ui-vertikal-schaetzung/-ampel).
-  STILL OPEN: rONT (phase 3), rest of phase 4 (cell table, drill-down
-  `focusCell`, per-station ampel colors), gridedit `lv_ref` (phase 5).
+  - *Phase 3 — rONT* (`ront.py`): on-load tap changer per station trafo,
+    activated via the trafo's element menu (upgrades tap data in place to
+    ±4 × 1.5 % hv-side, originals restored on removal). Holds the LV busbar
+    in a deadband around the setpoint (default 1.0 ± 0.015 pu, editable in
+    Volt in the trafo section), fed ONLY from the operator view (busbar
+    meter V, else the estimate; telegram-gated like the controllers; blind
+    holds). One mechanical step per action; higher tap_pos = lower LV
+    voltage. The estimation models SYNC the tap columns from the live net
+    per run (the tap is the operator's own setpoint — otherwise the WLS
+    ratio is wrong); `add/remove_ront` invalidate the estimator + solve
+    cold. `StepResult.ronts`; scenarios persist `ronts` [{trafo, v_target,
+    deadband}]; API GET /ronts, POST /ront, POST /ront/{id}/config,
+    DELETE /ront/{id}. Day sweeps stay UNregulated (like controllers).
+    Tests: `tests/test_ront.py` (3); suite 128 passed. Live: tap −3 lifts
+    the suburban busbar to 235.6 V (in band), feeder min +10 V. Manual:
+    rONT section in ch. "Anlagen und Regler".
+  STILL OPEN: rest of phase 4 (cell table, drill-down `focusCell`,
+  per-station ampel colors), gridedit `lv_ref` (phase 5).
 
 ---
 
