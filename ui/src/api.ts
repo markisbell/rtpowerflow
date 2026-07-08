@@ -60,6 +60,8 @@ export interface EstimationConfig {
   slp_annual_kwh: number;
   pseudo_std_pct: number;
   zero_injection: boolean;
+  /** vertical estimation: two-stage cell/MV WLS on districts */
+  hierarchy: "auto" | "monolithic" | "hierarchical";
 }
 
 export const api = {

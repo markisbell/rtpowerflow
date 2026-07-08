@@ -15,7 +15,7 @@ from . import battery as bat
 from .battery import MODES, Battery
 from .controller import SCOPES, Controller
 from .data_loader import InputData
-from .estimator import EstConfig, Estimator
+from .estimator import EstConfig, Estimator, HierarchicalEstimator, wants_hierarchy
 from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
@@ -108,7 +108,7 @@ class Simulator:
         # district nets one WLS run costs ~1-2 s, so estimation is re-run
         # adaptively (spaced by 2× its own runtime) and the latest estimate is
         # carried on every step in between.
-        self._estimator: Estimator | None = None
+        self._estimator: Estimator | HierarchicalEstimator | None = None
         self._sgen_day_mean_cache: dict[int, np.ndarray] = {}
         self._est_last: dict | None = None
         self._est_wall = 0.0            # monotonic time of the last estimation run
@@ -159,6 +159,19 @@ class Simulator:
         self._est_wall = 0.0
         for entry in self._daily_by_day.values():
             entry.pop("_est", None)
+
+    def _make_estimator(self, net) -> "Estimator | HierarchicalEstimator":
+        """The estimation policy's ``hierarchy`` knob decides the machinery:
+        two-stage cell/MV WLS on districts with spliced ONS cells, the classic
+        monolithic WLS everywhere else (incl. standalone LV grids, whose one
+        cell has no real MV level above it)."""
+        ev_rows, household_rows, hh_counts = self._est_row_sets()
+        kw = dict(ev_rows=ev_rows, household_rows=household_rows,
+                  household_counts=hh_counts, config=self.est_config)
+        if wants_hierarchy(self.est_config, self.cells, int(len(net.bus))):
+            return HierarchicalEstimator(net, self.prof, self._loads_at,
+                                         self._sgens_at, self.cells, **kw)
+        return Estimator(net, self.prof, self._loads_at, self._sgens_at, **kw)
 
     def _est_row_sets(self) -> tuple[set[int], set[int], dict[int, int]]:
         """Which load-profile rows are EV charging / real households — the
@@ -762,11 +775,7 @@ class Simulator:
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
             if self._estimator is None:
-                ev_rows, household_rows, hh_counts = self._est_row_sets()
-                self._estimator = Estimator(
-                    self.net, self.prof, self._loads_at, self._sgens_at,
-                    ev_rows=ev_rows, household_rows=household_rows,
-                    household_counts=hh_counts, config=self.est_config)
+                self._estimator = self._make_estimator(self.net)
             # the estimate can only be as fine as the METERING raster: when
             # EVERY device is a TAF-7 Lastgang meter, new readings arrive only
             # once per 15-min window, so a new estimate is only due at window
@@ -1164,10 +1173,7 @@ class Simulator:
             net = copy.deepcopy(self.net)
             net.storage.drop(net.storage.index, inplace=True)
             bs = self._sweep_batteries(net)
-            ev_rows, household_rows, hh_counts = self._est_row_sets()
-            estimator = Estimator(net, self.prof, self._loads_at, self._sgens_at,
-                                  ev_rows=ev_rows, household_rows=household_rows,
-                                  household_counts=hh_counts, config=self.est_config)
+            estimator = self._make_estimator(net)
             # its own MeasurementSet copy: standard-mode window accumulators
             # must not disturb the live meters' state
             sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),

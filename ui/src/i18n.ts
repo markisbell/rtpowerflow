@@ -207,6 +207,11 @@ const en = {
     slpKwh: "Assumed annual consumption (kWh)",
     stdPct: "Pseudo uncertainty: ±{{pct}} % of daily peak",
     stdHint: "How strongly the estimation trusts the load assumptions vs. the meters.",
+    hierGroup: "Vertical estimation (MV/LV)",
+    hierAuto: "Automatic (hierarchical on districts)",
+    hierOn: "Hierarchical (cells → MV level)",
+    hierOff: "Monolithic (one WLS over everything)",
+    hierHint: "Hierarchical = every secondary-substation cell estimates locally; its boundary flow feeds the MV-level estimate — the way a DSO actually layers it. Only affects grids with cells.",
   },
   node: {
     title: "Node {{name}}", power: "Power", voltage: "Voltage",
@@ -517,6 +522,11 @@ const de: typeof en = {
     slpKwh: "Angenommener Jahresverbrauch (kWh)",
     stdPct: "Pseudo-Unsicherheit: ±{{pct}} % der Tagesspitze",
     stdHint: "Wie stark die Schätzung den Lastannahmen gegenüber den Messungen vertraut.",
+    hierGroup: "Vertikale Schätzung (MS/NS)",
+    hierAuto: "Automatisch (hierarchisch auf Bezirken)",
+    hierOn: "Hierarchisch (Zellen → MS-Ebene)",
+    hierOff: "Monolithisch (eine WLS über alles)",
+    hierHint: "Hierarchisch = jede Ortsnetz-Zelle schätzt lokal; ihr Randfluss speist die MS-Schätzung — so schichtet es ein VNB tatsächlich. Wirkt nur auf Netzen mit Zellen.",
   },
   node: {
     title: "Knoten {{name}}", power: "Leistung", voltage: "Spannung",

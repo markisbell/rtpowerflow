@@ -777,6 +777,9 @@ class EstimationConfigModel(BaseModel):
     slp_annual_kwh: float = Field(4000.0, ge=500, le=20000)
     pseudo_std_pct: float = Field(50.0, ge=5, le=300)
     zero_injection: bool = True
+    # vertical estimation: two-stage cell/MV WLS on districts ("auto" uses it
+    # whenever the grid has spliced ONS cells and a real MV level)
+    hierarchy: Literal["auto", "monolithic", "hierarchical"] = "auto"
 
 
 @app.get("/estimation/config")

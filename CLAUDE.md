@@ -375,23 +375,45 @@ provisioned datasource + dashboard, all in compose.
   If pinning for reproducibility, pin to the tested 3.x.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
-- **Vertical MV/LV smart-grid integration — Phase 0 (cells) is BUILT, the
-  rest is planned**: see `docs/VERTIKALE_INTEGRATION.md` (2026-07-08).
-  Since Phase 0 every importer describes its vertical structure as **ONS
-  cells** (`GridInputs.cells` / `InputData.cells`, plain dicts `{id, name,
-  buses, lv_busbar, mv_bus, station_trafos, lumped}`, cross-validated in
-  `data_loader`): `district_import` emits spliced cells + inherits lumped
-  ones from ding0 `scope="mv"` (aggregate loads named `lv_<gid>` — that name
-  prefix is the intra-module contract), `convert_osm_lv` = exactly one cell,
-  `gridedit_mv_import` = degenerate cells per drawn station, file-based
-  grids have none. `Simulator.cells` + `cell_of_bus` are the runtime handles;
-  `topology()`/`/network` expose `cells[]`. Tests: `tests/test_cells.py` (4).
-  STILL OPEN (phases 1–6): hierarchical two-stage WLS (cell estimates feed
-  the MV estimate as boundary pseudo-measurements), grid-traffic-light
-  control cascade (MV coordinator scope `"mv"` → cell controllers scope
-  `"cell"`; today's `station` scope covers the WHOLE grid and is wrong on
-  districts), rONT, UI drill-down, gridedit `lv_ref` station references,
-  reference scenario 4.
+- **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT
+  (branch `feature/vertical`), the rest is planned**: see
+  `docs/VERTIKALE_INTEGRATION.md` (2026-07-08).
+  - *Phase 0 — cells*: every importer describes its vertical structure as
+    **ONS cells** (`GridInputs.cells` / `InputData.cells`, plain dicts
+    `{id, name, buses, lv_busbar, mv_bus, station_trafos, lumped}`,
+    cross-validated in `data_loader`): `district_import` emits spliced cells
+    + inherits lumped ones from ding0 `scope="mv"` (aggregate loads named
+    `lv_<gid>` — that name prefix is the intra-module contract),
+    `convert_osm_lv` = exactly one cell, `gridedit_mv_import` = degenerate
+    cells per drawn station, file-based grids have none. `Simulator.cells` +
+    `cell_of_bus` are the runtime handles; `topology()`/`/network` expose
+    `cells[]`. Tests: `tests/test_cells.py`.
+  - *Phase 1.1 — cell metering presets*: `digital_stations` (one station
+    measurement per cell: trafo meter, MV-bus/busbar stand-ins for
+    lumped/trafo-less cells) and `cell_full?cell=<id>` (full SMGW rollout of
+    one cell); `/measurements` reports per-cell coverage (`cells[]` with
+    `station_metered`); Messungen menu shows the preset when cells exist.
+  - *Phase 1.2 — hierarchical two-stage WLS*: `HierarchicalEstimator`
+    (estimator.py) runs one LOCAL WLS per spliced cell (subnet = members +
+    feeding MV bus; slack there, setpoint = previous MV estimate, 1.0 first)
+    and feeds each cell's **boundary flow** (measured > cell-estimated >
+    profile pseudo, per-cell `boundary_src`) into the reduced-MV-net WLS via
+    `Estimator.run(boundary=...)`. Composed result mirrors the monolithic
+    shape + `mode` + `cells[]` (per-cell `error` stripped in strict mode,
+    state.py). Policy knob `EstConfig.hierarchy` = auto|monolithic|
+    hierarchical (API + Schätz-Richtlinie dialog); `wants_hierarchy()`
+    resolves it (standalone LV = always monolithic — no MV level).
+    `Simulator._make_estimator` dispatches for the live loop AND `daily_est`
+    (sweep re-keys via est-config sig). Tests:
+    `tests/test_hierarchical_estimation.py` (4); suite 119 passed.
+    **Honest finding**: on `mv_rural_3150` hierarchical is equally accurate
+    (~3 mpu with digital stations) but NOT faster (~1.16 vs ~1.06 s) — only
+    3/157 cells are street-routed, the reduced MV graph keeps 247 buses.
+  STILL OPEN (phases 2–6): grid-traffic-light control cascade (MV
+  coordinator scope `"mv"` → cell controllers scope `"cell"`; today's
+  `station` scope covers the WHOLE grid and is wrong on districts), rONT,
+  UI drill-down (cell KPIs/ampel, Zellen section), gridedit `lv_ref` station
+  references, reference scenario 4.
 
 ---
 

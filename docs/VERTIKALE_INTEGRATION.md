@@ -1,6 +1,13 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Plan** (noch nicht umgesetzt). Stand 2026-07-08.
+> Status: **Phasen 0, 1.1 und 1.2 umgesetzt** (Branch `feature/vertical`,
+> Stand 2026-07-08); Phasen 2–6 offen. Befund aus 1.2: Auf dem Bezirk
+> `mv_rural_3150` ist die hierarchische Schätzung **gleich genau** wie die
+> monolithische (max |ΔU| ≈ 3 mpu bei digitalen ONS), aber **nicht schneller**
+> (≈ 1,16 s vs. ≈ 1,06 s je Lauf) — nur 3 der 157 Zellen sind straßengeroutet,
+> der reduzierte MS-Graph behält 247 Busse. Der Tempovorteil kommt erst mit
+> mehr gesplicten Zellen; der Wert der Hierarchie liegt hier in der Didaktik
+> (Randfluss-Quellen meter/estimate/pseudo, Fehler je Zelle, VNB-Schichtung).
 > Ziel: netzsim vom „einen Netz je Ebene" zum **vertikal integrierten
 > Smart Grid** erweitern — Mittelspannung (MS) und Niederspannung (NS)
 > physikalisch, messtechnisch und regelungstechnisch durchgängig, mit
