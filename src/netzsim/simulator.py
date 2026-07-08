@@ -85,6 +85,24 @@ class Simulator:
         self.cells: list[dict[str, Any]] = [dict(c) for c in data.cells]
         self.cell_of_bus: dict[int, str] = {
             int(b): c["id"] for c in self.cells for b in c.get("buses", [])}
+        # static per-cell domains for cell controllers / the MV coordinator:
+        # a cell owns its member buses, the lines between them (all its lines,
+        # by construction) and its station trafo(s); everything else is the
+        # MV level. Empty on grids without spliced cells.
+        self._cell_buses: dict[str, set[int]] = {
+            c["id"]: {int(b) for b in c["buses"]}
+            for c in self.cells if not c.get("lumped") and c.get("buses")}
+        self._cell_lines: dict[str, set[int]] = {
+            cid: {int(li) for li in self.net.line.index
+                  if int(self.net.line.at[li, "from_bus"]) in member}
+            for cid, member in self._cell_buses.items()}
+        self._cell_trafos: dict[str, set[int]] = {
+            c["id"]: {int(t) for t in c.get("station_trafos", [])}
+            for c in self.cells if not c.get("lumped") and c.get("buses")}
+        in_cells_l = set().union(*self._cell_lines.values()) if self._cell_lines else set()
+        in_cells_t = set().union(*self._cell_trafos.values()) if self._cell_trafos else set()
+        self._mv_lines: set[int] = {int(li) for li in self.net.line.index} - in_cells_l
+        self._mv_trafos: set[int] = {int(t) for t in self.net.trafo.index} - in_cells_t
         self._solved_once = False
         self._coords: tuple[dict[int, list[float]], dict[int, list[float]]] | None = None
         # multi-day real PV (optional): per-day normalised 0..1 shapes applied as a
@@ -283,16 +301,25 @@ class Simulator:
 
     # -- overload controllers (netzdienliche Steuerung) -------------------- #
     def add_controller(self, scope: str = "station", bus: int | None = None,
-                       limit_pct: float = 100.0) -> Controller:
+                       limit_pct: float = 100.0,
+                       cell: str | None = None) -> Controller:
         """Place an overload controller — ``station`` throttles all EV/PV of
         the grid on trafo/line overload, ``bus`` only the DERs at one node
-        (reacting to the lines that touch it)."""
+        (reacting to the lines that touch it), ``cell`` one spliced ONS cell,
+        ``mv`` the coordinating MV level (grid-traffic-light signals only)."""
         if scope not in SCOPES:
             raise ValueError(f"scope must be one of {SCOPES}")
         if scope == "bus" and (bus is None or bus not in self.net.bus.index):
             raise KeyError(bus)
+        if scope == "cell" and cell not in self._cell_buses:
+            raise KeyError(cell)
+        if scope == "mv" and not (self._cell_buses
+                                  and (self._mv_lines or self._mv_trafos)):
+            raise ValueError("the MV coordinator needs spliced ONS cells "
+                             "below a real MV level")
         c = Controller(cid=self._next_cid, scope=scope,
                        bus=int(bus) if bus is not None else None,
+                       cell=cell if scope == "cell" else None,
                        limit_pct=float(limit_pct))
         self._next_cid += 1
         self.controllers.append(c)
@@ -312,28 +339,39 @@ class Simulator:
         return False
 
     def _controller_rows(self, c: Controller) -> tuple[list[int], list[int]]:
-        """Profile row indices (EV loads, PV sgens) in the controller's scope."""
+        """Profile row indices (EV loads, PV sgens) in the controller's scope.
+        The MV coordinator throttles nothing itself — it only signals."""
+        if c.scope == "mv":
+            return [], []
+        member = self._cell_buses.get(c.cell or "", set()) if c.scope == "cell" else None
+
+        def in_scope(bus: int) -> bool:
+            if c.scope == "station":
+                return True
+            if c.scope == "cell":
+                return bus in member
+            return bus == c.bus
+
         ev_rows = [i for i, li in enumerate(self.prof.load_idx)
                    if "EV_" in str(self.net.load.at[li, "name"] or "")
-                   and (c.scope == "station"
-                        or int(self.net.load.at[li, "bus"]) == c.bus)]
+                   and in_scope(int(self.net.load.at[li, "bus"]))]
         pv_rows = [i for i, si in enumerate(self.prof.sgen_idx)
                    if i < len(self._sgen_is_pv) and self._sgen_is_pv[i]
-                   and (c.scope == "station"
-                        or int(self.net.sgen.at[si, "bus"]) == c.bus)]
+                   and in_scope(int(self.net.sgen.at[si, "bus"]))]
         return ev_rows, pv_rows
 
     def _apply_controller_factors(self) -> None:
         """Scale EV loads / PV sgens by the strictest covering controller —
-        called after the step profiles are written, before the batteries."""
+        called after the step profiles are written, before the batteries.
+        Cell controllers apply min(local law, coordinator signal)."""
         ev_f: dict[int, float] = {}
         pv_f: dict[int, float] = {}
         for c in self.controllers:
             ev_rows, pv_rows = self._controller_rows(c)
             for i in ev_rows:
-                ev_f[i] = min(ev_f.get(i, 1.0), c.ev_factor)
+                ev_f[i] = min(ev_f.get(i, 1.0), c.effective_ev)
             for i in pv_rows:
-                pv_f[i] = min(pv_f.get(i, 1.0), c.pv_factor)
+                pv_f[i] = min(pv_f.get(i, 1.0), c.effective_pv)
         for i, f in ev_f.items():
             if f < 1.0:
                 li = self.prof.load_idx[i]
@@ -357,9 +395,75 @@ class Simulator:
         est = res.estimated if isinstance(res.estimated, dict) else {}
         est_lines = est.get("lines") or []
         est_trafos = est.get("trafos") or []
-        for c in self.controllers:
+
+        # -- pass 1: MV coordinators (grid traffic light) ------------------- #
+        # They see only the MV level and ratchet their factors like any
+        # controller; the factors are then broadcast as per-cell SIGNALS to
+        # every placed cell controller (min-bound on top of its local law).
+        # Executing a received signal needs a device, not a meter — a locally
+        # blind cell controller still dims on command.
+        coords = [c for c in self.controllers if c.scope == "mv"]
+        cell_ctrls = [c for c in self.controllers if c.scope == "cell"]
+        for c in coords:
             seen: list[tuple[float, str]] = []
-            if c.scope == "station":
+            for tm in meas.get("trafos", []):
+                tr = tm.get("trafo")
+                if tr in self._mv_trafos and tm.get("loading_percent") is not None:
+                    seen.append((float(tm["loading_percent"]), "meter"))
+            for ln in est_lines:
+                if ln.get("index") in self._mv_lines and ln.get("loading_percent") is not None:
+                    seen.append((float(ln["loading_percent"]), "estimate"))
+            for tr in est_trafos:
+                if tr.get("index") in self._mv_trafos and tr.get("loading_percent") is not None:
+                    seen.append((float(tr["loading_percent"]), "estimate"))
+            # direction from the HV/MV import (measured before estimated):
+            # the MV level exporting into the HV grid = PV is the lever
+            p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                    if tm.get("trafo") in self._mv_trafos and tm.get("p_hv_mw") is not None]
+            if not p_hv:
+                p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                        if tr.get("index") in self._mv_trafos and tr.get("p_hv_mw") is not None]
+            exporting = bool(p_hv) and sum(p_hv) < 0.0
+            if seen:
+                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
+                c.update(c.seen_pct, exporting)
+            else:
+                c.seen_pct = c.seen_src = None
+                c.update(None, False)
+            c.signals = {cc.cell: (c.ev_factor, c.pv_factor) for cc in cell_ctrls}
+        # the strictest coordinator wins per cell (usually there is one)
+        for cc in cell_ctrls:
+            sig_ev = min((c.ev_factor for c in coords), default=1.0)
+            sig_pv = min((c.pv_factor for c in coords), default=1.0)
+            cc.signal_ev, cc.signal_pv = sig_ev, sig_pv
+
+        # -- pass 2: local controllers -------------------------------------- #
+        for c in self.controllers:
+            if c.scope == "mv":
+                continue
+            seen = []
+            if c.scope == "cell":
+                member_t = self._cell_trafos.get(c.cell or "", set())
+                member_l = self._cell_lines.get(c.cell or "", set())
+                # the cell's own station meter is a direct reading ...
+                for tm in meas.get("trafos", []):
+                    if tm.get("trafo") in member_t and tm.get("loading_percent") is not None:
+                        seen.append((float(tm["loading_percent"]), "meter"))
+                # ... its lines (and an unmetered station trafo) only estimated
+                for ln in est_lines:
+                    if ln.get("index") in member_l and ln.get("loading_percent") is not None:
+                        seen.append((float(ln["loading_percent"]), "estimate"))
+                for tr in est_trafos:
+                    if tr.get("index") in member_t and tr.get("loading_percent") is not None:
+                        seen.append((float(tr["loading_percent"]), "estimate"))
+                # direction from the cell's boundary flow (station trafo)
+                p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                        if tm.get("trafo") in member_t and tm.get("p_hv_mw") is not None]
+                if not p_hv:
+                    p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                            if tr.get("index") in member_t and tr.get("p_hv_mw") is not None]
+                exporting = bool(p_hv) and sum(p_hv) < 0.0
+            elif c.scope == "station":
                 # measured transformer loadings are direct device readings ...
                 for tm in meas.get("trafos", []):
                     if tm.get("loading_percent") is not None:

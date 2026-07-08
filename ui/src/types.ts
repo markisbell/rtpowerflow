@@ -235,16 +235,25 @@ export interface StepResult {
 }
 
 /** A placed overload controller (netzdienliche Steuerung): throttles EV
- *  charging / PV feed-in of its scope when the loading limit is exceeded. */
+ *  charging / PV feed-in of its scope when the loading limit is exceeded.
+ *  Vertical integration: scope "cell" covers one ONS cell, scope "mv" is
+ *  the coordinator that broadcasts grid-traffic-light signals to the cell
+ *  controllers instead of throttling itself. */
 export interface GridController {
   id: number;
-  scope: "station" | "bus";
+  scope: "station" | "bus" | "cell" | "mv";
   bus: number | null;
+  cell?: string | null;
   limit_pct: number;
   release_pct: number;
+  /** effective factors (local law capped by a received coordinator signal) */
   ev_factor: number;
   pv_factor: number;
   active: boolean;
+  /** a cell controller's received traffic-light bound (only when < 1) */
+  signal?: { ev: number; pv: number };
+  /** an MV coordinator's last broadcast per cell id */
+  signals?: Record<string, { ev: number; pv: number }>;
   /** loading the controller last saw of its domain (meters + estimate);
    *  null = blind, no measurement data at all */
   seen_pct: number | null;

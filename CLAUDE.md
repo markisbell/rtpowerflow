@@ -409,11 +409,29 @@ provisioned datasource + dashboard, all in compose.
     **Honest finding**: on `mv_rural_3150` hierarchical is equally accurate
     (~3 mpu with digital stations) but NOT faster (~1.16 vs ~1.06 s) — only
     3/157 cells are street-routed, the reduced MV graph keeps 247 buses.
-  STILL OPEN (phases 2–6): grid-traffic-light control cascade (MV
-  coordinator scope `"mv"` → cell controllers scope `"cell"`; today's
-  `station` scope covers the WHOLE grid and is wrong on districts), rONT,
-  UI drill-down (cell KPIs/ampel, Zellen section), gridedit `lv_ref` station
-  references, reference scenario 4.
+  - *Phase 2 — grid-traffic-light cascade*: controller scopes `"cell"`
+    (domain = ONE spliced cell: its station trafo [meter] + cell lines
+    [estimate only] + the DERs behind them; direction from the cell's
+    boundary flow) and `"mv"` (the COORDINATOR: watches only MV lines +
+    HV/MV trafo via meters/MV estimate, throttles nothing itself — its
+    ratcheted factors broadcast as SIGNALS to every placed cell controller,
+    applied as `min(local law, signal)` = `Controller.effective_ev/pv`,
+    which `as_dict()` reports as the factors). One uniform signal factor =
+    proportional burden per cell (decision E3). A locally meter-less cell
+    controller still EXECUTES signals (command path needs a Steuerbox, not
+    a meter); cells without a controller stay uncoordinated. `station`
+    keeps its whole-grid semantics (LV back-compat). Scenarios persist
+    `cell`; API `POST /controller {scope, bus?, cell?}`. Domain index sets
+    (`_cell_lines`/`_mv_lines`/...) precomputed in `Simulator.__init__`.
+    Tests: `tests/test_controller_vertical.py` (4; domain-isolation test
+    blocks estimation via `sim._est_wall = float("inf")` so meters are the
+    only source). Suite 123 passed. NOTE: once ANY meter exists, the
+    estimate covers every cell (pseudo cell stages) — "blind" in the old
+    sense only exists without any estimate.
+  STILL OPEN (phases 3–6): rONT, UI drill-down (cell KPIs/ampel, Zellen
+  section, coordinator signal table — the section display already shows
+  effective factors), gridedit `lv_ref` station references, reference
+  scenario 4 (calibrated MV congestion instead of an artificial 20 % limit).
 
 ---
 

@@ -456,8 +456,9 @@ async def remove_battery(idx: int):
 # Overload controllers (netzdienliche Steuerung, placed like batteries/meters)
 # --------------------------------------------------------------------------- #
 class ControllerRequest(BaseModel):
-    scope: Literal["station", "bus"] = "station"
+    scope: Literal["station", "bus", "cell", "mv"] = "station"
     bus: int | None = None                            # required for scope "bus"
+    cell: str | None = None                           # required for scope "cell"
     limit_pct: float = Field(100.0, ge=20, le=150)    # curtail above this loading
 
 
@@ -469,11 +470,13 @@ def controllers():
 
 @app.post("/controller")
 async def add_controller(req: ControllerRequest):
-    """Place an overload controller (station = whole grid, bus = one node)."""
+    """Place an overload controller (station = whole grid, bus = one node,
+    cell = one spliced ONS cell, mv = the coordinating MV level)."""
     try:
-        c = runtime.engine.sim.add_controller(req.scope, req.bus, req.limit_pct)
-    except KeyError:
-        raise HTTPException(404, f"unknown bus {req.bus}")
+        c = runtime.engine.sim.add_controller(req.scope, req.bus, req.limit_pct,
+                                              cell=req.cell)
+    except KeyError as exc:
+        raise HTTPException(404, f"unknown domain {exc}")
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     return c.as_dict()
@@ -538,7 +541,8 @@ async def scenarios_save(req: ScenarioSaveRequest):
         "batteries": [{"bus": b.bus, "capacity_kwh": round(b.capacity_mwh * 1000, 3),
                        "power_kw": round(b.power_mw * 1000, 3), "mode": b.mode}
                       for b in sim.batteries],
-        "controllers": [{"scope": c.scope, "bus": c.bus, "limit_pct": c.limit_pct}
+        "controllers": [{"scope": c.scope, "bus": c.bus, "cell": c.cell,
+                         "limit_pct": c.limit_pct}
                         for c in sim.controllers],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
@@ -621,7 +625,8 @@ async def scenarios_load(sid: str):
     for c in doc.get("controllers", []):
         try:
             sim.add_controller(c.get("scope", "station"), c.get("bus"),
-                               float(c.get("limit_pct", 100.0)))
+                               float(c.get("limit_pct", 100.0)),
+                               cell=c.get("cell"))
         except Exception:  # noqa: BLE001
             log.warning("scenario '%s': skipped controller %s", sid, c)
     m = doc.get("measurements") or {}

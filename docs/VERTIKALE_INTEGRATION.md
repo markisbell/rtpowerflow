@@ -1,7 +1,12 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1.1 und 1.2 umgesetzt** (Branch `feature/vertical`,
-> Stand 2026-07-08); Phasen 2–6 offen. Befund aus 1.2: Auf dem Bezirk
+> Status: **Phasen 0, 1 und 2 umgesetzt** (Branch `feature/vertical`,
+> Stand 2026-07-08); Phasen 3–6 offen. Abweichung in Phase 2 gegenüber dem
+> Plan: Der Koordinator sendet EIN einheitliches Signal an alle Zellenregler
+> (gleicher Faktor = proportionale Lastreduktion je Zelle, E3 erfüllt);
+> außerdem führt ein lokal messloser Zellenregler empfangene Signale AUS —
+> der Befehlsweg braucht eine Steuerbox, kein Messgerät. Unkoordinierbar
+> sind Zellen ohne Regler. Befund aus 1.2: Auf dem Bezirk
 > `mv_rural_3150` ist die hierarchische Schätzung **gleich genau** wie die
 > monolithische (max |ΔU| ≈ 3 mpu bei digitalen ONS), aber **nicht schneller**
 > (≈ 1,16 s vs. ≈ 1,06 s je Lauf) — nur 3 der 157 Zellen sind straßengeroutet,
