@@ -1,8 +1,18 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2, 3, 4 und 6 (inkl. Handbuchkapitel) umgesetzt**
-> (Branch `feature/vertical`, Stand 2026-07-08); offen: nur noch Phase 5
-> (gridedit `lv_ref`). Phase 4 komplett: Seitenpanel-Sektion **„Zellen"**
+> Status: **ALLE Phasen (0–6) umgesetzt** (Branch `feature/vertical`,
+> Stand 2026-07-08). Die gridedit-Editorseite von Phase 5 verdrahtet die
+> Referenzen beim Export AUTOMATISCH (gridedit `d6c16e6`): jede Station,
+> deren gezeichnetes NS-Netz Häuser enthält, bekommt `lv_ref` auf genau
+> die gridformat-Datei, die derselbe Export für sie schreibt (Namenslogik
+> + Slugging identisch zum Backend, TS/Python-Parität verifiziert) — ein
+> manueller Picker entfällt. `fromMvDoc` ignoriert `lv_ref` bewusst
+> (Export-Zeit-Artefakt, wird je Export aus der Zeichnung neu berechnet). netzsim konsumiert `lv_ref` bereits
+> vollständig: `gridedit_mv_import` löst die Referenz relativ zur MV-Datei
+> auf (user_grids), splict das gridformat-NS-Netz durch seinen eigenen, auf
+> die MS-Spannung des Zielnetzes umgeschnappten Stationstrafo, macht die
+> Gebäudelasten zu LPG-Haushalten und die Station zur echten Zelle;
+> fehlende Referenz → Summenlast + Warnhinweis in den Notes. Phase 4 komplett: Seitenpanel-Sektion **„Zellen"**
 > (scrollbare Tabelle aller ONS mit Ampel-Punkt [grün ruhig · gelb dimmt
 > auf Signal · rot Station überlastet · grau kein Messwert], Stations-
 > Messwert, 📟/🎛-Icons; Klick zoomt die Karte per `focusBuses`/fitBounds
