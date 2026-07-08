@@ -66,6 +66,13 @@ class Controller:
     # what the controller last saw of its domain (None = blind, no data)
     seen_pct: float | None = None
     seen_src: str | None = None   # "meter" | "estimate" | None
+    # (day, step) of the estimate the last control action was based on: an
+    # estimate-fed controller acts ONCE per new telegram — the estimate can
+    # refresh much slower than the simulation steps (wall-clock throttle on
+    # big districts), and ratcheting every step against a stale picture
+    # makes the closed loop oscillate hard. Meter-fed controllers keep
+    # per-step dynamics (their reading IS fresh every step).
+    est_stamp: tuple | None = None
 
     @property
     def effective_ev(self) -> float:

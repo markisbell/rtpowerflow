@@ -428,10 +428,31 @@ provisioned datasource + dashboard, all in compose.
     only source). Suite 123 passed. NOTE: once ANY meter exists, the
     estimate covers every cell (pseudo cell stages) — "blind" in the old
     sense only exists without any estimate.
-  STILL OPEN (phases 3–6): rONT, UI drill-down (cell KPIs/ampel, Zellen
-  section, coordinator signal table — the section display already shows
-  effective factors), gridedit `lv_ref` station references, reference
-  scenario 4 (calibrated MV congestion instead of an artificial 20 % limit).
+  - *Phase 6 (backend + scenario) — reference scenario 4*
+    `data/scenarios/4-feierabend-im-bezirk-…json`: district `mv_rural_3150`
+    (LPG loads, no household EVs), the Feierabend wave = 42 aggregate
+    200-kW wallbox blocks (der_ops `add_ev`, staggered 17:00–18:00, 4 h) at
+    the lumped stations of ring L19/L222 (8.4 MW — ding0 MV rings are
+    CLOSED; one segment only overloads via many stations), Steuerboxen
+    (cell controllers) at those 42 lumped cells — `cell` scope now also
+    accepts LUMPED cells (domain = the DERs at their mv_bus; locally blind
+    but executes signals), digital stations metering, clock 17:40 @ 0.2 s.
+    Numbers (verified live): truth segment L222 ≈ 108 %, hierarchical
+    estimate sees 108.0 %, max station meter 61.7 % (no cell sees it);
+    placing the MV coordinator (limit 100) → one ratchet, EV signal 0.75,
+    42/42 boxes dim, segment settles ~86–87 % (stable in the hysteresis
+    band). **Control-law fix that made this stable**: estimate-fed
+    controllers act once per NEW telegram (`est["seq"]` counter,
+    `Controller.est_stamp`) — per-step ratcheting against a stale estimate
+    (the wall-clock-throttled district estimate refreshes ~every 12
+    sim-minutes) oscillated hard. Meter-fed controllers keep per-step
+    dynamics. The trimmed picker manifest now carries the district + its
+    two extra LV grids (E5): 4 LV + 1 MV entries. Tests:
+    `tests/test_scenario4.py` (2); suite 125 passed.
+  STILL OPEN: rONT (phase 3), UI drill-down (phase 4: cell KPIs/ampel,
+  Zellen section, coordinator signal table AND click-placement of cell/mv
+  controllers — until then scenario 4's coordinator is placed via API),
+  gridedit `lv_ref` (phase 5), the manual chapter for the vertical story.
 
 ---
 
@@ -726,17 +747,20 @@ appear in the list (metadata.json is written on stop, and the listing
 requires it). Manual chapter exists (ch:export) — its screenshots/text
 still show the pre-Variante-B menu ("Simulation") and need a refresh.
 
-### Reference scenarios (the committed teaching set, 2026-07-06)
+### Reference scenarios (the committed teaching set, 2026-07-06; #4 added 2026-07-08)
 
-`data/scenarios/` holds exactly **three reference scenarios** (the earlier
+`data/scenarios/` holds **four reference scenarios** (the earlier
 examples were removed on customer request); `data/grid_library.json` is
-**trimmed to the two grids they use** (`lv_rural_3150_300266`,
-`lv_suburban_1864_265991`) so the picker only offers those. The full 20-entry
-manifest lives on as `data/grid_library_full.json` (copy it back to restore;
+**trimmed to the grids they use** (`lv_rural_3150_300266`,
+`lv_suburban_1864_265991`, and since scenario 4: `mv_rural_3150` + its two
+other street-routed LV grids `lv_rural_3150_300668`/`_300575`) so the picker
+only offers those. The full 20-entry manifest lives on as
+`data/grid_library_full.json` (copy it back to restore;
 `test_district_import.py` / `test_runtime_swap.py` point at the full file).
-All three include the SMGW measurement concept (station trafo meter + node
-meters at the plants/wallboxes) and start shortly before the critical time
-(interval 0.2 s/step):
+All include a measurement concept and start shortly before the critical time
+(interval 0.2 s/step). Scenario 4 ("Feierabend im Bezirk — Engpass unsichtbar
+für jede Zelle") is the VERTICAL teaching path — see the vertical-integration
+bullet in §10 for its calibrated numbers and cascade walkthrough. 1–3:
 
 1. **`1-bauernhof-pv-75-kw-spannungs-berh-hung`** — rural grid, 75-kWp PV at
    the 500-m feeder end (bus 24). Noon: ~252 V at the farm (EN 50160 limit

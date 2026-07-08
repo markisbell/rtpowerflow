@@ -88,14 +88,26 @@ class Simulator:
         # static per-cell domains for cell controllers / the MV coordinator:
         # a cell owns its member buses, the lines between them (all its lines,
         # by construction) and its station trafo(s); everything else is the
-        # MV level. Empty on grids without spliced cells.
-        self._cell_buses: dict[str, set[int]] = {
-            c["id"]: {int(b) for b in c["buses"]}
-            for c in self.cells if not c.get("lumped") and c.get("buses")}
+        # MV level. A LUMPED cell is representable too — its "members" are
+        # just its feeding MV bus, so a Steuerbox there can throttle the
+        # aggregate DERs modelled at that bus (locally blind, but it executes
+        # coordinator signals). Empty on grids without cells.
+        self._cell_buses: dict[str, set[int]] = {}
+        for c in self.cells:
+            if not c.get("lumped") and c.get("buses"):
+                self._cell_buses[c["id"]] = {int(b) for b in c["buses"]}
+            elif c.get("lumped") and c.get("mv_bus") is not None:
+                self._cell_buses[c["id"]] = {int(c["mv_bus"])}
+        # lines/trafos belong only to SPLICED cells (a lumped cell's MV bus
+        # sits on the ring — its adjacent lines stay in the coordinator's
+        # domain, and the missing entry keeps its controller locally blind)
+        spliced_members = {c["id"]: {int(b) for b in c["buses"]}
+                           for c in self.cells
+                           if not c.get("lumped") and c.get("buses")}
         self._cell_lines: dict[str, set[int]] = {
             cid: {int(li) for li in self.net.line.index
                   if int(self.net.line.at[li, "from_bus"]) in member}
-            for cid, member in self._cell_buses.items()}
+            for cid, member in spliced_members.items()}
         self._cell_trafos: dict[str, set[int]] = {
             c["id"]: {int(t) for t in c.get("station_trafos", [])}
             for c in self.cells if not c.get("lumped") and c.get("buses")}
@@ -129,6 +141,7 @@ class Simulator:
         self._estimator: Estimator | HierarchicalEstimator | None = None
         self._sgen_day_mean_cache: dict[int, np.ndarray] = {}
         self._est_last: dict | None = None
+        self._est_seq = 0               # counts estimation runs (telegram id)
         self._est_wall = 0.0            # monotonic time of the last estimation run
         self._est_ms = 0.0              # its duration (drives the adaptive spacing)
         # daily-sweep estimate raster in MINUTES (15/30/60/120): decided ONCE
@@ -395,6 +408,21 @@ class Simulator:
         est = res.estimated if isinstance(res.estimated, dict) else {}
         est_lines = est.get("lines") or []
         est_trafos = est.get("trafos") or []
+        # identity of the current estimate: estimate-fed controllers act once
+        # per NEW telegram (see Controller.est_stamp)
+        est_stamp = est.get("seq") if est else None
+
+        def _act(c: Controller, seen: list, exporting: bool) -> None:
+            if seen:
+                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
+                if c.seen_src == "estimate":
+                    if c.est_stamp == est_stamp:
+                        return                      # stale telegram: hold
+                    c.est_stamp = est_stamp
+                c.update(c.seen_pct, exporting)
+            else:
+                c.seen_pct = c.seen_src = None
+                c.update(None, False)
 
         # -- pass 1: MV coordinators (grid traffic light) ------------------- #
         # They see only the MV level and ratchet their factors like any
@@ -424,12 +452,7 @@ class Simulator:
                 p_hv = [tr["p_hv_mw"] for tr in est_trafos
                         if tr.get("index") in self._mv_trafos and tr.get("p_hv_mw") is not None]
             exporting = bool(p_hv) and sum(p_hv) < 0.0
-            if seen:
-                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
-                c.update(c.seen_pct, exporting)
-            else:
-                c.seen_pct = c.seen_src = None
-                c.update(None, False)
+            _act(c, seen, exporting)
             c.signals = {cc.cell: (c.ev_factor, c.pv_factor) for cc in cell_ctrls}
         # the strictest coordinator wins per cell (usually there is one)
         for cc in cell_ctrls:
@@ -500,12 +523,7 @@ class Simulator:
                                   if b.get("index") == c.bus and b.get("p_mw") is not None),
                                  None)
                 exporting = p_bus is not None and float(p_bus) < 0.0
-            if seen:
-                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
-                c.update(c.seen_pct, exporting)
-            else:
-                c.seen_pct = c.seen_src = None
-                c.update(None, False)
+            _act(c, seen, exporting)
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -896,6 +914,8 @@ class Simulator:
                 self._est_wall = time.monotonic()
                 if est is not None:
                     est["step"], est["day"] = t, day   # which step it estimated
+                    self._est_seq += 1
+                    est["seq"] = self._est_seq         # telegram id (controllers)
                     self._est_ms = est["solve_ms"]
                     self._est_last = est
             res.estimated = self._est_last

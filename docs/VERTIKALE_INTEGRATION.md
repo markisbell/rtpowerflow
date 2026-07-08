@@ -1,7 +1,20 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1 und 2 umgesetzt** (Branch `feature/vertical`,
-> Stand 2026-07-08); Phasen 3–6 offen. Abweichung in Phase 2 gegenüber dem
+> Status: **Phasen 0, 1, 2 und 6 (Backend + Szenario) umgesetzt** (Branch
+> `feature/vertical`, Stand 2026-07-08); offen: Phase 3 (rONT), Phase 4
+> (UI-Drill-down inkl. Koordinator-Platzierung per Klick — Szenario 4 wird
+> bis dahin per API/Kaskade demonstriert), Phase 5 (gridedit `lv_ref`),
+> Handbuchkapitel. Szenario 4 liegt unter `data/scenarios/4-feierabend-…`,
+> der Picker (`data/grid_library.json`) trägt dafür den Bezirk
+> `mv_rural_3150` + seine zwei weiteren NS-Netze (E5). Wesentliche
+> Erkenntnis aus der Kalibrierung: Die ding0-MS-Ringe sind geschlossen
+> und ein MS-Segment ist nur über VIELE Stationen überlastbar — die
+> Feierabend-Welle sind daher aggregierte 200-kW-Wallbox-Blöcke an den 42
+> Summenlast-Stationen des Rings L19/L222 (8,4 MW), mit Steuerboxen an
+> ebendiesen Zellen (`cell`-Scope gilt jetzt auch für Summenlast-Zellen).
+> Zweite Erkenntnis: schätzungsgespeiste Regler müssen je NEUEM Telegramm
+> handeln (`Controller.est_stamp`/`est["seq"]`), sonst schwingt der Kreis
+> auf Bezirken hart (Sensor langsamer als Aktor). Abweichung in Phase 2 gegenüber dem
 > Plan: Der Koordinator sendet EIN einheitliches Signal an alle Zellenregler
 > (gleicher Faktor = proportionale Lastreduktion je Zelle, E3 erfüllt);
 > außerdem führt ein lokal messloser Zellenregler empfangene Signale AUS —
