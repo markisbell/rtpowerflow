@@ -225,27 +225,34 @@ Menüleiste am oberen Rand bündelt alle Funktionen
 (Abbildung~\ref{fig:menue}):
 
 \begin{description}[nosep]
-  \item[\ui{Netz}] öffnet die kombinierte Ansicht \ui{Netz \&
-    Lasten…} --- Netz wählen oder importieren, Lasten konfigurieren,
-    Trafo-Auslastung prüfen, starten; darunter steht das aktuell
-    geladene Netz.
-  \item[\ui{Simulation}] Start/Pause sowie die komplette
-    Szenarien-Verwaltung (Kapitel~\ref{ch:scenarios}).
-  \item[\ui{Ansicht}] Darstellung (Karte/Schema/Werte) und Sicht
-    (Lastfluss / Gemessen / Schätzung,
-    Kapitel~\ref{ch:observability}).
-  \item[\ui{Messungen}] Mess-Presets, TAF-Modus und die aktuelle
-    Abdeckung.
-  \item[\ui{Schätzung}] die Richtlinie der Zustandsschätzung
+  \item[\ui{Datei}] alles, was lädt, speichert oder exportiert:
+    \ui{Netz \& Lasten…} (Netz wählen/importieren, Lasten
+    konfigurieren, starten), Szenarien speichern und laden
+    (Kapitel~\ref{ch:scenarios}) sowie der \ui{Daten-Export}
+    (Kapitel~\ref{ch:export}). Einträge mit \glqq…\grqq{} öffnen
+    einen kleinen Dialog, Einträge mit
+    \glqq$\triangleright$\grqq{} ein Untermenü.
+  \item[\ui{Ansicht}] die Darstellung (Karte/Schema/Werte).
+  \item[\ui{Messungen}] Mess-Presets, der TAF-Modus für alle
+    Geräte, die \ui{Schätz-Richtlinie…} und die aktuelle Abdeckung
     (Kapitel~\ref{ch:observability}).
   \item[\ui{Hilfe}] öffnet dieses Benutzerhandbuch als PDF.
 \end{description}
 
+Rechts neben den Menüs sitzt dauerhaft sichtbar der
+\textbf{Sicht-Umschalter} \ui{Lastfluss~/ Gemessen~/ Schätzung}
+(Kapitel~\ref{ch:observability}) --- die drei Sichten sind das
+Kernkonzept der Plattform, deshalb ist die aktive Sicht immer
+ablesbar und mit einem Klick wechselbar. Start/Pause lebt in der
+Transportleiste am unteren Rand; läuft eine Aufzeichnung oder ein
+Export, erscheinen rechts in der Leiste klickbare Status-Chips.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-menue}
-  \caption{Die Menüleiste über der Live-Ansicht, hier mit geöffnetem
-    \ui{Ansicht}-Menü: Darstellung und Sicht als Auswahlgruppen. Die
+  \caption{Die Menüleiste über der Live-Ansicht mit geöffnetem
+    \ui{Datei}-Menü (kurze Befehlsliste, Listen als Untermenüs) und
+    dem stets sichtbaren Sicht-Umschalter rechts daneben. Die
     Transportleiste (Start/Pause, Zeit, Tag, Schrittdauer) bleibt
     permanent am unteren Rand.}
   \label{fig:menue}
@@ -262,8 +269,9 @@ zu Schritt wiederfinden lassen.
 
 \section{Schritt 1: Netz wählen oder importieren}
 
-\ui{Netz} $\rightarrow$ \ui{Netz \& Lasten…} öffnet die kombinierte
-Ansicht. Die linke Spalte listet alle verfügbaren Netze:
+\ui{Datei} $\rightarrow$ \ui{Netz \& Lasten…} öffnet die kombinierte
+Ansicht (auch der Klick auf den Netz-Chip rechts oben führt
+hierher). Die linke Spalte listet alle verfügbaren Netze:
 
 \begin{description}
   \item[\ui{Bibliothek}] mitgelieferte synthetische deutsche
@@ -482,9 +490,9 @@ Die Darstellung wird im Menü \ui{Ansicht} gewählt:
 \subsection{Steuerung}
 
 \begin{itemize}[nosep]
-  \item \ui{Start} / \ui{Pause} (Transportleiste unten oder Menü
-    \ui{Simulation}) halten die Simulation an und setzen sie fort ---
-    praktisch, um einen Zustand in Ruhe zu besprechen.
+  \item \ui{Start} / \ui{Pause} (Transportleiste unten) halten die
+    Simulation an und setzen sie fort --- praktisch, um einen
+    Zustand in Ruhe zu besprechen.
   \item Der \ui{Zeitpunkt}-Regler springt an eine beliebige Uhrzeit
     des Tages (siehe Beispiel in Abschnitt~\ref{sec:zeitmodell}).
   \item \ui{Schrittdauer} stellt die Realzeit pro Simulationsschritt
@@ -515,7 +523,7 @@ Erzeugung & 3{,}1 kW & Rest-PV der Abendsonne \\
 Bezug (Netz) & 150 kW & Import aus dem MS-Netz \\
 Verluste & 4{,}11 kW & $\approx 2{,}8\,\%$ der Last --- Abendspitze \\
  & & treibt die $I^2R$-Verluste \\
-Rechenzeit & 8{,}2 ms & Lastfluss-Dauer dieses Schrittes \\
+Rechenzeit & 7{,}1 ms & Lastfluss-Dauer dieses Schrittes \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -559,7 +567,9 @@ Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
     (Abschnitt~\ref{sec:sichten}): Im \ui{Lastfluss} zeigen sie die
     volle Wahrheit im Minutenraster, in \ui{Gemessen} nur die
     Messgrößen des Elements im Messraster, in der \ui{Schätzung}
-    alle Ebenen überlagert.
+    alle Ebenen überlagert. Angeheftete Elemente sind im Schema
+    \emph{und} auf der Karte mit einem goldenen Ring markiert, damit
+    die Diagramme im Seitenpanel eindeutig zuzuordnen sind.
   \item \ui{Messung platzieren} / \ui{entfernen} --- siehe
     Kapitel~\ref{ch:observability}.
   \item \ui{Batterie hinzufügen}, \ui{PV-Anlage hinzufügen},
@@ -629,32 +639,45 @@ in der Übersicht laufend angezeigt (Abbildung~\ref{fig:beobachtet}).
 \end{figure}
 
 Zwei Mess-Modi bilden reale Smart-Meter-Tarifanwendungsfälle (TAF)
-nach dem deutschen Messstellenbetriebsgesetz ab:
+nach dem deutschen Messstellenbetriebsgesetz ab --- und zwar
+\textbf{je Gerät}, so wie im echten Netz TAF-7-Haushaltszähler und
+minütlich messende SMGWs an Anlagen und Wallboxen nebeneinander
+existieren:
 
 \begin{description}
   \item[TAF 9/10/14] \glqq Netzzustandsdaten\grqq: Spannung, P, Q und
     Strom im Minutentakt --- das, was sich ein Netzbetreiber wünscht.
   \item[TAF 7] \glqq Zählerstandsgang\grqq: nur der
     15-Minuten-Mittelwert der Wirkleistung --- das, was der
-    Standard-Rollout tatsächlich liefert.
+    Standard-Rollout tatsächlich liefert. Die Granularität ist
+    strikt: Innerhalb eines Fensters ändert sich der Wert nie, und
+    direkt nach dem Platzieren oder Umschalten liefert das Gerät
+    \emph{gar nichts}, bis die erste Viertelstunde vollendet ist.
 \end{description}
+
+Umgeschaltet wird an zwei Stellen: Der kleine
+\ui{TAF9/10/14}/\ui{TAF7}-Umschalter im Messwerte-Block einer
+Element-Sektion stellt \emph{dieses eine Gerät} um; die beiden
+Einträge im Menü \ui{Messungen} setzen \emph{alle} platzierten
+Geräte auf einmal und bestimmen die Vorgabe für neue.
 
 \begin{beispiel}[Warum TAF 7 Spitzen verschluckt]
 Eine 22-kW-Wallbox lädt von 19:02 bis 19:12 Uhr --- zehn Minuten
-volle Leistung. Im TAF-9-Modus zeigt das Smart Meter des Hauses
-diese 22~kW minutengenau. Im TAF-7-Modus erscheint im Intervall
-19:00--19:15 nur der Mittelwert
-$22 \cdot \tfrac{10}{15} \approx 14{,}7$~kW --- ein Drittel der
-Spitze ist \emph{in den Messdaten} verschwunden, im Kabel aber
-natürlich geflossen. Der Umschalter \ui{TAF9/10/14}/\ui{TAF7} in
-der Messungs-Sektion macht den Unterschied in allen angehefteten
-Diagrammen sichtbar.
+volle Leistung. Ein TAF-9-Gerät zeigt diese 22~kW minutengenau. Ein
+TAF-7-Zähler liefert für das Intervall 19:00--19:15 nur den
+Mittelwert $22 \cdot \tfrac{10}{15} \approx 14{,}7$~kW --- ein
+Drittel der Spitze ist \emph{in den Messdaten} verschwunden, im
+Kabel aber natürlich geflossen. Der Umschalter im Messwerte-Block
+des Hauses macht den Unterschied unmittelbar sichtbar; ein
+realistisches Messkonzept mischt beide: die Nachbarschaft auf TAF~7,
+nur die Wallbox mit einem 1-min-SMGW.
 \end{beispiel}
 
 \section{Die drei Ansichtsmodi}
 \label{sec:sichten}
 
-Im Menü \ui{Ansicht} wählt man unter \ui{Sicht}:
+Der Sicht-Umschalter sitzt als dauerhaft sichtbares Segment rechts
+neben den Menüs in der Menüleiste --- ein Klick genügt:
 
 \begin{description}
   \item[\ui{Lastfluss (Wahrheit)}] Der echte Lastfluss wird
@@ -695,10 +718,10 @@ Tagesdiagrammen:
 
 \begin{beispiel}[Die Summe lügt nicht --- sie ist nur unvollständig]
 Im Screenshot (Abbildung~\ref{fig:beobachtet}) meldet die Übersicht
-\glqq gemessene Last ($\Sigma$) 10{,}6~kW\grqq{} --- die Wahrheit im
-selben Moment: 154{,}8~kW. Die 10{,}6~kW sind schlicht die Summe der
+\glqq gemessene Last ($\Sigma$) 12{,}9~kW\grqq{} --- die Wahrheit im
+selben Moment: 146{,}8~kW. Die 12{,}9~kW sind schlicht die Summe der
 vier gemessenen Hausanschlüsse. Wer nur auf Messwerte schaut, sieht
-7\,\% des Geschehens; die \glqq gemessen max Trafo 67{,}6\,\%\grqq{}
+9\,\% des Geschehens; die \glqq gemessen max Trafo 63{,}5\,\%\grqq{}
 der Stationsmessung ist dagegen belastbar, weil durch den Trafo
 \emph{alles} fließt. Diese Asymmetrie --- Summenmessung top,
 Ortsauflösung null --- ist der Kern des Beobachtbarkeitsproblems.
@@ -734,44 +757,52 @@ Die Übersicht zeigt neben den geschätzten Kennzahlen den
 Abbildung~\ref{fig:schaetzung} zeigt die Schätz-Ansicht mit nur fünf
 Messgeräten.
 
-Die Schätzung rechnet dabei im \emph{Messraster}: Im Modus
-\ui{TAF 9/10/14} liefern die Geräte minütlich neue Werte, also wird
-minütlich neu geschätzt. Im Modus \ui{TAF 7} kommt nur alle
-15~Minuten ein neuer Lastgangwert --- eine neue Schätzung entsteht
-folglich nur an den Viertelstundengrenzen, dazwischen hält sie den
-letzten Stand. Auf großen Netzen wird zusätzlich automatisch
-gedrosselt (die Schätzung rechnet dann z.\,B. nur jeden dritten
-Schritt), damit die Simulation flüssig bleibt.
+Die Schätzung rechnet dabei im \emph{Messraster}: Sobald auch nur
+ein Gerät im Modus \ui{TAF 9/10/14} minütlich neue Werte liefert,
+wird minütlich neu geschätzt (die TAF-7-Geräte steuern dann eben nur
+alle 15~Minuten frische Lastgangwerte bei). Sind dagegen
+\emph{alle} Geräte auf \ui{TAF 7}, entsteht eine neue Schätzung nur
+an den Viertelstundengrenzen --- dazwischen hält sie den letzten
+Stand. Auf großen Netzen wird zusätzlich automatisch gedrosselt
+(die Schätzung rechnet dann z.\,B. nur jeden dritten Schritt),
+damit die Simulation flüssig bleibt.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-schaetzung}
-  \caption{Ansicht \ui{Schätzung}: Aus fünf Messungen und dem
+  \caption{Sicht \ui{Schätzung}: Aus fünf Messungen und dem
     Netzmodell rekonstruiert die WLS-Zustandsschätzung den kompletten
     Netzzustand --- die Karte färbt sich wieder, die Übersicht weist
-    den Schätzfehler gegen die Wahrheit aus (hier 0{,}7~V).}
+    den Schätzfehler gegen die Wahrheit aus (hier 1{,}6~V; er
+    konzentriert sich auf den Strang ohne Messung).}
   \label{fig:schaetzung}
 \end{figure}
 
 \begin{beispiel}[Messkampagne im Experiment]
 Ein lohnender Unterrichtsverlauf auf dem 62-Knoten-Netz zur
-Abendspitze:
+Abendspitze (19:39 Uhr):
 \begin{enumerate}[nosep]
   \item \textbf{Nur Stations-Trafo} (Preset \ui{Stationen}): Die
-    Schätzung kennt die Gesamtbilanz, verteilt sie aber nach
-    Standardannahmen --- wahre Spannungen werden auf einige Volt
-    verfehlt, das höchstbelastete Kabel wird nur ungefähr erkannt.
-  \item \textbf{+ 3 Smart Meter} an den Strangenden: Der Fehler
-    fällt auf \textbf{0{,}7~V} (Screenshot) --- die Meter an den
-    kritischen Enden \glqq spannen\grqq{} das Spannungsprofil auf.
-    Auch die geschätzte maximale Leitungsauslastung (52\,\%) liegt
-    nun nahe an der Wahrheit.
+    Schätzung kennt die Gesamtbilanz und verteilt sie nach
+    Standardannahmen. Zur Abendspitze passt das erstaunlich gut
+    (max.\ Fehler \textbf{1{,}3~V}) --- Haushalte verhalten sich
+    abends profilähnlich. Aber: \emph{Wo} der Fehler sitzt, weiß
+    niemand.
+  \item \textbf{+ 3 Smart Meter} in den belasteten Strängen
+    (Screenshot): Die gemessenen Stränge werden fast exakt --- am
+    kritischen Strangende schrumpft der Fehler von 0{,}5 auf
+    0{,}1~V. Die Kennzahl \ui{max $|\Delta U|$} fällt trotzdem
+    nicht (\textbf{1{,}6~V}): Der Restfehler ist in den einen
+    Strang gewandert, in dem \emph{niemand} misst. Die eine Zahl
+    sagt also nur, wie schlecht es an der blindesten Stelle steht.
   \item \textbf{Alle Knoten} (Preset): Der Fehler verschwindet
     praktisch ($< 0{,}1$~V) --- Vollausstattung macht die Schätzung
     exakt, kostet im echten Netz aber Millionen.
 \end{enumerate}
-Merksatz, den das Experiment liefert: \emph{Wenige, gut platzierte
-Messungen schlagen viele schlecht platzierte} --- Strangenden zuerst.
+Merksatz, den das Experiment liefert: \emph{Messungen wirken lokal.}
+Der Fehler verschwindet dort, wo gemessen wird --- und sammelt sich
+dort, wo niemand misst. Deshalb gehören Messungen an die kritischen
+Stellen, nicht irgendwohin.
 \end{beispiel}
 
 % ===================================================================
@@ -886,12 +917,12 @@ Beobachtbarkeit (Kapitel~\ref{ch:observability}).
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-regler}
-  \caption{Netzregler an der Station im Referenzszenario~3 (12:52
+  \caption{Netzregler an der Station im Referenzszenario~3 (12:50
     Uhr): Die Regler-Sektion zeigt \ui{sieht Auslastung}
-    87{,}5\,\% (geschätzt) --- über der Grenze von 100\,\% hat er
-    die \ui{PV-Einspeisung auf} 80\,\% gedrosselt, die E-Auto-Ladung
+    91{,}7\,\% (geschätzt) --- über der Grenze von 100\,\% hat er
+    die \ui{PV-Einspeisung auf} 85\,\% gedrosselt, die E-Auto-Ladung
     blieb unangetastet. Die wahre maximale Leitungsauslastung ist
-    dadurch von $\approx$110 auf 87\,\% gefallen; das mittlere
+    dadurch von $\approx$110 auf 91\,\% gefallen; das mittlere
     Strangsegment auf der Karte ist noch orange gefärbt.}
   \label{fig:regler}
 \end{figure}
@@ -980,11 +1011,13 @@ abgespielt. Der Vorteil: Die Dateien sind klein, lesbar und von Hand
 anpassbar.
 
 \begin{itemize}[nosep]
-  \item Im Menü \ui{Simulation}: Namen eintippen und \ui{Speichern}
-    legt das aktuelle Setup ab.
-  \item Ein Klick auf einen Szenario-Eintrag im selben Menü spielt
-    das Rezept vollständig ab und startet am gespeicherten Zeitpunkt;
-    das $\times$ daneben löscht es.
+  \item \ui{Datei \(\to\) Szenario speichern\ldots} öffnet einen
+    kleinen Dialog: Namen eintippen, \ui{Speichern} legt das
+    aktuelle Setup ab.
+  \item \ui{Datei \(\to\) Szenario laden} klappt die Liste der
+    gespeicherten Szenarien als Untermenü aus; ein Klick spielt
+    das Rezept vollständig ab und startet am gespeicherten Zeitpunkt,
+    das $\times$ neben einem Eintrag löscht es.
 \end{itemize}
 
 Szenarien liegen als JSON-Dateien unter \texttt{data/scenarios/}.
@@ -1060,26 +1093,28 @@ verschärft die Überhöhung, ein Eintrag in \texttt{"batteries"}
 Alles, was die Simulation rechnet, lässt sich als \textbf{CSV-Paket}
 herunterladen --- für die Auswertung in Python, MATLAB oder Excel und
 als Datengrundlage für Übungsblätter. Beide Wege leben im Menü
-\ui{Simulation} unter \ui{Daten-Export}
-(Abbildung~\ref{fig:export}) und erzeugen identisch aufgebaute
-Pakete:
+\ui{Datei} (Abbildung~\ref{fig:export}) und erzeugen identisch
+aufgebaute Pakete:
 
 \begin{description}
-  \item[\ui{Tage exportieren}] --- der Standardweg. Die gewünschte
-    Anzahl Tage wird \emph{offline} so schnell wie möglich
-    durchsimuliert, ohne auf die beschleunigte Uhr zu warten: zwei
-    volle Tage des Vorstadtnetzes rechnen in etwa einer Minute,
-    live wären es 48 Minuten. Gerechnet wird die \emph{echte}
-    Live-Physik der aktuellen Konfiguration: Batterien starten bei
-    50\,\% und integrieren über Mitternacht hinweg, Überlast-Regler
-    regeln im geschlossenen Kreis, bei geladenen PV-Messtagen ist
-    jeder exportierte Tag ein anderer realer Solartag. Das kleine
-    Häkchen neben der Tageszahl entscheidet, ob die
-    Zustandsschätzung mitläuft --- im Modus TAF~9/10/14 rechnet sie
-    minütlich und dominiert dann die Exportdauer deutlich. Während des Exports zeigt die Zeile
-    Fortschritt und Restzeit (\ui{Abbrechen} behält das bereits
-    Gerechnete); die Simulation läuft währenddessen normal weiter,
-    rechts in der Menüleiste erscheint ein Fortschritts-Chip.
+  \item[\ui{Tage exportieren\ldots}] --- der Standardweg. Der
+    Dialog fragt die gewünschte Anzahl Tage ab; sie wird
+    \emph{offline} so schnell wie möglich durchsimuliert, ohne auf
+    die beschleunigte Uhr zu warten: zwei volle Tage des
+    Vorstadtnetzes rechnen in etwa einer Minute, live wären es 48
+    Minuten. Gerechnet wird die \emph{echte} Live-Physik der
+    aktuellen Konfiguration: Batterien starten bei 50\,\% und
+    integrieren über Mitternacht hinweg, Überlast-Regler regeln im
+    geschlossenen Kreis, bei geladenen PV-Messtagen ist jeder
+    exportierte Tag ein anderer realer Solartag. Das Häkchen
+    \ui{mit Zustandsschätzung} im selben Dialog entscheidet, ob die
+    Schätzung mitläuft --- im Modus TAF~9/10/14 rechnet sie
+    minütlich und dominiert dann die Exportdauer deutlich. Während
+    des Exports zeigt eine Zeile im \ui{Datei}-Menü Fortschritt und
+    Restzeit (\ui{Abbrechen} behält das bereits Gerechnete); die
+    Simulation läuft währenddessen normal weiter, rechts in der
+    Menüleiste erscheint ein Fortschritts-Chip, der auch bei
+    geschlossenem Menü sichtbar bleibt.
   \item[\ui{Live-Sitzung aufzeichnen}] --- für interaktive
     Vorführungen: Ab dem Klick wird jeder Simulationsschritt
     mitgeschrieben, \emph{inklusive aller Eingriffe} (Anlagen
@@ -1089,18 +1124,22 @@ Pakete:
     eine Aufzeichnung gehört immer zu genau einer Konfiguration.
 \end{description}
 
-Fertige Pakete erscheinen darunter als Liste: Ein Klick lädt das
-ZIP, das $\times$ daneben löscht. Auf dem Server liegen die Pakete
-unter \texttt{data/recordings/}.
+Fertige Pakete listet das Untermenü \ui{Datei \(\to\)
+Aufzeichnungen}: Ein Klick lädt das ZIP, das $\times$ daneben
+löscht. Auf dem Server liegen die Pakete unter
+\texttt{data/recordings/}. Die beiden Status-Chips (rotes \ui{REC},
+Export-Fortschritt) sind klickbar und öffnen direkt das
+\ui{Datei}-Menü.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{ui-export}
-  \caption{\ui{Daten-Export} im Menü \ui{Simulation}: oben der
-    laufende Tages-Export mit Fortschritt und \ui{Abbrechen},
-    darunter der Aufzeichnungs-Umschalter und die fertigen Pakete
-    zum Download; rechts in der Menüleiste der Fortschritts-Chip,
-    der auch bei geschlossenem Menü sichtbar bleibt.}
+  \caption{Daten-Export im Menü \ui{Datei}: oben der laufende
+    Tages-Export mit Fortschritt und \ui{Abbrechen}, darunter der
+    Aufzeichnungs-Umschalter und das Untermenü \ui{Aufzeichnungen}
+    mit den fertigen Paketen zum Download; rechts in der Menüleiste
+    der Fortschritts-Chip, der auch bei geschlossenem Menü sichtbar
+    bleibt.}
   \label{fig:export}
 \end{figure}
 
@@ -1510,8 +1549,9 @@ Profil-Arrays müssen exakt \texttt{steps} Werte haben (1440).
     enthält keine einzige PV-Anlage --- reine Wind-/Biogas-Netze
     nutzen die gemessenen Solartage bewusst nicht.
   \item[Die Schätzung erscheint nicht] Es ist keine Messung
-    platziert. Mindestens ein Smart Meter oder eine Trafo-Messung
-    setzen; danach taucht der Modus \ui{Schätzung} auf.
+    platziert. Die Zustandsschätzung rechnet erst, sobald mindestens
+    ein Smart Meter oder eine Trafo-Messung gesetzt ist --- bis
+    dahin bleibt die Sicht \ui{Schätzung} leer.
   \item[Grafana zeigt nichts] Der Collector wartet, bis netzsim und
     InfluxDB gesund sind und der erste Schritt gelöst ist;
     Zeitbereich auf \glqq letzte 5 Minuten\grqq{} stellen.
