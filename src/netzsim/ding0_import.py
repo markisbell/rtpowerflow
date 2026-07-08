@@ -360,8 +360,28 @@ def convert_ding0_csv(grid_dir: str | Path, *, name: str | None = None,
                  f"{len(line_specs)} lines, {len(trafo_specs)} trafos, "
                  f"{len(load_specs)} loads, {len(gen_specs)} sgen; slack at {slack}")
 
+    # --- ONS cells (vertical MV/LV structure) -------------------------------- #
+    # scope "lv": the whole grid is one cell, fed at its busbar (= the slack).
+    # scope "mv": every folded LV grid becomes a degenerate *lumped* cell at its
+    # feeding MV bus — identified by the "lv_" name this module gave its
+    # aggregate load above. scope "full" carries no cells (the hierarchy path
+    # goes through district_import, which splices OSM LV grids).
+    cells: list[dict[str, Any]] = []
+    if scope == "lv":
+        cells.append({"id": name, "name": name,
+                      "buses": list(range(len(bus_specs))),
+                      "lv_busbar": bus_index[slack], "mv_bus": None,
+                      "station_trafos": list(range(len(trafo_specs))),
+                      "lumped": False})
+    elif scope == "mv":
+        for ld in load_specs:
+            if str(ld["name"]).startswith("lv_"):
+                cells.append({"id": str(ld["name"]), "name": str(ld["name"]),
+                              "buses": [], "lv_busbar": None, "mv_bus": ld["bus"],
+                              "station_trafos": [], "lumped": True})
+
     return GridInputs(
         grid_structure={"name": name, "f_hz": 50.0, "buses": bus_specs},
         lines=lines_doc, load=load_doc, generation=generation_doc,
-        substation=substation_doc, notes=notes,
+        substation=substation_doc, notes=notes, cells=cells,
     )

@@ -593,7 +593,7 @@ async def scenarios_load(sid: str):
             else:
                 load_doc = g.load
             data = input_data_from_dicts(g.grid_structure, g.lines, load_doc,
-                                         gen_doc, g.substation)
+                                         gen_doc, g.substation, cells=g.cells)
         else:
             data = load_inputs(settings.data_dir)
     except HTTPException:
@@ -1113,7 +1113,8 @@ async def config_apply(req: ApplyGridRequest):
             load_doc = g.load
             load_source = "placeholder"
         data = input_data_from_dicts(
-            g.grid_structure, g.lines, load_doc, gen_doc, g.substation
+            g.grid_structure, g.lines, load_doc, gen_doc, g.substation,
+            cells=g.cells,
         )
     except HTTPException:
         raise

@@ -71,6 +71,7 @@ def convert_district(grid_dir: str | Path, lv_grids: list[dict], *,
     load_specs = mv.load["loads"]
     gen_specs = mv.generation["generation"]
     notes = list(mv.notes)
+    cells = list(mv.cells)          # lumped cells of every non-spliced station
     bus_index = {b["name"]: i for i, b in enumerate(bus_specs)}
     for ld in load_specs:
         ld["household"] = False        # MV-level + lumped station loads: no LPG households
@@ -98,9 +99,16 @@ def convert_district(grid_dir: str | Path, lv_grids: list[dict], *,
         busbar = busbar_local + offset
         rows = station[lvid]
         mv_bus = bus_index[rows[0][1]]
+        trafo_at = len(trafo_specs)
         for r, mv_name, vn_lv in rows:  # several rows = parallel station transformers
             trafo_specs.append(trafo_spec_from_row(
                 r, bus_index[mv_name], busbar, vnof.get(mv_name, 20.0), vn_lv))
+        cells.append({"id": g.get("id") or f"lv_{lvid}",
+                      "name": g.get("id") or f"lv_{lvid}",
+                      "buses": list(range(offset, offset + len(lv_buses) - 1)),
+                      "lv_busbar": busbar, "mv_bus": mv_bus,
+                      "station_trafos": list(range(trafo_at, len(trafo_specs))),
+                      "lumped": False})
 
         n_gen = 0                       # ding0's LV generators re-attach at the busbar
         if not gens.empty:
@@ -127,5 +135,5 @@ def convert_district(grid_dir: str | Path, lv_grids: list[dict], *,
         lines={"lines": line_specs, "transformers": trafo_specs},
         load={**mv.load, "loads": load_specs},
         generation={**mv.generation, "generation": gen_specs},
-        substation=mv.substation, notes=notes,
+        substation=mv.substation, notes=notes, cells=cells,
     )

@@ -162,8 +162,14 @@ def convert_gridedit_mv(path: str | Path, *, name: str | None = None,
     if echeck and not echeck.get("ok", True):
         fails = ", ".join(echeck.get("failures", [])) or "unknown"
         notes.append(f"E-Check FAIL: {fails}")
+    # every drawn MV/LV station is a degenerate (lumped) ONS cell — Phase 5 of
+    # the vertical integration will let a station reference a drawn LV grid
+    cells = [{"id": buses[i]["name"], "name": buses[i]["name"],
+              "buses": [], "lv_busbar": None, "mv_bus": i,
+              "station_trafos": [], "lumped": True}
+             for i, b in enumerate(src_buses) if b.get("kind") == "station"]
     return GridInputs(
         grid_structure={"name": name, "f_hz": 50.0, "buses": buses},
         lines=lines_doc, load=load_doc, generation=gen_doc,
-        substation=sub_doc, notes=notes,
+        substation=sub_doc, notes=notes, cells=cells,
     )

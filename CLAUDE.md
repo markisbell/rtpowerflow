@@ -375,14 +375,23 @@ provisioned datasource + dashboard, all in compose.
   If pinning for reproducibility, pin to the tested 3.x.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
-- **Vertical MV/LV smart-grid integration is PLANNED, not built**: see
-  `docs/VERTIKALE_INTEGRATION.md` (2026-07-08) — phased plan for first-class
-  ONS cells on `GridInputs`, hierarchical two-stage WLS (cell estimates feed
-  the MV estimate as boundary pseudo-measurements), a grid-traffic-light
+- **Vertical MV/LV smart-grid integration — Phase 0 (cells) is BUILT, the
+  rest is planned**: see `docs/VERTIKALE_INTEGRATION.md` (2026-07-08).
+  Since Phase 0 every importer describes its vertical structure as **ONS
+  cells** (`GridInputs.cells` / `InputData.cells`, plain dicts `{id, name,
+  buses, lv_busbar, mv_bus, station_trafos, lumped}`, cross-validated in
+  `data_loader`): `district_import` emits spliced cells + inherits lumped
+  ones from ding0 `scope="mv"` (aggregate loads named `lv_<gid>` — that name
+  prefix is the intra-module contract), `convert_osm_lv` = exactly one cell,
+  `gridedit_mv_import` = degenerate cells per drawn station, file-based
+  grids have none. `Simulator.cells` + `cell_of_bus` are the runtime handles;
+  `topology()`/`/network` expose `cells[]`. Tests: `tests/test_cells.py` (4).
+  STILL OPEN (phases 1–6): hierarchical two-stage WLS (cell estimates feed
+  the MV estimate as boundary pseudo-measurements), grid-traffic-light
   control cascade (MV coordinator scope `"mv"` → cell controllers scope
   `"cell"`; today's `station` scope covers the WHOLE grid and is wrong on
-  districts), rONT, UI drill-down, gridedit `lv_ref` station references, and
-  reference scenario 4. Start with Phase 0 (cells).
+  districts), rONT, UI drill-down, gridedit `lv_ref` station references,
+  reference scenario 4.
 
 ---
 

@@ -16,7 +16,18 @@ from typing import Any
 
 @dataclass
 class GridInputs:
-    """The five netzsim input documents as plain dicts."""
+    """The five netzsim input documents as plain dicts.
+
+    ``cells`` is the vertical MV/LV structure (docs/VERTIKALE_INTEGRATION.md,
+    Phase 0): one entry per MV/LV secondary substation (ONS) cell, as plain
+    dicts ``{id, name, buses, lv_busbar, mv_bus, station_trafos, lumped}``.
+    ``buses`` are the cell's LV bus indices (empty for a *lumped* station whose
+    LV grid is folded into one aggregate load at ``mv_bus``); ``lv_busbar`` is
+    the LV busbar bus, ``station_trafos`` the indices into
+    ``lines["transformers"]`` (several = parallel units). A standalone LV grid
+    is exactly one cell; an MV-only or legacy grid may have none. Cells are
+    runtime metadata — they are NOT part of the five-file contract.
+    """
 
     grid_structure: dict[str, Any]
     lines: dict[str, Any]
@@ -24,6 +35,7 @@ class GridInputs:
     generation: dict[str, Any]
     substation: dict[str, Any]
     notes: list[str] = field(default_factory=list)
+    cells: list[dict[str, Any]] = field(default_factory=list)
 
     def as_files(self) -> dict[str, dict[str, Any]]:
         return {

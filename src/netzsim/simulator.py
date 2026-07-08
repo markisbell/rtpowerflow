@@ -78,6 +78,13 @@ class Simulator:
         self.warm_start = warm_start
         self.net, self.prof = build_network(data)
         self.steps_per_day = data.steps_per_day
+        # vertical MV/LV structure: ONS cells from the importer (may be empty —
+        # file-based grids carry none). `cell_of_bus` is the derived membership
+        # map every later phase (hierarchical estimation, cell controllers)
+        # builds on; lumped cells have no member buses.
+        self.cells: list[dict[str, Any]] = [dict(c) for c in data.cells]
+        self.cell_of_bus: dict[int, str] = {
+            int(b): c["id"] for c in self.cells for b in c.get("buses", [])}
         self._solved_once = False
         self._coords: tuple[dict[int, list[float]], dict[int, list[float]]] | None = None
         # multi-day real PV (optional): per-day normalised 0..1 shapes applied as a
@@ -942,6 +949,8 @@ class Simulator:
             # LV cable cabinets (where service cables join the main line) → green circles
             "cabinet_buses": [i for i, b in enumerate(self.data.grid.buses)
                               if getattr(b, "kind", None) == "cabinet"],
+            # vertical MV/LV structure: ONS cells (empty for legacy/file grids)
+            "cells": [dict(c) for c in self.cells],
             "n_load": int(len(net.load)),
             "n_sgen": int(len(net.sgen)),
             "n_trafo": int(len(net.trafo)),

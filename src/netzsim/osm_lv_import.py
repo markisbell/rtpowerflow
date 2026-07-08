@@ -114,8 +114,13 @@ def convert_osm_lv(path: str | Path, *, name: str | None = None,
     if echeck and not echeck.get("ok", True):
         fails = ", ".join(echeck.get("failures", [])) or "unknown"
         notes.append(f"E-Check FAIL: {fails}")
+    # one ONS cell: the whole LV grid behind the (appended) station transformer
+    cells = [{"id": name, "name": name,
+              "buses": list(range(mv_bus)),          # every bus except "MS-Netz"
+              "lv_busbar": lv_busbar, "mv_bus": mv_bus,
+              "station_trafos": [0], "lumped": False}]
     return GridInputs(
         grid_structure={"name": name, "f_hz": 50.0, "buses": buses},
         lines=lines_doc, load=load_doc, generation=gen_doc,
-        substation=sub_doc, notes=notes,
+        substation=sub_doc, notes=notes, cells=cells,
     )
