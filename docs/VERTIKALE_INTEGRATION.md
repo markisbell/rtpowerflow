@@ -1,10 +1,15 @@
 # Vertikale Integration MS/NS — Umsetzungsplan
 
-> Status: **Phasen 0, 1, 2, 3 (rONT), 4 (Kaskaden-Scheibe) und 6 (inkl.
-> Handbuchkapitel) umgesetzt** (Branch `feature/vertical`, Stand
-> 2026-07-08); offen: Rest von Phase 4 (Zellen-Tabelle,
-> Drill-down/`focusCell`, Ampelfarbe je Station statt nur Dimm-Ring) und
-> Phase 5 (gridedit `lv_ref`). Der rONT (ront.py) stuft ±4 × 1,5 % auf der
+> Status: **Phasen 0, 1, 2, 3, 4 und 6 (inkl. Handbuchkapitel) umgesetzt**
+> (Branch `feature/vertical`, Stand 2026-07-08); offen: nur noch Phase 5
+> (gridedit `lv_ref`). Phase 4 komplett: Seitenpanel-Sektion **„Zellen"**
+> (scrollbare Tabelle aller ONS mit Ampel-Punkt [grün ruhig · gelb dimmt
+> auf Signal · rot Station überlastet · grau kein Messwert], Stations-
+> Messwert, 📟/🎛-Icons; Klick zoomt die Karte per `focusBuses`/fitBounds
+> in die Zelle und heftet ihre Station an, „← Bezirkssicht" zoomt zurück).
+> Designentscheidung: Die Ampel lebt in der Tabelle; auf der Karte
+> markiert der rote Ring die dimmenden Stationen (ein Ampel-FILL der
+> Marker würde mit der Spannungs-Färbung kollidieren). Der rONT (ront.py) stuft ±4 × 1,5 % auf der
 > HS-Seite, hält die Sammelschiene im Totband um den Sollwert, sieht nur
 > Messung/Schätzung (Telegramm-Taktung wie die Regler, blind hält) und
 > synchronisiert seine Stufenstellung als Betreiber-Sollwert in die
