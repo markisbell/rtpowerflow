@@ -23,35 +23,68 @@ not acted upon. That is the point: control quality equals observability.
 Which lever the controller pulls follows the flow direction of its domain:
 a net-exporting domain (midday PV) throttles generation, a net-importing one
 (evening EV charging) throttles the controllable loads.
+
+Vertical integration (Phase 2): scope ``cell`` limits the domain to ONE
+spliced ONS cell (its station trafo + cell lines + the DERs behind them);
+scope ``mv`` is the MV COORDINATOR — it watches only the MV level (MV lines,
+HV/MV trafo) and never throttles DERs itself. Instead its factors are
+broadcast as a grid-traffic-light SIGNAL to every placed cell controller,
+which applies it as an upper bound on top of its own local law
+(``min(local, signal)``). A cell without a controller has no Steuerbox and
+stays uncoordinated; a locally blind cell controller still executes the
+coordinator's signal — the command path needs a device, not a meter.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-SCOPES = ("station", "bus")
+SCOPES = ("station", "bus", "cell", "mv")
 
 
 @dataclass
 class Controller:
     """One placed controller; ``station`` covers the whole grid, ``bus`` the
-    DERs at a single node (its lever reacts to the lines touching that bus)."""
+    DERs at a single node (its lever reacts to the lines touching that bus),
+    ``cell`` one ONS cell, ``mv`` the coordinating MV level (signal only)."""
 
     cid: int
-    scope: str = "station"        # "station" | "bus"
+    scope: str = "station"        # "station" | "bus" | "cell" | "mv"
     bus: int | None = None        # for scope "bus"
+    cell: str | None = None       # for scope "cell"
     limit_pct: float = 100.0      # curtail while loading is above this
     release_pct: float = 80.0     # ramp back below this (hysteresis band)
     step_down: float = 0.25       # factor cut per violating step
     step_up: float = 0.05         # factor recovery per healthy step
     ev_factor: float = 1.0        # applied to EV charging loads in scope
     pv_factor: float = 1.0        # applied to PV feed-in in scope
+    # grid-traffic-light bound received from an MV coordinator (cell scope
+    # only; 1.0 = green). Applied as min(local factor, signal).
+    signal_ev: float = 1.0
+    signal_pv: float = 1.0
+    # an MV coordinator's last broadcast, per cell id (UI signal table)
+    signals: dict = field(default_factory=dict)
     # what the controller last saw of its domain (None = blind, no data)
     seen_pct: float | None = None
     seen_src: str | None = None   # "meter" | "estimate" | None
+    # (day, step) of the estimate the last control action was based on: an
+    # estimate-fed controller acts ONCE per new telegram — the estimate can
+    # refresh much slower than the simulation steps (wall-clock throttle on
+    # big districts), and ratcheting every step against a stale picture
+    # makes the closed loop oscillate hard. Meter-fed controllers keep
+    # per-step dynamics (their reading IS fresh every step).
+    est_stamp: tuple | None = None
+
+    @property
+    def effective_ev(self) -> float:
+        return min(self.ev_factor, self.signal_ev)
+
+    @property
+    def effective_pv(self) -> float:
+        return min(self.pv_factor, self.signal_pv)
 
     @property
     def active(self) -> bool:
-        return self.ev_factor < 1.0 or self.pv_factor < 1.0
+        return self.effective_ev < 1.0 or self.effective_pv < 1.0
 
     def update(self, max_loading_pct: float | None, exporting: bool) -> None:
         """One control step from the OBSERVED loading of the domain. ``None``
@@ -69,10 +102,17 @@ class Controller:
             self.pv_factor = min(1.0, round(self.pv_factor + self.step_up, 6))
 
     def as_dict(self) -> dict:
-        return {"id": self.cid, "scope": self.scope, "bus": self.bus,
-                "limit_pct": self.limit_pct, "release_pct": self.release_pct,
-                "ev_factor": round(self.ev_factor, 4),
-                "pv_factor": round(self.pv_factor, 4),
-                "active": self.active,
-                "seen_pct": round(self.seen_pct, 2) if self.seen_pct is not None else None,
-                "seen_src": self.seen_src}
+        d = {"id": self.cid, "scope": self.scope, "bus": self.bus,
+             "cell": self.cell,
+             "limit_pct": self.limit_pct, "release_pct": self.release_pct,
+             "ev_factor": round(self.effective_ev, 4),
+             "pv_factor": round(self.effective_pv, 4),
+             "active": self.active,
+             "seen_pct": round(self.seen_pct, 2) if self.seen_pct is not None else None,
+             "seen_src": self.seen_src}
+        if self.scope == "cell" and (self.signal_ev < 1.0 or self.signal_pv < 1.0):
+            d["signal"] = {"ev": round(self.signal_ev, 4), "pv": round(self.signal_pv, 4)}
+        if self.scope == "mv":
+            d["signals"] = {cid: {"ev": round(s[0], 4), "pv": round(s[1], 4)}
+                            for cid, s in self.signals.items()}
+        return d

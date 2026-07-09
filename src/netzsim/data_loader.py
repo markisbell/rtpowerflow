@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .models import (
@@ -29,6 +29,10 @@ class InputData:
     load: LoadFile
     generation: GenerationFile
     substation: SubstationFile
+    # vertical MV/LV structure: one dict per ONS cell (see GridInputs.cells).
+    # Runtime metadata from the importers — not part of the five-file contract,
+    # so file-based grids (load_inputs) simply have none.
+    cells: list[dict] = field(default_factory=list)
 
     @property
     def steps_per_day(self) -> int:
@@ -60,11 +64,13 @@ def input_data_from_dicts(
     load: dict,
     generation: dict,
     substation: dict,
+    cells: list[dict] | None = None,
 ) -> InputData:
     """Validate + cross-validate the five input documents already in memory.
 
     Used both by :func:`load_inputs` (from JSON files) and by the runtime
-    grid-swap path (from a freshly converted grid model).
+    grid-swap path (from a freshly converted grid model, which may also carry
+    the vertical ONS-``cells`` structure).
     """
     data = InputData(
         grid=GridStructure.model_validate(grid),
@@ -72,6 +78,7 @@ def input_data_from_dicts(
         load=LoadFile.model_validate(load),
         generation=GenerationFile.model_validate(generation),
         substation=SubstationFile.model_validate(substation),
+        cells=list(cells or []),
     )
     _cross_validate(data)
     return data
@@ -96,6 +103,22 @@ def _cross_validate(data: InputData) -> None:
         _check_bus(el.bus, f"gen {el.name}")
     for el in data.substation.substations:
         _check_bus(el.bus, f"substation {el.name}")
+
+    n_trafo = len(data.lines.transformers)
+    seen_ids: set[str] = set()
+    for c in data.cells:
+        cid = str(c.get("id") or "")
+        if not cid or cid in seen_ids:
+            raise ValueError(f"cell '{cid}': missing or duplicate id")
+        seen_ids.add(cid)
+        for b in c.get("buses", []):
+            _check_bus(int(b), f"cell {cid}")
+        for key in ("lv_busbar", "mv_bus"):
+            if c.get(key) is not None:
+                _check_bus(int(c[key]), f"cell {cid} {key}")
+        for ti in c.get("station_trafos", []):
+            if not (0 <= int(ti) < n_trafo):
+                raise ValueError(f"cell {cid}: trafo index {ti} out of range [0, {n_trafo})")
 
     # All profiles must share the same number of steps.
     steps = {

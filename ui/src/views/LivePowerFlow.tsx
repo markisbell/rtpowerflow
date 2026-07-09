@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, RontInfo, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
 import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
@@ -38,11 +38,15 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [ovOpen, setOvOpen] = useState(true);          // "Overview" section
   const [measOpen, setMeasOpen] = useState(false);     // bulk "Measurements" section
+  const [ampelOpen, setAmpelOpen] = useState(true);    // Netzampel (coordinator)
+  const [cellsOpen, setCellsOpen] = useState(false);   // ONS cell table
+  const [focusCell, setFocusCell] = useState<string | null>(null); // map drill-down
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [controllers, setControllers] = useState<GridController[]>([]);
+  const [ronts, setRonts] = useState<RontInfo[]>([]);
   const [batModes, setBatModes] = useState<BatteryMode[]>([]);
   const [batHasPrices, setBatHasPrices] = useState(false);
   const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
@@ -70,6 +74,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     .catch(() => {});
   const reloadControllers = () => api.controllers()
     .then((r) => setControllers(r.controllers)).catch(() => {});
+  const reloadRonts = () => api.ronts()
+    .then((r) => setRonts(r.ronts)).catch(() => {});
   const reloadMeasurements = () => api.measurements().then(setPlacement).catch(() => {});
 
   useEffect(() => {
@@ -80,6 +86,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadBatteries();
     reloadControllers();
+    reloadRonts();
     reloadMeasurements();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
@@ -122,11 +129,37 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     const bus = busForElement(kind, id);
     return bus == null ? undefined : batteries.find((b) => b.bus === bus);
   };
-  // a station controller lives on the trafo, a bus controller on its node
-  const controllerAt = (kind: SelKind, id: number): GridController | undefined =>
-    kind === "trafo" ? controllers.find((c) => c.scope === "station")
-      : kind === "bus" ? controllers.find((c) => c.scope === "bus" && c.bus === id)
-      : undefined;
+  // vertical structure: ONS cells — a Steuerbox (cell controller) is placed
+  // at a cell's station (busbar of a spliced cell / MV bus of a lumped one),
+  // the Netzampel coordinator at the slack/UW bus
+  const cells = topo?.cells ?? [];
+  const cellAtBus = (id: number) =>
+    cells.find((c) => (c.lumped ? c.mv_bus === id : c.lv_busbar === id));
+  const cellAtTrafo = (id: number) => cells.find((c) => c.station_trafos.includes(id));
+  const extBuses = (topo?.ext_grids ?? []).map((e) => e.bus);
+  const cellBusOf = (c: GridController): number => {
+    const cc = cells.find((x) => x.id === c.cell);
+    return cc ? (cc.lumped ? cc.mv_bus ?? -1 : cc.lv_busbar ?? -1) : -1;
+  };
+
+  // a station controller lives on the trafo, a bus controller on its node;
+  // vertical: the cell controller on its station, the coordinator on the UW
+  const controllerAt = (kind: SelKind, id: number): GridController | undefined => {
+    if (kind === "trafo") {
+      const cc = cellAtTrafo(id);
+      return (cc && controllers.find((c) => c.scope === "cell" && c.cell === cc.id))
+        || controllers.find((c) => c.scope === "station");
+    }
+    if (kind === "bus") {
+      const own = controllers.find((c) => c.scope === "bus" && c.bus === id);
+      if (own) return own;
+      const cc = cellAtBus(id);
+      if (cc) return controllers.find((c) => c.scope === "cell" && c.cell === cc.id);
+      if (extBuses.includes(id)) return controllers.find((c) => c.scope === "mv");
+      return undefined;
+    }
+    return undefined;
+  };
 
   const pinSection = (kind: SelKind, id: number) =>
     setSections((prev) => {
@@ -199,11 +232,28 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   };
   const addControllerAt = async (kind: SelKind, id: number) => {
     try {
-      if (kind === "trafo") await api.addController({ scope: "station" });
-      else if (kind === "bus") await api.addController({ scope: "bus", bus: id });
-      else return;
+      if (kind === "trafo") {
+        const cc = cellAtTrafo(id);
+        if (cc) await api.addController({ scope: "cell", cell: cc.id });
+        else await api.addController({ scope: "station" });
+      } else if (kind === "bus") {
+        const cc = cellAtBus(id);
+        if (cc) await api.addController({ scope: "cell", cell: cc.id });
+        else if (extBuses.includes(id) && cells.length) await api.addController({ scope: "mv" });
+        else await api.addController({ scope: "bus", bus: id });
+      } else return;
     } finally { reloadControllers(); }
     pinSection(kind, id);
+  };
+  const addRontAt = async (trafo: number) => {
+    try { await api.addRont({ trafo }); } finally { reloadRonts(); }
+    pinSection("trafo", trafo);
+  };
+  const removeRontById = async (rid: number) => {
+    try { await api.removeRont(rid); } finally { reloadRonts(); }
+  };
+  const setRontTargetAt = async (rid: number, v_target: number) => {
+    try { await api.setRont(rid, v_target); } finally { reloadRonts(); }
   };
   const removeControllerById = async (cid: number) => {
     try { await api.removeController(cid); } finally { reloadControllers(); }
@@ -339,11 +389,38 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const menuController = menu ? controllerAt(menu.kind, menu.id) : undefined;
   const menuMetered = menu ? meteredElem(menu.kind, menu.id) : false;
 
-  // 🎛 badge positions: bus controllers at their node, the station controller
-  // at the LV busbar of the (first) transformer
+  // 🎛 badge positions: bus controllers at their node, cell controllers at
+  // their station, the coordinator at the UW, the station controller at the
+  // LV busbar of the (first) transformer
   const controllerBuses = controllers
-    .map((c) => (c.scope === "bus" ? c.bus ?? -1 : topo?.trafos[0]?.lv_bus ?? -1))
+    .map((c) => c.scope === "bus" ? c.bus ?? -1
+      : c.scope === "cell" ? cellBusOf(c)
+      : c.scope === "mv" ? extBuses[0] ?? -1
+      : topo?.trafos[0]?.lv_bus ?? -1)
     .filter((b) => b >= 0);
+
+  // 🚦 stations whose Steuerbox is currently dimming (live factors from the
+  // last frame) — the map marks them with a signal ring
+  const liveCtrls = latest?.controllers ?? controllers;
+  const signalBuses = liveCtrls
+    .filter((c) => c.scope === "cell" && (c.ev_factor < 1 || c.pv_factor < 1))
+    .map((c) => cellBusOf(c))
+    .filter((b) => b >= 0);
+  const coordLive = liveCtrls.find((c) => c.scope === "mv")
+    ?? controllers.find((c) => c.scope === "mv");
+  const cellCtrlCount = controllers.filter((c) => c.scope === "cell").length;
+
+  // drill-down: the focused cell's buses drive the map's fitBounds
+  const focused = focusCell ? cells.find((c) => c.id === focusCell) : undefined;
+  const focusBuses = focused
+    ? (focused.lumped ? (focused.mv_bus != null ? [focused.mv_bus] : [])
+                      : focused.buses)
+    : [];
+  const openCell = (c: (typeof cells)[number]) => {
+    setFocusCell(c.id);
+    if (!c.lumped && c.station_trafos.length) pinSection("trafo", c.station_trafos[0]);
+    else if (c.mv_bus != null) pinSection("bus", c.mv_bus);
+  };
 
   // drag the panel's left edge to widen it (and the graphs, which are width:100%)
   const startResize = (e: React.MouseEvent) => {
@@ -359,7 +436,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
       <div className="diagram-wrap">
         {layout === "map" && topo.has_geo ? (
           <MapDiagram topo={topo} latest={frame} batteryBuses={batteryBuses} onSelectBus={selectBus}
-                      controllerBuses={controllerBuses}
+                      controllerBuses={controllerBuses} signalBuses={signalBuses}
+                      focusBuses={focusBuses}
                       selectedBuses={selBuses} selectedTrafos={selTrafos}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
                       evBuses={evBuses} pvBuses={pvBuses}
@@ -383,8 +461,15 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           hasPv={menu.kind === "bus" && pvBuses.includes(menu.id)}
           hasEv={menu.kind === "bus" && evBuses.includes(menu.id)}
           hasController={!!menuController}
+          controllerLabel={menu.kind === "trafo" && cellAtTrafo(menu.id) ? t("menu.addControllerCell")
+            : menu.kind === "bus" && cellAtBus(menu.id) ? t("menu.addControllerCell")
+            : menu.kind === "bus" && extBuses.includes(menu.id) && cells.length ? t("menu.addControllerMv")
+            : undefined}
           onAddController={() => addControllerAt(menu.kind, menu.id)}
           onRemoveController={() => menuController && removeControllerById(menuController.id)}
+          hasRont={menu.kind === "trafo" && ronts.some((r) => r.trafo === menu.id)}
+          onAddRont={menu.kind === "trafo" ? () => addRontAt(menu.id) : undefined}
+          onRemoveRont={() => { const r = ronts.find((x) => x.trafo === menu.id); if (r) removeRontById(r.id); }}
           onGraph={() => pinSection(menu.kind, menu.id)}
           onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onAddPv={() => { if (menu.kind === "bus") addPvAt(menu.id); }}
@@ -474,12 +559,106 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           </Section>
         )}
 
+        {(coordLive || cellCtrlCount > 0) && (
+          <Section title={`🚦 ${t("ampel.heading")}`} open={ampelOpen}
+                   onToggle={() => setAmpelOpen((v) => !v)}
+                   badges={signalBuses.length ? [`⚡ ${signalBuses.length}`] : []}>
+            {coordLive ? (
+              <>
+                <div className="row" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontWeight: 600 }}>{t("ampel.coordinator")}</span>
+                  <ControllerLimit ctrl={coordLive}
+                                   onLimit={(p) => setControllerLimitAt(coordLive.id, p)} />
+                  <button className="mini" title={t("ctrl.remove")} style={{ marginLeft: "auto" }}
+                          onClick={() => removeControllerById(coordLive.id)}>✕</button>
+                </div>
+                <Stat label={t("ctrl.seen")}
+                      value={coordLive.seen_pct != null
+                        ? `${fmt(coordLive.seen_pct, 1)} % (${t(coordLive.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
+                        : `⚠️ ${t("ctrl.blind")}`}
+                      color={coordLive.seen_pct != null && coordLive.seen_pct > coordLive.limit_pct ? "#e05c4a" : undefined} />
+                <Stat label={t("ampel.signalEv")} value={`${Math.round(coordLive.ev_factor * 100)} %`}
+                      color={coordLive.ev_factor < 1 ? "#e0a83a" : undefined} />
+                <Stat label={t("ampel.signalPv")} value={`${Math.round(coordLive.pv_factor * 100)} %`}
+                      color={coordLive.pv_factor < 1 ? "#e0a83a" : undefined} />
+              </>
+            ) : (
+              <div className="muted" style={{ fontSize: "0.78rem" }}>{t("ampel.noCoord")}</div>
+            )}
+            <Stat label={t("ampel.cells")} value={`${cells.length}`} />
+            <Stat label={t("ampel.boxes")} value={`${cellCtrlCount}`} />
+            <Stat label={t("ampel.dimming")} value={`${signalBuses.length}`}
+                  color={signalBuses.length ? "#e0a83a" : undefined} />
+          </Section>
+        )}
+
+        {cells.length > 0 && (
+          <Section title={t("cells.heading")} open={cellsOpen}
+                   onToggle={() => setCellsOpen((v) => !v)}
+                   badges={[`${cells.length}`]}>
+            {focusCell && (
+              <button className="ghost" style={{ fontSize: "0.72rem", marginBottom: 4 }}
+                      onClick={() => setFocusCell(null)}>← {t("cells.back")}</button>
+            )}
+            <div style={{ maxHeight: 280, overflowY: "auto", fontSize: "0.74rem" }}>
+              {(() => {
+                const trafoRead = new Map((latest?.measurements?.trafos ?? [])
+                  .map((m) => [m.trafo, m]));
+                const nodeRead = new Map((latest?.measurements?.nodes ?? [])
+                  .map((m) => [m.bus, m]));
+                const sigSet = new Set(signalBuses);
+                const boxSet = new Set(controllers
+                  .filter((c) => c.scope === "cell").map((c) => c.cell));
+                return cells.map((c) => {
+                  const tm = c.station_trafos.length
+                    ? trafoRead.get(c.station_trafos[0]) : undefined;
+                  const nm = c.lumped && c.mv_bus != null
+                    ? nodeRead.get(c.mv_bus) : undefined;
+                  const stationBus = c.lumped ? c.mv_bus : c.lv_busbar;
+                  const dimming = stationBus != null && sigSet.has(stationBus);
+                  const overload = tm?.loading_percent != null && tm.loading_percent > 100;
+                  const noData = !tm && !nm;
+                  const dot = overload ? "#f85149" : dimming ? "#f2ae00"
+                    : noData ? "#8b949e" : "#3fb950";
+                  const reading = tm?.loading_percent != null
+                    ? `${fmt(tm.loading_percent, 0)} %`
+                    : nm?.p_mw != null ? `${fmt(nm.p_mw * 1000, 0)} kW` : "—";
+                  return (
+                    <div key={c.id} className="cell-row"
+                         onClick={() => openCell(c)}
+                         style={{ display: "flex", alignItems: "center", gap: 6,
+                                  cursor: "pointer", padding: "1px 2px",
+                                  background: focusCell === c.id ? "var(--border)" : undefined }}>
+                      <span style={{ color: dot }}>●</span>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis",
+                                     whiteSpace: "nowrap" }}
+                            title={c.name}>{c.name.replace(/^lv_/, "")}</span>
+                      <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>{reading}</span>
+                      <span style={{ width: 30, textAlign: "right" }}>
+                        {c.station_trafos.some((tId) => (placement?.trafo_idxs ?? []).includes(tId))
+                          || (c.lumped && c.mv_bus != null && (placement?.node_buses ?? []).includes(c.mv_bus))
+                          ? "📟" : ""}
+                        {boxSet.has(c.id) ? "🎛" : ""}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>
+              {t("cells.hint")}
+            </div>
+          </Section>
+        )}
+
         {sections.map((sec) => {
           const key = `${sec.kind}${sec.id}`;
           const name = elemName(sec.kind, sec.id);
           const bat = batteryAt(sec.kind, sec.id);
           const ctrl = controllerAt(sec.kind, sec.id);
           const liveCtrl = ctrl ? latest?.controllers?.find((c) => c.id === ctrl.id) ?? ctrl : undefined;
+          const ront = sec.kind === "trafo" ? ronts.find((r) => r.trafo === sec.id) : undefined;
+          const liveRont = ront ? latest?.ronts?.find((r) => r.id === ront.id) ?? ront : undefined;
           const metered = meteredElem(sec.kind, sec.id);
           const nm = sec.kind === "bus" ? liveNodeMeas.get(sec.id) : undefined;
           const tm = sec.kind === "trafo" ? liveTrafoMeas.get(sec.id) : undefined;
@@ -550,6 +729,28 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                   <BatteryProfile embedded key={`${bat.index}-${bat.mode}`} idx={bat.index} now={nowFrac} day={curDay} />
                   <button className="ghost" style={{ fontSize: "0.68rem", padding: "1px 6px", marginTop: 4 }}
                           onClick={() => removeBattery(bat.index)}>{t("menu.removeBattery")}</button>
+                </div>
+              )}
+
+              {ront && liveRont && (
+                <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>🔧 {t("ront.title")}</span>
+                    <RontTarget ront={ront} onTarget={(v) => setRontTargetAt(ront.id, v)} />
+                    <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
+                            onClick={() => removeRontById(ront.id)}>✕</button>
+                  </div>
+                  <Stat label={t("ront.tap")}
+                        value={`${liveRont.tap_pos > 0 ? "+" : ""}${liveRont.tap_pos} / ±${liveRont.tap_max} (à ${fmt(liveRont.tap_step_percent, 1)} %)`}
+                        color={liveRont.tap_pos !== 0 ? "#f2ae00" : undefined} />
+                  <Stat label={t("ront.seenV")}
+                        value={liveRont.seen_v != null
+                          ? `${fmt(liveRont.seen_v * V_BASE, 1)} V (${t(liveRont.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
+                          : `⚠️ ${t("ctrl.blind")}`} />
+                  <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
+                    {t("ront.band", { lo: fmt((liveRont.v_target - liveRont.deadband) * V_BASE, 1),
+                                      hi: fmt((liveRont.v_target + liveRont.deadband) * V_BASE, 1) })}
+                  </div>
                 </div>
               )}
 
@@ -719,6 +920,28 @@ function ControllerLimit({ ctrl, onLimit }: {
              onChange={(e) => setV(+e.target.value)}
              onBlur={() => v !== ctrl.limit_pct && v >= 20 && v <= 150 && onLimit(v)}
              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> %
+    </span>
+  );
+}
+
+function RontTarget({ ront, onTarget }: {
+  ront: RontInfo; onTarget: (v_target: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [v, setV] = useState(Math.round(ront.v_target * V_BASE * 10) / 10);
+  useEffect(() => setV(Math.round(ront.v_target * V_BASE * 10) / 10), [ront.v_target]);
+  const commit = () => {
+    const pu = v / V_BASE;
+    if (pu >= 0.9 && pu <= 1.1 && Math.abs(pu - ront.v_target) > 1e-6) onTarget(pu);
+  };
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: "0.72rem" }}
+          title={t("ront.targetTitle")}>
+      {t("ront.target")}
+      <input type="number" min={207} max={253} step={0.5} value={v} style={{ ...numStyle, width: 58 }}
+             onChange={(e) => setV(+e.target.value)}
+             onBlur={commit}
+             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> V
     </span>
   );
 }

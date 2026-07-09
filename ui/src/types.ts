@@ -122,6 +122,17 @@ export interface TopoTrafo {
   sn_mva: number;
 }
 
+/** One MV/LV secondary-substation (ONS) cell — the vertical structure. */
+export interface TopoCell {
+  id: string;
+  name: string;
+  buses: number[];              // member buses (empty for a lumped station)
+  lv_busbar: number | null;
+  mv_bus: number | null;
+  station_trafos: number[];
+  lumped: boolean;
+}
+
 export interface Topology {
   name: string;
   f_hz: number;
@@ -136,6 +147,7 @@ export interface Topology {
   cabinet_buses?: number[];
   ev_buses?: number[];          // buses with EV charging loads
   pv_buses?: number[];          // buses with rooftop-PV systems
+  cells?: TopoCell[];           // ONS cells (empty for legacy/file grids)
   n_load: number;
   n_sgen: number;
   n_trafo: number;
@@ -230,29 +242,68 @@ export interface StepResult {
   ext_grids?: { index: number; name: string; p_mw: number; q_mvar: number }[];
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
   controllers?: GridController[];
+  ronts?: RontInfo[];
   summary?: StepSummary;
   error: string | null;
 }
 
 /** A placed overload controller (netzdienliche Steuerung): throttles EV
- *  charging / PV feed-in of its scope when the loading limit is exceeded. */
+ *  charging / PV feed-in of its scope when the loading limit is exceeded.
+ *  Vertical integration: scope "cell" covers one ONS cell, scope "mv" is
+ *  the coordinator that broadcasts grid-traffic-light signals to the cell
+ *  controllers instead of throttling itself. */
 export interface GridController {
   id: number;
-  scope: "station" | "bus";
+  scope: "station" | "bus" | "cell" | "mv";
   bus: number | null;
+  cell?: string | null;
   limit_pct: number;
   release_pct: number;
+  /** effective factors (local law capped by a received coordinator signal) */
   ev_factor: number;
   pv_factor: number;
   active: boolean;
+  /** a cell controller's received traffic-light bound (only when < 1) */
+  signal?: { ev: number; pv: number };
+  /** an MV coordinator's last broadcast per cell id */
+  signals?: Record<string, { ev: number; pv: number }>;
   /** loading the controller last saw of its domain (meters + estimate);
    *  null = blind, no measurement data at all */
   seen_pct: number | null;
   seen_src: "meter" | "estimate" | null;
 }
 
-export type MeterPreset = "all_nodes" | "all_trafos" | "substation_trafos" | "clear";
+/** An activated rONT (on-load tap changer on a station transformer). */
+export interface RontInfo {
+  id: number;
+  trafo: number;
+  busbar: number;
+  cell?: string | null;
+  v_target: number;             // pu
+  deadband: number;             // pu (half band)
+  tap_pos: number;
+  tap_min: number;
+  tap_max: number;
+  tap_step_percent: number;
+  seen_v: number | null;        // observed busbar voltage (meter/estimate)
+  seen_src: "meter" | "estimate" | null;
+}
+
+export type MeterPreset =
+  "all_nodes" | "all_trafos" | "substation_trafos"
+  | "digital_stations" | "cell_full" | "clear";
 export type MeterMode = "full" | "standard";
+
+/** Per-ONS-cell metering coverage (vertical MV/LV integration). */
+export interface CellCoverage {
+  id: string;
+  lumped: boolean;
+  n_buses: number;
+  n_node_meter: number;
+  /** the cell's station measurement (trafo meter / stand-in) is in place */
+  station_metered: boolean;
+}
+
 export interface MeasurementsResponse {
   node_buses: number[];
   trafo_idxs: number[];
@@ -262,6 +313,8 @@ export interface MeasurementsResponse {
   /** per-device TAF mode, default resolved (JSON keys are stringified ids) */
   node_modes?: Record<string, MeterMode>;
   trafo_modes?: Record<string, MeterMode>;
+  /** per-cell coverage; empty for grids without cells */
+  cells?: CellCoverage[];
   presets: MeterPreset[];
   expose_ground_truth: boolean;
 }

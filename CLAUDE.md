@@ -380,6 +380,133 @@ provisioned datasource + dashboard, all in compose.
   If pinning for reproducibility, pin to the tested 3.x.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
+- **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT
+  (branch `feature/vertical`), the rest is planned**: see
+  `docs/VERTIKALE_INTEGRATION.md` (2026-07-08).
+  - *Phase 0 — cells*: every importer describes its vertical structure as
+    **ONS cells** (`GridInputs.cells` / `InputData.cells`, plain dicts
+    `{id, name, buses, lv_busbar, mv_bus, station_trafos, lumped}`,
+    cross-validated in `data_loader`): `district_import` emits spliced cells
+    + inherits lumped ones from ding0 `scope="mv"` (aggregate loads named
+    `lv_<gid>` — that name prefix is the intra-module contract),
+    `convert_osm_lv` = exactly one cell, `gridedit_mv_import` = degenerate
+    cells per drawn station, file-based grids have none. `Simulator.cells` +
+    `cell_of_bus` are the runtime handles; `topology()`/`/network` expose
+    `cells[]`. Tests: `tests/test_cells.py`.
+  - *Phase 1.1 — cell metering presets*: `digital_stations` (one station
+    measurement per cell: trafo meter, MV-bus/busbar stand-ins for
+    lumped/trafo-less cells) and `cell_full?cell=<id>` (full SMGW rollout of
+    one cell); `/measurements` reports per-cell coverage (`cells[]` with
+    `station_metered`); Messungen menu shows the preset when cells exist.
+  - *Phase 1.2 — hierarchical two-stage WLS*: `HierarchicalEstimator`
+    (estimator.py) runs one LOCAL WLS per spliced cell (subnet = members +
+    feeding MV bus; slack there, setpoint = previous MV estimate, 1.0 first)
+    and feeds each cell's **boundary flow** (measured > cell-estimated >
+    profile pseudo, per-cell `boundary_src`) into the reduced-MV-net WLS via
+    `Estimator.run(boundary=...)`. Composed result mirrors the monolithic
+    shape + `mode` + `cells[]` (per-cell `error` stripped in strict mode,
+    state.py). Policy knob `EstConfig.hierarchy` = auto|monolithic|
+    hierarchical (API + Schätz-Richtlinie dialog); `wants_hierarchy()`
+    resolves it (standalone LV = always monolithic — no MV level).
+    `Simulator._make_estimator` dispatches for the live loop AND `daily_est`
+    (sweep re-keys via est-config sig). Tests:
+    `tests/test_hierarchical_estimation.py` (4); suite 119 passed.
+    **Honest finding**: on `mv_rural_3150` hierarchical is equally accurate
+    (~3 mpu with digital stations) but NOT faster (~1.16 vs ~1.06 s) — only
+    3/157 cells are street-routed, the reduced MV graph keeps 247 buses.
+  - *Phase 2 — grid-traffic-light cascade*: controller scopes `"cell"`
+    (domain = ONE spliced cell: its station trafo [meter] + cell lines
+    [estimate only] + the DERs behind them; direction from the cell's
+    boundary flow) and `"mv"` (the COORDINATOR: watches only MV lines +
+    HV/MV trafo via meters/MV estimate, throttles nothing itself — its
+    ratcheted factors broadcast as SIGNALS to every placed cell controller,
+    applied as `min(local law, signal)` = `Controller.effective_ev/pv`,
+    which `as_dict()` reports as the factors). One uniform signal factor =
+    proportional burden per cell (decision E3). A locally meter-less cell
+    controller still EXECUTES signals (command path needs a Steuerbox, not
+    a meter); cells without a controller stay uncoordinated. `station`
+    keeps its whole-grid semantics (LV back-compat). Scenarios persist
+    `cell`; API `POST /controller {scope, bus?, cell?}`. Domain index sets
+    (`_cell_lines`/`_mv_lines`/...) precomputed in `Simulator.__init__`.
+    Tests: `tests/test_controller_vertical.py` (4; domain-isolation test
+    blocks estimation via `sim._est_wall = float("inf")` so meters are the
+    only source). Suite 123 passed. NOTE: once ANY meter exists, the
+    estimate covers every cell (pseudo cell stages) — "blind" in the old
+    sense only exists without any estimate.
+  - *Phase 6 (backend + scenario) — reference scenario 4*
+    `data/scenarios/4-feierabend-im-bezirk-…json`: district `mv_rural_3150`
+    (LPG loads, no household EVs), the Feierabend wave = 42 aggregate
+    200-kW wallbox blocks (der_ops `add_ev`, staggered 17:00–18:00, 4 h) at
+    the lumped stations of ring L19/L222 (8.4 MW — ding0 MV rings are
+    CLOSED; one segment only overloads via many stations), Steuerboxen
+    (cell controllers) at those 42 lumped cells — `cell` scope now also
+    accepts LUMPED cells (domain = the DERs at their mv_bus; locally blind
+    but executes signals), digital stations metering, clock 17:40 @ 0.2 s.
+    Numbers (verified live): truth segment L222 ≈ 108 %, hierarchical
+    estimate sees 108.0 %, max station meter 61.7 % (no cell sees it);
+    placing the MV coordinator (limit 100) → one ratchet, EV signal 0.75,
+    42/42 boxes dim, segment settles ~86–87 % (stable in the hysteresis
+    band). **Control-law fix that made this stable**: estimate-fed
+    controllers act once per NEW telegram (`est["seq"]` counter,
+    `Controller.est_stamp`) — per-step ratcheting against a stale estimate
+    (the wall-clock-throttled district estimate refreshes ~every 12
+    sim-minutes) oscillated hard. Meter-fed controllers keep per-step
+    dynamics. The trimmed picker manifest now carries the district + its
+    two extra LV grids (E5): 4 LV + 1 MV entries. Tests:
+    `tests/test_scenario4.py` (2); suite 125 passed.
+  - *Phase 4 (cascade slice) + manual chapter*: element menu places
+    Steuerboxen at cell stations (spliced: busbar/trafo; lumped: mv_bus)
+    and the Netzampel coordinator at the UW/slack bus; side-panel section
+    "🚦 Netzampel" (coordinator status incl. editable limit, EV/PV signal,
+    cells/boxes/dimming stats); dimming stations get a red canvas ring on
+    the map (gold pin ring wins on overlap). Manual chapter "Vertikale
+    Integration: vom Ortsnetz zum Bezirk" (ch:vertikal) walks scenario 4
+    with verified numbers + 2 screenshots (ui-vertikal-schaetzung/-ampel).
+  - *Phase 3 — rONT* (`ront.py`): on-load tap changer per station trafo,
+    activated via the trafo's element menu (upgrades tap data in place to
+    ±4 × 1.5 % hv-side, originals restored on removal). Holds the LV busbar
+    in a deadband around the setpoint (default 1.0 ± 0.015 pu, editable in
+    Volt in the trafo section), fed ONLY from the operator view (busbar
+    meter V, else the estimate; telegram-gated like the controllers; blind
+    holds). One mechanical step per action; higher tap_pos = lower LV
+    voltage. The estimation models SYNC the tap columns from the live net
+    per run (the tap is the operator's own setpoint — otherwise the WLS
+    ratio is wrong); `add/remove_ront` invalidate the estimator + solve
+    cold. `StepResult.ronts`; scenarios persist `ronts` [{trafo, v_target,
+    deadband}]; API GET /ronts, POST /ront, POST /ront/{id}/config,
+    DELETE /ront/{id}. Day sweeps stay UNregulated (like controllers).
+    Tests: `tests/test_ront.py` (3); suite 128 passed. Live: tap −3 lifts
+    the suburban busbar to 235.6 V (in band), feeder min +10 V. Manual:
+    rONT section in ch. "Anlagen und Regler".
+  - *Phase 4 complete — Zellen section + drill-down*: side-panel section
+    "Zellen" (scrollable table of all ONS cells: ampel dot [green quiet /
+    amber dimming-on-signal / red station-meter overload / grey no
+    reading], live station reading [trafo % for spliced, node kW for
+    lumped], 📟/🎛 icons; closed by default — 157 rows re-render per WS
+    frame only while open). Click zooms the map to the cell
+    (`MapDiagram.focusBuses` → fitBounds, transition-based zoom-out via
+    "← Bezirkssicht") and pins its station section. Ampel deliberately
+    lives in the TABLE; the map keeps the red dimm-ring (a marker FILL
+    would clash with the voltage coloring).
+  - *Phase 5 (netzsim side) — `lv_ref`*: a drawn MV station may carry
+    `lv_ref` (filename of a gridformat LV export, resolved RELATIVE to the
+    MV file — the way user_grids/ lays out); `gridedit_mv_import` splices
+    the referenced grid via `convert_osm_lv` (its own station trafo,
+    re-snapped to the MV grid's voltage via `_pick_trafo(sn, mv_kv)`),
+    building loads become `household: true` LPG targets, the station is a
+    real spliced cell (all vertical actors work: Steuerbox, rONT,
+    hierarchy). Missing file → station stays lumped + warning note. Tests:
+    `tests/test_lv_ref.py` (6). Suite 134 passed.
+  - *Phase 5 (gridedit side, repo ../gridedit commit d6c16e6)*: `toMvDocs`
+    embeds `lv_ref` AUTOMATICALLY at export time — a station whose drawn LV
+    grid has ≥1 house references exactly the gridformat file the same
+    export writes for it (same `stationsOf` order/naming as
+    `toGridformatDocs`, slugged like the backend filenames; TS `slugify`
+    mirrors gridcheck.py, parity verified). `fromMvDoc` deliberately
+    ignores `lv_ref` (export-time artifact, recomputed per export);
+    ExportPanel shows how many stations link up. No manual picker needed.
+  **The vertical-integration plan (docs/VERTIKALE_INTEGRATION.md) is fully
+  implemented — all phases 0–6.**
 
 ---
 
@@ -674,17 +801,20 @@ appear in the list (metadata.json is written on stop, and the listing
 requires it). Manual chapter exists (ch:export) — its screenshots/text
 still show the pre-Variante-B menu ("Simulation") and need a refresh.
 
-### Reference scenarios (the committed teaching set, 2026-07-06)
+### Reference scenarios (the committed teaching set, 2026-07-06; #4 added 2026-07-08)
 
-`data/scenarios/` holds exactly **three reference scenarios** (the earlier
+`data/scenarios/` holds **four reference scenarios** (the earlier
 examples were removed on customer request); `data/grid_library.json` is
-**trimmed to the two grids they use** (`lv_rural_3150_300266`,
-`lv_suburban_1864_265991`) so the picker only offers those. The full 20-entry
-manifest lives on as `data/grid_library_full.json` (copy it back to restore;
+**trimmed to the grids they use** (`lv_rural_3150_300266`,
+`lv_suburban_1864_265991`, and since scenario 4: `mv_rural_3150` + its two
+other street-routed LV grids `lv_rural_3150_300668`/`_300575`) so the picker
+only offers those. The full 20-entry manifest lives on as
+`data/grid_library_full.json` (copy it back to restore;
 `test_district_import.py` / `test_runtime_swap.py` point at the full file).
-All three include the SMGW measurement concept (station trafo meter + node
-meters at the plants/wallboxes) and start shortly before the critical time
-(interval 0.2 s/step):
+All include a measurement concept and start shortly before the critical time
+(interval 0.2 s/step). Scenario 4 ("Feierabend im Bezirk — Engpass unsichtbar
+für jede Zelle") is the VERTICAL teaching path — see the vertical-integration
+bullet in §10 for its calibrated numbers and cascade walkthrough. 1–3:
 
 1. **`1-bauernhof-pv-75-kw-spannungs-berh-hung`** — rural grid, 75-kWp PV at
    the 500-m feeder end (bus 24). Noon: ~252 V at the farm (EN 50160 limit

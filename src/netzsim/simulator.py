@@ -14,8 +14,9 @@ import pandapower as pp
 from . import battery as bat
 from .battery import MODES, Battery
 from .controller import SCOPES, Controller
+from .ront import RONT_STEP_PERCENT, RONT_TAP_MAX, RONT_TAP_MIN, Ront
 from .data_loader import InputData
-from .estimator import EstConfig, Estimator
+from .estimator import EstConfig, Estimator, HierarchicalEstimator, wants_hierarchy
 from .measurements import MeasurementSet
 from .network_builder import ProfileArrays, build_network
 
@@ -37,6 +38,8 @@ class StepResult:
     batteries: list[dict[str, Any]] = field(default_factory=list)
     # placed overload controllers with their live curtailment factors
     controllers: list[dict[str, Any]] = field(default_factory=list)
+    # activated rONTs (on-load tap changers) with their live tap positions
+    ronts: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
     # Observability projection: what the placed measurement devices reveal (see
@@ -78,6 +81,43 @@ class Simulator:
         self.warm_start = warm_start
         self.net, self.prof = build_network(data)
         self.steps_per_day = data.steps_per_day
+        # vertical MV/LV structure: ONS cells from the importer (may be empty —
+        # file-based grids carry none). `cell_of_bus` is the derived membership
+        # map every later phase (hierarchical estimation, cell controllers)
+        # builds on; lumped cells have no member buses.
+        self.cells: list[dict[str, Any]] = [dict(c) for c in data.cells]
+        self.cell_of_bus: dict[int, str] = {
+            int(b): c["id"] for c in self.cells for b in c.get("buses", [])}
+        # static per-cell domains for cell controllers / the MV coordinator:
+        # a cell owns its member buses, the lines between them (all its lines,
+        # by construction) and its station trafo(s); everything else is the
+        # MV level. A LUMPED cell is representable too — its "members" are
+        # just its feeding MV bus, so a Steuerbox there can throttle the
+        # aggregate DERs modelled at that bus (locally blind, but it executes
+        # coordinator signals). Empty on grids without cells.
+        self._cell_buses: dict[str, set[int]] = {}
+        for c in self.cells:
+            if not c.get("lumped") and c.get("buses"):
+                self._cell_buses[c["id"]] = {int(b) for b in c["buses"]}
+            elif c.get("lumped") and c.get("mv_bus") is not None:
+                self._cell_buses[c["id"]] = {int(c["mv_bus"])}
+        # lines/trafos belong only to SPLICED cells (a lumped cell's MV bus
+        # sits on the ring — its adjacent lines stay in the coordinator's
+        # domain, and the missing entry keeps its controller locally blind)
+        spliced_members = {c["id"]: {int(b) for b in c["buses"]}
+                           for c in self.cells
+                           if not c.get("lumped") and c.get("buses")}
+        self._cell_lines: dict[str, set[int]] = {
+            cid: {int(li) for li in self.net.line.index
+                  if int(self.net.line.at[li, "from_bus"]) in member}
+            for cid, member in spliced_members.items()}
+        self._cell_trafos: dict[str, set[int]] = {
+            c["id"]: {int(t) for t in c.get("station_trafos", [])}
+            for c in self.cells if not c.get("lumped") and c.get("buses")}
+        in_cells_l = set().union(*self._cell_lines.values()) if self._cell_lines else set()
+        in_cells_t = set().union(*self._cell_trafos.values()) if self._cell_trafos else set()
+        self._mv_lines: set[int] = {int(li) for li in self.net.line.index} - in_cells_l
+        self._mv_trafos: set[int] = {int(t) for t in self.net.trafo.index} - in_cells_t
         self._solved_once = False
         self._coords: tuple[dict[int, list[float]], dict[int, list[float]]] | None = None
         # multi-day real PV (optional): per-day normalised 0..1 shapes applied as a
@@ -101,9 +141,10 @@ class Simulator:
         # district nets one WLS run costs ~1-2 s, so estimation is re-run
         # adaptively (spaced by 2× its own runtime) and the latest estimate is
         # carried on every step in between.
-        self._estimator: Estimator | None = None
+        self._estimator: Estimator | HierarchicalEstimator | None = None
         self._sgen_day_mean_cache: dict[int, np.ndarray] = {}
         self._est_last: dict | None = None
+        self._est_seq = 0               # counts estimation runs (telegram id)
         self._est_wall = 0.0            # monotonic time of the last estimation run
         self._est_ms = 0.0              # its duration (drives the adaptive spacing)
         # daily-sweep estimate raster in MINUTES (15/30/60/120): decided ONCE
@@ -128,6 +169,11 @@ class Simulator:
         # placed overload controllers (like batteries: per-simulator, reset on swap)
         self.controllers: list[Controller] = []
         self._next_cid = 1
+        # activated rONTs (per-simulator, reset on swap); originals keep the
+        # transformer's shipped tap data for a clean removal
+        self.ronts: list[Ront] = []
+        self._next_rid = 1
+        self._ront_orig: dict[int, dict[str, Any]] = {}
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
         self._loads_at: dict[int, list[int]] = {}
         for i, li in enumerate(self.prof.load_idx):
@@ -152,6 +198,19 @@ class Simulator:
         self._est_wall = 0.0
         for entry in self._daily_by_day.values():
             entry.pop("_est", None)
+
+    def _make_estimator(self, net) -> "Estimator | HierarchicalEstimator":
+        """The estimation policy's ``hierarchy`` knob decides the machinery:
+        two-stage cell/MV WLS on districts with spliced ONS cells, the classic
+        monolithic WLS everywhere else (incl. standalone LV grids, whose one
+        cell has no real MV level above it)."""
+        ev_rows, household_rows, hh_counts = self._est_row_sets()
+        kw = dict(ev_rows=ev_rows, household_rows=household_rows,
+                  household_counts=hh_counts, config=self.est_config)
+        if wants_hierarchy(self.est_config, self.cells, int(len(net.bus))):
+            return HierarchicalEstimator(net, self.prof, self._loads_at,
+                                         self._sgens_at, self.cells, **kw)
+        return Estimator(net, self.prof, self._loads_at, self._sgens_at, **kw)
 
     def _est_row_sets(self) -> tuple[set[int], set[int], dict[int, int]]:
         """Which load-profile rows are EV charging / real households — the
@@ -263,16 +322,25 @@ class Simulator:
 
     # -- overload controllers (netzdienliche Steuerung) -------------------- #
     def add_controller(self, scope: str = "station", bus: int | None = None,
-                       limit_pct: float = 100.0) -> Controller:
+                       limit_pct: float = 100.0,
+                       cell: str | None = None) -> Controller:
         """Place an overload controller — ``station`` throttles all EV/PV of
         the grid on trafo/line overload, ``bus`` only the DERs at one node
-        (reacting to the lines that touch it)."""
+        (reacting to the lines that touch it), ``cell`` one spliced ONS cell,
+        ``mv`` the coordinating MV level (grid-traffic-light signals only)."""
         if scope not in SCOPES:
             raise ValueError(f"scope must be one of {SCOPES}")
         if scope == "bus" and (bus is None or bus not in self.net.bus.index):
             raise KeyError(bus)
+        if scope == "cell" and cell not in self._cell_buses:
+            raise KeyError(cell)
+        if scope == "mv" and not (self._cell_buses
+                                  and (self._mv_lines or self._mv_trafos)):
+            raise ValueError("the MV coordinator needs spliced ONS cells "
+                             "below a real MV level")
         c = Controller(cid=self._next_cid, scope=scope,
                        bus=int(bus) if bus is not None else None,
+                       cell=cell if scope == "cell" else None,
                        limit_pct=float(limit_pct))
         self._next_cid += 1
         self.controllers.append(c)
@@ -292,28 +360,39 @@ class Simulator:
         return False
 
     def _controller_rows(self, c: Controller) -> tuple[list[int], list[int]]:
-        """Profile row indices (EV loads, PV sgens) in the controller's scope."""
+        """Profile row indices (EV loads, PV sgens) in the controller's scope.
+        The MV coordinator throttles nothing itself — it only signals."""
+        if c.scope == "mv":
+            return [], []
+        member = self._cell_buses.get(c.cell or "", set()) if c.scope == "cell" else None
+
+        def in_scope(bus: int) -> bool:
+            if c.scope == "station":
+                return True
+            if c.scope == "cell":
+                return bus in member
+            return bus == c.bus
+
         ev_rows = [i for i, li in enumerate(self.prof.load_idx)
                    if "EV_" in str(self.net.load.at[li, "name"] or "")
-                   and (c.scope == "station"
-                        or int(self.net.load.at[li, "bus"]) == c.bus)]
+                   and in_scope(int(self.net.load.at[li, "bus"]))]
         pv_rows = [i for i, si in enumerate(self.prof.sgen_idx)
                    if i < len(self._sgen_is_pv) and self._sgen_is_pv[i]
-                   and (c.scope == "station"
-                        or int(self.net.sgen.at[si, "bus"]) == c.bus)]
+                   and in_scope(int(self.net.sgen.at[si, "bus"]))]
         return ev_rows, pv_rows
 
     def _apply_controller_factors(self) -> None:
         """Scale EV loads / PV sgens by the strictest covering controller —
-        called after the step profiles are written, before the batteries."""
+        called after the step profiles are written, before the batteries.
+        Cell controllers apply min(local law, coordinator signal)."""
         ev_f: dict[int, float] = {}
         pv_f: dict[int, float] = {}
         for c in self.controllers:
             ev_rows, pv_rows = self._controller_rows(c)
             for i in ev_rows:
-                ev_f[i] = min(ev_f.get(i, 1.0), c.ev_factor)
+                ev_f[i] = min(ev_f.get(i, 1.0), c.effective_ev)
             for i in pv_rows:
-                pv_f[i] = min(pv_f.get(i, 1.0), c.pv_factor)
+                pv_f[i] = min(pv_f.get(i, 1.0), c.effective_pv)
         for i, f in ev_f.items():
             if f < 1.0:
                 li = self.prof.load_idx[i]
@@ -337,9 +416,85 @@ class Simulator:
         est = res.estimated if isinstance(res.estimated, dict) else {}
         est_lines = est.get("lines") or []
         est_trafos = est.get("trafos") or []
-        for c in self.controllers:
+        # identity of the current estimate: estimate-fed controllers act once
+        # per NEW telegram (see Controller.est_stamp)
+        est_stamp = est.get("seq") if est else None
+
+        def _act(c: Controller, seen: list, exporting: bool) -> None:
+            if seen:
+                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
+                if c.seen_src == "estimate":
+                    if c.est_stamp == est_stamp:
+                        return                      # stale telegram: hold
+                    c.est_stamp = est_stamp
+                c.update(c.seen_pct, exporting)
+            else:
+                c.seen_pct = c.seen_src = None
+                c.update(None, False)
+
+        # -- pass 1: MV coordinators (grid traffic light) ------------------- #
+        # They see only the MV level and ratchet their factors like any
+        # controller; the factors are then broadcast as per-cell SIGNALS to
+        # every placed cell controller (min-bound on top of its local law).
+        # Executing a received signal needs a device, not a meter — a locally
+        # blind cell controller still dims on command.
+        coords = [c for c in self.controllers if c.scope == "mv"]
+        cell_ctrls = [c for c in self.controllers if c.scope == "cell"]
+        for c in coords:
             seen: list[tuple[float, str]] = []
-            if c.scope == "station":
+            for tm in meas.get("trafos", []):
+                tr = tm.get("trafo")
+                if tr in self._mv_trafos and tm.get("loading_percent") is not None:
+                    seen.append((float(tm["loading_percent"]), "meter"))
+            for ln in est_lines:
+                if ln.get("index") in self._mv_lines and ln.get("loading_percent") is not None:
+                    seen.append((float(ln["loading_percent"]), "estimate"))
+            for tr in est_trafos:
+                if tr.get("index") in self._mv_trafos and tr.get("loading_percent") is not None:
+                    seen.append((float(tr["loading_percent"]), "estimate"))
+            # direction from the HV/MV import (measured before estimated):
+            # the MV level exporting into the HV grid = PV is the lever
+            p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                    if tm.get("trafo") in self._mv_trafos and tm.get("p_hv_mw") is not None]
+            if not p_hv:
+                p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                        if tr.get("index") in self._mv_trafos and tr.get("p_hv_mw") is not None]
+            exporting = bool(p_hv) and sum(p_hv) < 0.0
+            _act(c, seen, exporting)
+            c.signals = {cc.cell: (c.ev_factor, c.pv_factor) for cc in cell_ctrls}
+        # the strictest coordinator wins per cell (usually there is one)
+        for cc in cell_ctrls:
+            sig_ev = min((c.ev_factor for c in coords), default=1.0)
+            sig_pv = min((c.pv_factor for c in coords), default=1.0)
+            cc.signal_ev, cc.signal_pv = sig_ev, sig_pv
+
+        # -- pass 2: local controllers -------------------------------------- #
+        for c in self.controllers:
+            if c.scope == "mv":
+                continue
+            seen = []
+            if c.scope == "cell":
+                member_t = self._cell_trafos.get(c.cell or "", set())
+                member_l = self._cell_lines.get(c.cell or "", set())
+                # the cell's own station meter is a direct reading ...
+                for tm in meas.get("trafos", []):
+                    if tm.get("trafo") in member_t and tm.get("loading_percent") is not None:
+                        seen.append((float(tm["loading_percent"]), "meter"))
+                # ... its lines (and an unmetered station trafo) only estimated
+                for ln in est_lines:
+                    if ln.get("index") in member_l and ln.get("loading_percent") is not None:
+                        seen.append((float(ln["loading_percent"]), "estimate"))
+                for tr in est_trafos:
+                    if tr.get("index") in member_t and tr.get("loading_percent") is not None:
+                        seen.append((float(tr["loading_percent"]), "estimate"))
+                # direction from the cell's boundary flow (station trafo)
+                p_hv = [tm["p_hv_mw"] for tm in meas.get("trafos", [])
+                        if tm.get("trafo") in member_t and tm.get("p_hv_mw") is not None]
+                if not p_hv:
+                    p_hv = [tr["p_hv_mw"] for tr in est_trafos
+                            if tr.get("index") in member_t and tr.get("p_hv_mw") is not None]
+                exporting = bool(p_hv) and sum(p_hv) < 0.0
+            elif c.scope == "station":
                 # measured transformer loadings are direct device readings ...
                 for tm in meas.get("trafos", []):
                     if tm.get("loading_percent") is not None:
@@ -376,12 +531,87 @@ class Simulator:
                                   if b.get("index") == c.bus and b.get("p_mw") is not None),
                                  None)
                 exporting = p_bus is not None and float(p_bus) < 0.0
-            if seen:
-                c.seen_pct, c.seen_src = max(seen, key=lambda v: v[0])
-                c.update(c.seen_pct, exporting)
-            else:
-                c.seen_pct = c.seen_src = None
-                c.update(None, False)
+            _act(c, seen, exporting)
+
+    # -- rONT: on-load tap changer per station transformer ------------------ #
+    def add_ront(self, trafo: int, v_target: float = 1.0,
+                 deadband: float = 0.015) -> Ront:
+        """Activate an rONT on a transformer: upgrade its tap data in place
+        (±4 × 1.5 %, neutral start) and regulate the LV busbar from now on."""
+        if trafo not in self.net.trafo.index:
+            raise KeyError(trafo)
+        if any(r.trafo == trafo for r in self.ronts):
+            raise ValueError(f"trafo {trafo} already has an rONT")
+        tap_cols = ("tap_side", "tap_neutral", "tap_min", "tap_max",
+                    "tap_step_percent", "tap_pos")
+        self._ront_orig[int(trafo)] = {
+            c: self.net.trafo.at[trafo, c] for c in tap_cols
+            if c in self.net.trafo.columns}
+        self.net.trafo.at[trafo, "tap_side"] = "hv"
+        self.net.trafo.at[trafo, "tap_neutral"] = 0
+        self.net.trafo.at[trafo, "tap_min"] = RONT_TAP_MIN
+        self.net.trafo.at[trafo, "tap_max"] = RONT_TAP_MAX
+        self.net.trafo.at[trafo, "tap_step_percent"] = RONT_STEP_PERCENT
+        self.net.trafo.at[trafo, "tap_pos"] = 0
+        cell = next((cid for cid, ts in self._cell_trafos.items() if trafo in ts), None)
+        r = Ront(rid=self._next_rid, trafo=int(trafo),
+                 busbar=int(self.net.trafo.at[trafo, "lv_bus"]), cell=cell,
+                 v_target=float(v_target), deadband=float(deadband))
+        self._next_rid += 1
+        self.ronts.append(r)
+        self._solved_once = False       # ratio changed: solve cold next step
+        self._estimator = None          # est model copies the tap data lazily
+        self._est_last = None
+        return r
+
+    def remove_ront(self, rid: int) -> bool:
+        r = next((x for x in self.ronts if x.rid == rid), None)
+        if r is None:
+            return False
+        for c, v in self._ront_orig.pop(r.trafo, {}).items():
+            self.net.trafo.at[r.trafo, c] = v
+        self.ronts = [x for x in self.ronts if x.rid != rid]
+        self._solved_once = False
+        self._estimator = None
+        self._est_last = None
+        return True
+
+    def set_ront(self, rid: int, v_target: float | None = None,
+                 deadband: float | None = None) -> bool:
+        for r in self.ronts:
+            if r.rid == rid:
+                if v_target is not None:
+                    r.v_target = float(v_target)
+                if deadband is not None:
+                    r.deadband = float(deadband)
+                return True
+        return False
+
+    def _ront_update(self, res: "StepResult") -> None:
+        """One regulation step per rONT — fed ONLY from the operator's view of
+        its busbar: the smart-meter voltage where one delivers V, else the
+        state estimate. Estimate-fed regulators act once per new telegram;
+        without data the rONT is blind and holds. The chosen tap acts on the
+        NEXT step (written to the net here)."""
+        est = res.estimated if isinstance(res.estimated, dict) else {}
+        est_stamp = est.get("seq") if est else None
+        for r in self.ronts:
+            v = next((n["vm_pu"] for n in (res.measurements or {}).get("nodes", [])
+                      if n.get("bus") == r.busbar and n.get("vm_pu") is not None),
+                     None)
+            src = "meter" if v is not None else None
+            if v is None:
+                v = next((b["vm_pu"] for b in est.get("buses") or []
+                          if b.get("index") == r.busbar and b.get("vm_pu") is not None),
+                         None)
+                src = "estimate" if v is not None else None
+            r.seen_v, r.seen_src = (float(v) if v is not None else None), src
+            if src == "estimate":
+                if r.est_stamp == est_stamp:
+                    continue                     # stale telegram: hold
+                r.est_stamp = est_stamp
+            if r.update(r.seen_v):
+                self.net.trafo.at[r.trafo, "tap_pos"] = r.tap_pos
 
     # -- runtime DER configuration (PV / EV per node) ---------------------- #
     def _der_log_put(self, entry: dict, replaces: tuple[str, ...]) -> None:
@@ -622,7 +852,7 @@ class Simulator:
     # -- observability / measurement placement --------------------------- #
     def measurement_placement(self) -> dict:
         """Current meter placement + coverage (no power-flow results needed)."""
-        return self.meters.placement(self.net)
+        return self.meters.placement(self.net, cells=self.cells)
 
     def place_node_meter(self, bus: int) -> bool:
         if bus not in self.net.bus.index:
@@ -640,8 +870,8 @@ class Simulator:
     def remove_trafo_meter(self, trafo: int) -> bool:
         return self.meters.remove_trafo(trafo)
 
-    def apply_meter_preset(self, name: str) -> None:
-        self.meters.apply_preset(name, self.net)
+    def apply_meter_preset(self, name: str, cell: str | None = None) -> None:
+        self.meters.apply_preset(name, self.net, cells=self.cells, cell=cell)
 
     def set_meter_mode(self, name: str) -> None:
         """Bulk meter fidelity: switch EVERY placed device and the default for
@@ -755,11 +985,7 @@ class Simulator:
         # once at least one meter is placed, and only from a converged truth
         if converged and (self.meters.node_buses or self.meters.trafo_idxs):
             if self._estimator is None:
-                ev_rows, household_rows, hh_counts = self._est_row_sets()
-                self._estimator = Estimator(
-                    self.net, self.prof, self._loads_at, self._sgens_at,
-                    ev_rows=ev_rows, household_rows=household_rows,
-                    household_counts=hh_counts, config=self.est_config)
+                self._estimator = self._make_estimator(self.net)
             # the estimate can only be as fine as the METERING raster: when
             # EVERY device is a TAF-7 Lastgang meter, new readings arrive only
             # once per 15-min window, so a new estimate is only due at window
@@ -776,6 +1002,8 @@ class Simulator:
                 self._est_wall = time.monotonic()
                 if est is not None:
                     est["step"], est["day"] = t, day   # which step it estimated
+                    self._est_seq += 1
+                    est["seq"] = self._est_seq         # telegram id (controllers)
                     self._est_ms = est["solve_ms"]
                     self._est_last = est
             res.estimated = self._est_last
@@ -787,6 +1015,11 @@ class Simulator:
         if converged and self.controllers:
             self._controller_update(res)
             res.controllers = [c.as_dict() for c in self.controllers]
+        # the rONT closes its loop the same way: observed busbar voltage of
+        # THIS step decides the tap position of the NEXT one
+        if converged and self.ronts:
+            self._ront_update(res)
+            res.ronts = [r.as_dict() for r in self.ronts]
         return res
 
     # -- result extraction ---------------------------------------------- #
@@ -856,6 +1089,7 @@ class Simulator:
                 "capacity_kwh": _r(b.capacity_mwh * 1000.0), "power_kw": _r(b.power_mw * 1000.0),
             })
         res.controllers = [c.as_dict() for c in self.controllers]
+        res.ronts = [r.as_dict() for r in self.ronts]
 
         vm = net.res_bus.vm_pu
         loadings = net.res_line.loading_percent
@@ -942,6 +1176,8 @@ class Simulator:
             # LV cable cabinets (where service cables join the main line) → green circles
             "cabinet_buses": [i for i, b in enumerate(self.data.grid.buses)
                               if getattr(b, "kind", None) == "cabinet"],
+            # vertical MV/LV structure: ONS cells (empty for legacy/file grids)
+            "cells": [dict(c) for c in self.cells],
             "n_load": int(len(net.load)),
             "n_sgen": int(len(net.sgen)),
             "n_trafo": int(len(net.trafo)),
@@ -1155,10 +1391,7 @@ class Simulator:
             net = copy.deepcopy(self.net)
             net.storage.drop(net.storage.index, inplace=True)
             bs = self._sweep_batteries(net)
-            ev_rows, household_rows, hh_counts = self._est_row_sets()
-            estimator = Estimator(net, self.prof, self._loads_at, self._sgens_at,
-                                  ev_rows=ev_rows, household_rows=household_rows,
-                                  household_counts=hh_counts, config=self.est_config)
+            estimator = self._make_estimator(net)
             # its own MeasurementSet copy: standard-mode window accumulators
             # must not disturb the live meters' state
             sweep_meters = MeasurementSet(node_buses=set(self.meters.node_buses),

@@ -30,8 +30,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # Presets accepted by ``MeasurementSet.apply_preset`` / the ``/measurements/preset``
-# endpoint. Kept here so the API and the set agree on the vocabulary.
-PRESETS = ("all_nodes", "all_trafos", "substation_trafos", "clear")
+# endpoint. Kept here so the API and the set agree on the vocabulary. The cell
+# presets (vertical MV/LV integration) need the grid's ONS cells: one digital
+# secondary substation per cell, or the full SMGW rollout of a single cell.
+PRESETS = ("all_nodes", "all_trafos", "substation_trafos", "digital_stations",
+           "cell_full", "clear")
 
 # Meter fidelity. "full": every quantity (V, P, Q, I) every simulation step —
 # TAF 9/10/14 grid-state telemetry. "standard": German standard metering
@@ -156,8 +159,10 @@ class MeasurementSet:
         self.trafo_modes.clear()
         self._win, self._acc, self._held = -1, {}, {}
 
-    def apply_preset(self, name: str, net) -> None:
-        """Bulk placement helper. ``net`` supplies the element indices."""
+    def apply_preset(self, name: str, net, cells: list[dict] | None = None,
+                     cell: str | None = None) -> None:
+        """Bulk placement helper. ``net`` supplies the element indices; the
+        cell presets additionally need the grid's ONS ``cells``."""
         if name == "clear":
             self.clear()
         elif name == "all_nodes":
@@ -168,6 +173,25 @@ class MeasurementSet:
             # a "substation" here = a transformer's LV busbar meter + the trafo meter
             self.trafo_idxs = {int(t) for t in net.trafo.index}
             self.node_buses |= {int(net.trafo.at[t, "lv_bus"]) for t in net.trafo.index}
+        elif name == "digital_stations":
+            # one digital ONS per cell: the station-trafo meter. Model stand-ins
+            # where no trafo exists: a lumped station is only its aggregate load
+            # at the feeding MV bus -> node meter there; a trafo-less standalone
+            # LV cell (ding0 "lv" scope) is fed at its busbar -> node meter.
+            for c in cells or []:
+                if c.get("station_trafos"):
+                    self.trafo_idxs |= {int(t) for t in c["station_trafos"]}
+                elif c.get("lumped") and c.get("mv_bus") is not None:
+                    self.node_buses.add(int(c["mv_bus"]))
+                elif c.get("lv_busbar") is not None:
+                    self.node_buses.add(int(c["lv_busbar"]))
+        elif name == "cell_full":
+            # full SMGW rollout of ONE cell (incl. its digital station)
+            match = next((c for c in cells or [] if c.get("id") == cell), None)
+            if match is None:
+                raise KeyError(cell)
+            self.node_buses |= {int(b) for b in match.get("buses", [])}
+            self.trafo_idxs |= {int(t) for t in match.get("station_trafos", [])}
         else:  # pragma: no cover - guarded by the API layer
             raise ValueError(f"unknown preset '{name}'")
 
@@ -179,13 +203,32 @@ class MeasurementSet:
         self.trafo_modes = {t: m for t, m in self.trafo_modes.items() if t in self.trafo_idxs}
 
     # -- the projection: solved net → observed readings ----------------------- #
-    def placement(self, net) -> dict[str, Any]:
+    def placement(self, net, cells: list[dict] | None = None) -> dict[str, Any]:
         """Static placement + coverage (no results needed) for the /measurements
-        endpoint and the UI's meter markers."""
+        endpoint and the UI's meter markers. With ``cells`` given, the coverage
+        is additionally broken down per ONS cell — the vertical view: does a
+        cell have its station measurement, how many of its buses carry SMGWs?"""
         n_bus = int(len(net.bus))
         n_trafo = int(len(net.trafo))
         n_node_meter = len(self.node_buses)
         n_trafo_meter = len(self.trafo_idxs)
+        cell_cov = []
+        for c in cells or []:
+            member = set(int(b) for b in c.get("buses", []))
+            trafos = [int(t) for t in c.get("station_trafos", [])]
+            if trafos:
+                station = all(t in self.trafo_idxs for t in trafos)
+            elif c.get("lumped") and c.get("mv_bus") is not None:
+                station = int(c["mv_bus"]) in self.node_buses
+            else:
+                station = (c.get("lv_busbar") is not None
+                           and int(c["lv_busbar"]) in self.node_buses)
+            cell_cov.append({
+                "id": c["id"], "lumped": bool(c.get("lumped")),
+                "n_buses": len(member),
+                "n_node_meter": len(member & self.node_buses),
+                "station_metered": bool(station),
+            })
         return {
             "node_buses": sorted(self.node_buses),
             "trafo_idxs": sorted(self.trafo_idxs),
@@ -193,6 +236,7 @@ class MeasurementSet:
             # full per-device map (default resolved), for the UI's TAF switches
             "node_modes": {b: self.mode_of_node(b) for b in sorted(self.node_buses)},
             "trafo_modes": {tr: self.mode_of_trafo(tr) for tr in sorted(self.trafo_idxs)},
+            "cells": cell_cov,
             "coverage": {
                 "n_bus": n_bus,
                 "n_node_meter": n_node_meter,

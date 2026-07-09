@@ -71,6 +71,17 @@ export function EstimationPanel() {
       </label>
       <div className="est-hint">{t("est.stdHint")}</div>
 
+      <div className="est-group">{t("est.hierGroup")}</div>
+      <label className="est-row">
+        <select value={cfg?.hierarchy ?? "auto"}
+                onChange={(e) => apply({ hierarchy: e.target.value as EstimationConfig["hierarchy"] })}>
+          <option value="auto">{t("est.hierAuto")}</option>
+          <option value="hierarchical">{t("est.hierOn")}</option>
+          <option value="monolithic">{t("est.hierOff")}</option>
+        </select>
+      </label>
+      <div className="est-hint">{t("est.hierHint")}</div>
+
       {err && <div className="est-err">{err}</div>}
     </div>
   );

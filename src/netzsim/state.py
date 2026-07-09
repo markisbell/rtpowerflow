@@ -42,8 +42,14 @@ class StateStore:
         if self._expose:
             return payload
         out = {k: v for k, v in payload.items() if k not in _TRUTH_KEYS}
-        if isinstance(out.get("estimated"), dict) and "error" in out["estimated"]:
-            out["estimated"] = {k: v for k, v in out["estimated"].items() if k != "error"}
+        est = out.get("estimated")
+        if isinstance(est, dict):
+            est = {k: v for k, v in est.items() if k != "error"}
+            # hierarchical estimates carry per-cell error metrics — same leak
+            if isinstance(est.get("cells"), list):
+                est["cells"] = [{k: v for k, v in c.items() if k != "error"}
+                                for c in est["cells"]]
+            out["estimated"] = est
         return out
 
     # -- writes ---------------------------------------------------------- #
