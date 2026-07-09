@@ -34,6 +34,14 @@ import pandapower as pp
 
 from .measurements import _r
 
+# ``select_subnet`` lives in ``pandapower.toolbox``; older releases re-export it
+# at the top level, newer ones (that CI installs from requirements.txt) do NOT.
+# Import from the stable location, falling back to the top-level name.
+try:
+    from pandapower.toolbox import select_subnet as _select_subnet
+except ImportError:  # pragma: no cover - very old pandapower
+    _select_subnet = pp.select_subnet
+
 # standard deviations = the operator's trust in each information source
 STD_V_METER = 0.003      # smart-meter voltage, pu
 STD_PQ_METER = 0.0005    # smart-meter P/Q, MW / MVar
@@ -341,7 +349,7 @@ class HierarchicalEstimator:
         for c in self._cells:
             member = {int(b) for b in c["buses"]}
             spliced |= member
-            sub = pp.select_subnet(net, list(member | {int(c["mv_bus"])}))
+            sub = _select_subnet(net, list(member | {int(c["mv_bus"])}))
             # the subnet keeps original indices; its slack is the feeding MV bus
             if len(sub.ext_grid):
                 sub.ext_grid.drop(sub.ext_grid.index, inplace=True)
@@ -353,7 +361,7 @@ class HierarchicalEstimator:
                 {b: r for b, r in loads_at.items() if b in member},
                 {b: r for b, r in sgens_at.items() if b in member}, **kw)
         keep = [int(b) for b in net.bus.index if int(b) not in spliced]
-        self._mv_net = pp.select_subnet(net, keep)
+        self._mv_net = _select_subnet(net, keep)
         self._mv_est = Estimator(
             self._mv_net, prof,
             {b: r for b, r in loads_at.items() if b not in spliced},
