@@ -148,6 +148,27 @@ die Abendspitze springen will, ruft daher
 dasselbe über den \ui{Zeitpunkt}-Regler.
 \end{beispiel}
 
+\section{Weiterführende Dokumentation}
+\label{sec:weiterdoku}
+
+Dieses Handbuch beschreibt die Bedienung. Für Entwicklung und
+Skript-Anbindung liegen im Repository zwei englischsprachige
+Dokumente unter \texttt{docs/}:
+
+\begin{description}
+  \item[\texttt{docs/API.md}] die vollständige REST-Referenz (alle
+    Endpunkte mit Parametern und Request-Feldern). Sie wird aus dem
+    laufenden Code generiert (\texttt{scripts/gen\_api\_doc.py}) und
+    kann daher nicht veralten; die interaktive Variante ist die
+    eingebaute Swagger-Oberfläche unter
+    \api{http://localhost:8000/docs} (Kapitel~\ref{app:api} zeigt
+    eine Auswahl mit Beispielen).
+  \item[\texttt{docs/ARCHITECTURE.md}] die Systemarchitektur:
+    Komponenten und Datenfluss, die drei Datenebenen als
+    Kernkonzept, Modulübersicht, vertikale MS/NS-Integration und
+    die zentralen Design-Entscheidungen samt Begründung.
+\end{description}
+
 % ===================================================================
 \chapter{Installation und Start}
 
@@ -1534,7 +1555,12 @@ NETZSIM_HOST=0.0.0.0
 
 Für Skripte, eigene Frontends oder Übungsaufgaben ist die komplette
 Funktionalität auch per HTTP erreichbar (Standard:
-\texttt{http://localhost:8000}). Auswahl der wichtigsten Endpunkte:
+\texttt{http://localhost:8000}). Die \emph{vollständige} Referenz
+aller Endpunkte steht in \texttt{docs/API.md} (aus dem Code
+generiert, siehe Abschnitt~\ref{sec:weiterdoku}) und interaktiv in
+der eingebauten Swagger-Oberfläche unter \api{/docs} --- dort lässt
+sich jeder Aufruf direkt im Browser ausprobieren. Auswahl der
+wichtigsten Endpunkte:
 
 {\small
 \begin{longtable}{@{}p{0.13\textwidth}p{0.34\textwidth}p{0.42\textwidth}@{}}
