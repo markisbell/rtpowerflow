@@ -64,7 +64,15 @@ EchtzeitNetzSimulator/
 │   ├── models.py             # pydantic schemas for the 5 input files
 │   ├── data_loader.py        # read + cross-validate inputs -> InputData
 │   ├── network_builder.py    # build pandapower net once + numpy profile arrays
-│   ├── simulator.py          # apply one step, run_step() -> StepResult (+ observed projection)
+│   ├── simulator.py          # apply one step, run_step() -> StepResult (+ observed projection);
+│   │                         #   since 2026-07-10 the CORE only (840 Z., was 1586) — three layers
+│   │                         #   extracted as sim-first function modules w/ thin delegates, all
+│   │                         #   state (caches, journal, ids) stays ON the Simulator so scenario
+│   │                         #   recipes, invalidation and the exporter's deepcopy are untouched:
+│   ├── sweeps.py             #   day sweeps: truth/measured/est day-graph layers + profiles
+│   │                         #   (tests/test_sweeps.py pins TAF raster + deepcopy independence)
+│   ├── der.py                #   runtime PV/EV mutators, node_der, DER journal (apply_der_op)
+│   ├── control_runtime.py    #   controller/rONT per-step passes (domain views, signals, taps)
 │   ├── measurements.py       # OBSERVABILITY layer: MeasurementSet (meter placement + observe(net))
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
 │   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip, recorder sink)
@@ -529,8 +537,10 @@ provisioned datasource + dashboard, all in compose.
   updating every reference.
 - **Element order matters**: profile arrays are aligned to pandapower element
   indices by insertion order in `network_builder`.
-- **Numeric rounding & JSON safety**: results are rounded to 6 digits in
-  `simulator._r`, which also maps **non-finite** floats (NaN/±Inf) to `null`.
+- **Numeric rounding & JSON safety**: results are rounded to 6 digits in `_r`,
+  which also maps **non-finite** floats (NaN/±Inf) to `null`. The CANONICAL
+  copy lives in `measurements._r` (since 2026-07-10; simulator/sweeps/estimator
+  import it from there — the former duplicate `simulator._r` is a re-export).
   Without this, Python's `json` emits the literal `NaN`, which browsers'
   `JSON.parse` reject → the WS client silently drops every frame. Keep all result
   floats going through `_r`.
