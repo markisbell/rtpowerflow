@@ -373,17 +373,25 @@ provisioned datasource + dashboard, all in compose.
   1 ext_grid; **+1 `trafo` point per transformer** on grids that have one).
 - ✅ All YAML + dashboard JSON parse.
 
-**NOT yet verified (do this first when resuming):**
-- ⚠️ **Full `docker compose up --build` has never been run** (no Docker in the build
-  env). Image builds and the InfluxDB↔collector↔Grafana wiring are unproven
-  end-to-end. **This is the #1 thing to validate.**
-- ⚠️ Grafana dashboard panels not visually confirmed against real InfluxDB data.
+**Full-stack Docker validation (2026-07-10, Docker Desktop 29.5.3 on this
+machine): `docker compose up --build` ran completely for the FIRST time —
+the whole chain works.** All 3 images built locally, 5 containers up;
+verified end-to-end: netzsim container ticks (converged, ~14 ms/solve on
+the sample), nginx UI on :8080 serves the app AND proxies /api to netzsim,
+collector connects to both and writes one point per simulated step (dedupe
+confirmed), InfluxDB healthy, Grafana (11.1) provisioned with the influxdb
+datasource + the 7-panel dashboard, and a query THROUGH Grafana's ds proxy
+returns live data (`total_load_mw` from the running sim). CI additionally
+builds AND pushes all 3 images to
+`ghcr.io/markisbell/echtzeitnetzsimulator/{netzsim,ui,collector}`
+(tags: master, sha, latest) on every master push.
+Remaining cosmetic: the Grafana panels were verified via API query, not
+eyeballed in the browser.
 
 ---
 
 ## 10. Known gaps / TODO / good next steps
 
-- **Run the full stack once** and confirm Grafana shows live data (see §9 ⚠️).
 - **Secrets:** InfluxDB token (`netzsim-dev-token`) and Grafana/InfluxDB
   passwords are **dev defaults hard-coded in `docker-compose.yml`** and
   `visualization/grafana/provisioning/datasources/influxdb.yml`. Move to a `.env`
