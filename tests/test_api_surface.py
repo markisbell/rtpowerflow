@@ -6,7 +6,6 @@ without modification."""
 from __future__ import annotations
 
 import pytest
-from fastapi.routing import APIRoute, APIWebSocketRoute
 from fastapi.testclient import TestClient
 
 from netzsim.config import settings
@@ -101,19 +100,39 @@ EXPECTED_ROUTES = {
 }
 
 
-def _actual_routes() -> set[tuple[str, str]]:
-    out: set[tuple[str, str]] = set()
-    for r in app.routes:
-        if isinstance(r, APIWebSocketRoute):
-            out.add(("WS", r.path))
-        elif isinstance(r, APIRoute):
-            for m in r.methods - {"HEAD", "OPTIONS"}:
-                out.add((m, r.path))
+# FastAPI's route layout moves between releases: 0.136 flattens included
+# routers into app.routes (APIRoute objects), 0.139 keeps ONE _IncludedRouter
+# wrapper per include_router call (path None; the real routes sit on its
+# .original_router). Walk version-agnostically: unwrap router wrappers, then
+# duck-type — HTTP routes carry `methods`, the WebSocket route does not.
+_DOC_PATHS = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}
+
+
+def _walk(routes):
+    for r in routes:
+        inner = getattr(r, "original_router", None)
+        if inner is not None:
+            yield from _walk(inner.routes)
+            continue
+        yield r
+
+
+def _route_list() -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    for r in _walk(app.routes):
+        path = getattr(r, "path", None)
+        if path is None or path in _DOC_PATHS:
+            continue
+        methods = getattr(r, "methods", None)
+        if methods:
+            out += [(m, path) for m in set(methods) - {"HEAD", "OPTIONS"}]
+        else:
+            out.append(("WS", path))
     return out
 
 
 def test_route_inventory_complete():
-    actual = _actual_routes()
+    actual = set(_route_list())
     missing = EXPECTED_ROUTES - actual
     extra = actual - EXPECTED_ROUTES
     assert not missing, f"routes lost: {sorted(missing)}"
@@ -121,10 +140,7 @@ def test_route_inventory_complete():
 
 
 def test_no_duplicate_routes():
-    seen: list[tuple[str, str]] = []
-    for r in app.routes:
-        if isinstance(r, APIRoute):
-            seen += [(m, r.path) for m in r.methods - {"HEAD", "OPTIONS"}]
+    seen = [x for x in _route_list() if x[0] != "WS"]
     dupes = {x for x in seen if seen.count(x) > 1}
     assert not dupes, f"route registered twice: {sorted(dupes)}"
 
