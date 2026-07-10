@@ -70,7 +70,18 @@ EchtzeitNetzSimulator/
 │   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip, recorder sink)
 │   ├── recorder.py           # session recording: published step stream -> tidy CSVs on disk (+ ZIP)
 │   ├── exporter.py           # bulk export: offline replay of whole days into a recorder pack
-│   ├── api.py                # FastAPI: REST + WS /ws + grid catalog/swap + measurements + monitor
+│   ├── api/                  # FastAPI, split into routers by area (2026-07-10; was one api.py —
+│   │   │                     #   the netzsim.api import surface is unchanged, tests/test_api_surface.py
+│   │   │                     #   pins the full route inventory + smokes every router area)
+│   │   ├── __init__.py       #   app assembly + lifespan + CORS + back-compat re-exports
+│   │   ├── runtime.py        #   App container (runtime singleton), _active_meta, _recording_meta
+│   │   ├── core.py           #   / /manual /health /status /network /state /history profiles /ws
+│   │   ├── control.py        #   /control/* /pv/days
+│   │   ├── equipment.py      #   batteries · controllers · rONTs · per-node DERs (PV/EV)
+│   │   ├── measurements.py   #   /measurements* /estimation/config (EstimationConfigModel)
+│   │   ├── grids.py          #   /grids* /loadgen* /config/apply|active (LoadgenPolicy + helpers)
+│   │   ├── recordings.py     #   /recording* /recordings* /export*
+│   │   └── scenarios.py      #   /scenarios* (save/load recipes)
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
 │   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user)
 │   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
