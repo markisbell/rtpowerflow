@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Lightweight realtime power-flow time-series simulation built on pandapower"
 requires-python = ">=3.10"
 dependencies = [
-    "pandapower>=2.14",
+    "pandapower>=3.0,<4",
     "numpy>=1.24",
     "pandas>=2.0",
     "fastapi>=0.110",

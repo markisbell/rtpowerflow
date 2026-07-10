@@ -8,9 +8,30 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
 
+from ..config import settings
 from .runtime import runtime
 
 router = APIRouter()
+
+# Strict observability (§12): with NETZSIM_EXPOSE_GROUND_TRUTH=false the wire
+# must not carry the solved truth. StateStore already strips /state, /ws and
+# /history; the day-graph endpoints are gated HERE — a requested truth view
+# downgrades to the measured layer (mirroring the UI's own fallback), and the
+# est view keeps its estimate/measured layers but loses the truth arrays.
+_TRUTH_KEYS = {"node": ("series", "voltage"),
+               "line": ("current", "loading"),
+               "trafo": ("power", "loading")}
+
+
+def _gate_view(view: str) -> str:
+    return "measured" if view == "truth" and not settings.expose_ground_truth else view
+
+
+def _gate_profiles(out: dict, kind: str) -> dict:
+    if not settings.expose_ground_truth and out.get("view") == "est":
+        for k in _TRUTH_KEYS[kind]:
+            out[k] = []
+    return out
 
 
 @router.get("/manual")
@@ -45,7 +66,7 @@ def node_profiles(bus: int, view: Literal["truth", "measured", "est"] = "est"):
     sim = runtime.engine.sim
     if bus < 0 or bus not in sim.net.bus.index:
         raise HTTPException(404, f"unknown bus {bus}")
-    return sim.node_profiles(bus, view=view)
+    return _gate_profiles(sim.node_profiles(bus, view=_gate_view(view)), "node")
 
 
 @router.get("/line/{line}/profiles")
@@ -55,7 +76,7 @@ def line_profiles(line: int, view: Literal["truth", "measured", "est"] = "est"):
     sim = runtime.engine.sim
     if line < 0 or line not in sim.net.line.index:
         raise HTTPException(404, f"unknown line {line}")
-    return sim.line_profiles(line, view=view)
+    return _gate_profiles(sim.line_profiles(line, view=_gate_view(view)), "line")
 
 
 @router.get("/trafo/{trafo}/profiles")
@@ -65,7 +86,7 @@ def trafo_profiles(trafo: int, view: Literal["truth", "measured", "est"] = "est"
     sim = runtime.engine.sim
     if trafo < 0 or trafo not in sim.net.trafo.index:
         raise HTTPException(404, f"unknown trafo {trafo}")
-    return sim.trafo_profiles(trafo, view=view)
+    return _gate_profiles(sim.trafo_profiles(trafo, view=_gate_view(view)), "trafo")
 
 
 @router.get("/state")

@@ -209,3 +209,26 @@ def test_grid_and_recording_listings(client):
     assert "recordings" in r and "active" in r
     assert client.get("/export").status_code == 200
     assert client.get("/scenarios").status_code == 200
+
+
+def test_strict_mode_gates_profile_endpoints(client, monkeypatch):
+    """NETZSIM_EXPOSE_GROUND_TRUTH=false must hide the solved truth from the
+    day-graph endpoints too (§12 — formerly a documented gap): a requested
+    truth view downgrades to measured, and the est view keeps only the
+    estimate/measured layers."""
+    monkeypatch.setattr(settings, "expose_ground_truth", False)
+
+    prof = client.get("/node/1/profiles", params={"view": "truth"}).json()
+    assert prof["view"] == "measured"
+    assert prof["voltage"] == [] and prof["series"] == []
+
+    prof = client.get("/node/1/profiles", params={"view": "est"}).json()
+    assert prof["voltage"] == [] and prof["series"] == []   # truth stripped
+    assert "est_voltage" in prof and "measured" in prof     # est layers stay
+
+    line = client.get("/line/0/profiles", params={"view": "est"}).json()
+    assert line["current"] == [] and line["loading"] == []
+    assert line["rated_i_ka"] is not None                   # grid model: known
+
+    # measured view stays available (only the meters' own quantities)
+    assert client.get("/node/1/profiles", params={"view": "measured"}).status_code == 200
