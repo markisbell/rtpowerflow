@@ -35,6 +35,7 @@ router = APIRouter()
 # --------------------------------------------------------------------------- #
 @router.get("/grids")
 def grids():
+    """List the importable grids of the committed dataset + user imports."""
     return {
         "available": runtime.catalog.available,
         "grids": runtime.catalog.list(),
@@ -43,6 +44,7 @@ def grids():
 
 @router.get("/grids/{grid_id}")
 def grid_preview(grid_id: str):
+    """Net-free topology preview of a catalog grid (+ converter notes)."""
     if not runtime.catalog.has(grid_id):
         raise HTTPException(404, f"unknown grid '{grid_id}'")
     g = runtime.catalog.get_inputs(grid_id, steps=settings.steps_per_day)
@@ -148,6 +150,7 @@ def _assign_policy(p: LoadgenPolicy, character: str | None = None) -> AssignPoli
 
 @router.get("/loadgen/archetypes")
 def loadgen_archetypes():
+    """List the cached LPG household archetypes (steps, metadata)."""
     return {
         "available": runtime.library.available,
         "ev_available": True,  # synthetic model, no library needed
@@ -265,6 +268,8 @@ class ApplyGridRequest(BaseModel):
 
 @router.post("/config/apply")
 async def config_apply(req: ApplyGridRequest):
+    """Convert a catalog grid (optionally with LPG loads + EV + PV) and swap
+    the running engine onto it."""
     if not runtime.catalog.has(req.grid_id):
         raise HTTPException(404, f"unknown grid '{req.grid_id}'")
     try:
@@ -309,4 +314,5 @@ async def config_apply(req: ApplyGridRequest):
 
 @router.get("/config/active")
 def config_active():
+    """Metadata of the currently loaded grid (id, counts, load source, notes)."""
     return runtime.active

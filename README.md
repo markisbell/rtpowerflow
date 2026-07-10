@@ -24,7 +24,10 @@ MV/LV integration**: medium-voltage districts with dozens of low-voltage cells,
 hierarchical estimation, and a grid-traffic-light (Netzampel) control cascade.
 
 A German **Benutzerhandbuch** (`docs/Benutzerhandbuch.pdf`) is the complete
-user guide; `CLAUDE.md` is the exhaustive developer/architecture reference.
+user guide. Developer documentation: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+(system architecture) and [`docs/API.md`](docs/API.md) (generated REST
+reference; interactive Swagger UI at `/docs`); `CLAUDE.md` is the exhaustive
+development log.
 
 ---
 
@@ -143,8 +146,9 @@ warm-started); the power flow runs **off the event loop** (`asyncio.to_thread`)
 so the API stays responsive; **profiles double as element definitions** (every
 row in the load/generation/substation files becomes one pandapower element).
 
-Full module map, the complete ~60-endpoint API, and the observability/estimation
-internals are documented in [`CLAUDE.md`](CLAUDE.md).
+The system architecture (modules, data layers, vertical integration, design
+rationale) is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
+the complete endpoint reference in [`docs/API.md`](docs/API.md).
 
 ---
 
