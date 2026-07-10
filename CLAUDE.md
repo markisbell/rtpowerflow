@@ -279,9 +279,11 @@ see §12), `RECORDINGS_DIR` (default `./data/recordings`, gitignored) and
 `RECORD` (default `false`; `true` = continuous recording from startup on,
 restarting per grid apply / scenario load).
 
-> Note: `STEPS_PER_DAY` exists in config but the simulator currently derives steps
-> from the input files (`InputData.steps_per_day`). Keep the env value and the file
-> `steps` consistent (both 1440 in the sample). See §10.
+> Note: `STEPS_PER_DAY` drives all CATALOG imports (`/grids`, `/loadgen`,
+> `/config/apply`, scenario load — api passes it to `catalog.get_inputs` and
+> the loadgen assigners); only the data_dir path derives steps from the input
+> files (`InputData.steps_per_day`). Keep the env value and the file `steps`
+> consistent (both 1440 everywhere in the committed data).
 
 collector (env in `docker-compose.yml`): `NETZSIM_URL`, `INFLUX_URL`,
 `INFLUX_TOKEN`, `INFLUX_ORG`, `INFLUX_BUCKET`, `POLL_INTERVAL_SECONDS` (0.5 —
@@ -388,15 +390,9 @@ provisioned datasource + dashboard, all in compose.
   passwords are **dev defaults hard-coded in `docker-compose.yml`** and
   `visualization/grafana/provisioning/datasources/influxdb.yml`. Move to a `.env`
   / secrets before any non-local use.
-- **`STEPS_PER_DAY` config is currently unused** by the simulator (steps come from
-  the input files). Either wire it through or remove it to avoid confusion.
 - **No result persistence in netzsim** beyond the in-memory ring buffer
   (`HISTORY_SIZE`). InfluxDB is the durable store; netzsim itself forgets history
   on restart.
-- **No CORS config** on FastAPI — add `CORSMiddleware` if a separate frontend will
-  call it from a browser.
-- **pandapower version**: `requirements.txt` pins `>=2.14`; dev verified on 3.4.0.
-  If pinning for reproducibility, pin to the tested 3.x.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
 - **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT
@@ -520,10 +516,13 @@ provisioned datasource + dashboard, all in compose.
     embeds `lv_ref` AUTOMATICALLY at export time — a station whose drawn LV
     grid has ≥1 house references exactly the gridformat file the same
     export writes for it (same `stationsOf` order/naming as
-    `toGridformatDocs`, slugged like the backend filenames; TS `slugify`
-    mirrors gridcheck.py, parity verified). `fromMvDoc` deliberately
-    ignores `lv_ref` (export-time artifact, recomputed per export);
-    ExportPanel shows how many stations link up. No manual picker needed.
+    `toGridformatDocs`). Since 2026-07-10 the field carries the RAW export
+    name and gridedit's BACKEND slugifies it on /export-mv (idempotent, so
+    older already-slugged docs pass through) — the former TS mirror of
+    gridcheck.py's `slugify` is gone; gridedit/tests/test_export.py pins
+    the contract. `fromMvDoc` deliberately ignores `lv_ref` (export-time
+    artifact, recomputed per export); ExportPanel shows how many stations
+    link up. No manual picker needed.
   **The vertical-integration plan (docs/VERTIKALE_INTEGRATION.md) is fully
   implemented — all phases 0–6.**
 
@@ -641,11 +640,13 @@ state estimation.
   default view = observed only (unmetered nodes/trafos grey with `?`, blue meter
   badges on metered ones); sidebar shows the observed summary + coverage. The
   reveal toggle is hidden when the server enforces strict mode.
-- **Known gap**: the per-element *daily profile* endpoints (`/node/{}/profiles`,
-  `/line/…`, `/trafo/…`, used by the click-to-graph panels) still return the full
-  simulated curves regardless of meter placement or `expose_ground_truth`. They
-  bypass the observability layer; gate them too if strict end-to-end hiding is
-  needed.
+- **Strict mode covers the day graphs too** (since 2026-07-10, formerly a
+  documented gap): the per-element profile endpoints (`/node/{}/profiles`,
+  `/line/…`, `/trafo/…`) are gated in `api/core.py` — with
+  `expose_ground_truth=false` a requested truth view downgrades to the
+  measured layer (mirroring the UI's own fallback) and the est view keeps
+  its estimate/measured layers but loses the truth arrays
+  (`test_api_surface.test_strict_mode_gates_profile_endpoints`).
 
 ### Overload controllers (feature/control branch)
 

@@ -1,9 +1,10 @@
 """Realtime engine: drives the simulator forward one step per accelerated tick.
 
 Wall-clock semantics (accelerated tick): every ``interval`` real seconds the
-engine advances exactly one 15-minute step. After ``steps_per_day`` steps it
-wraps around to step 0 and increments the day counter, repeating indefinitely
-with the same daily profiles.
+engine advances exactly one simulation step (1 minute of simulated time on
+the committed grids). After ``steps_per_day`` steps it wraps around to step 0
+and increments the day counter, repeating indefinitely with the same daily
+profiles.
 """
 from __future__ import annotations
 
