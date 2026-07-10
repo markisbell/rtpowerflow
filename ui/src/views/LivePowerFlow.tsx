@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import type { Battery, BatteryMode, EngineStatus, GridController, MeasurementsResponse, MeterMode, MeterPreset, NodeMeasurement, RontInfo, Topology, TrafoMeasurement } from "../types";
+import type { Battery, BatteryMode, EngineStatus, GridController, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
+import { useDerState, useEquipment, useMeterPlacement, type SelKind } from "../hooks";
 import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
@@ -14,10 +15,9 @@ import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import DerPanel from "../components/DerPanel";
 import Section from "../components/Section";
+import { BatterySize, ControllerLimit, RontTarget, Stat } from "../components/EquipmentControls";
 import { gridDisplayName } from "../gridname";
 import type { LiveView } from "../App";
-
-type SelKind = "bus" | "line" | "trafo";
 // One collapsible side-panel section per grid element. A section exists while
 // pinned (via the element menu / ctrl-click) or while a battery sits at the
 // element; its body (graphs, readings) renders lazily on expand.
@@ -44,21 +44,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const [stepSeconds, setStepSeconds] = useState(1);   // accelerated-tick interval (s/step)
   const [pvDates, setPvDates] = useState<string[]>([]); // real-PV day calendar (day slider)
   const [sideW, setSideW] = useState(340);             // resizable overview width (px)
-  const [batteries, setBatteries] = useState<Battery[]>([]);
-  const [controllers, setControllers] = useState<GridController[]>([]);
-  const [ronts, setRonts] = useState<RontInfo[]>([]);
-  const [batModes, setBatModes] = useState<BatteryMode[]>([]);
-  const [batHasPrices, setBatHasPrices] = useState(false);
-  const [placement, setPlacement] = useState<MeasurementsResponse | null>(null);  // meter placement
   const [gridId, setGridId] = useState<string | null>(null);   // active grid id -> localized name
-  // runtime DER state: which buses host EV charging / PV (seeded from the
-  // topology, extended live on add) + a stamp that refreshes graphs/panels
-  const [evBuses, setEvBuses] = useState<number[]>([]);
-  const [pvBuses, setPvBuses] = useState<number[]>([]);
-  const [derStamp, setDerStamp] = useState(0);
-  // meter placement / per-device TAF changes -> day graphs refetch (the
-  // measured layer rasters per device, so stale data would lie)
-  const [meterStamp, setMeterStamp] = useState(0);
   // Three parallel views of the grid: ground truth (default, so a fresh session
   // sees a normal colored grid), the strict observed-only projection, and the
   // WLS state estimate computed from the placed meters (estimator.py).
@@ -67,16 +53,28 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
 
   const { latest, status: wsStatus } = useStepStream(true);
 
+  // runtime state slices (hooks.ts): equipment CRUD, meter placement + TAF
+  // raster stamp, per-node DER state — the view adds section pinning on top
+  const {
+    batteries, batModes, batHasPrices, controllers, ronts,
+    reloadAll: reloadEquipment,
+    addBattery, changeBatteryMode, changeBatterySize, removeBattery,
+    addController, removeController: removeControllerById, setControllerLimit: setControllerLimitAt,
+    addRont, removeRont: removeRontById, setRontTarget: setRontTargetAt,
+  } = useEquipment();
+  const {
+    placement, meterStamp, reload: reloadMeasurements,
+    placeMeter, removeMeter: removeMeterAt,
+    preset: meterPreset, setMode: meterMode,
+    modeAt: meterModeAt, setModeAt: setMeterModeAt,
+  } = useMeterPlacement(measStamp);
+  const {
+    evBuses, pvBuses, derStamp, bump: bumpDer,
+    addPv, addEv, removePv: removePvAt, removeEv: removeEvAt,
+  } = useDerState(topo);
+
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
   const loadStatus = () => api.status().then(setStatus).catch(() => {});
-  const reloadBatteries = () => api.batteries()
-    .then((r) => { setBatteries(r.batteries); setBatModes(r.modes); setBatHasPrices(r.has_prices); })
-    .catch(() => {});
-  const reloadControllers = () => api.controllers()
-    .then((r) => setControllers(r.controllers)).catch(() => {});
-  const reloadRonts = () => api.ronts()
-    .then((r) => setRonts(r.ronts)).catch(() => {});
-  const reloadMeasurements = () => api.measurements().then(setPlacement).catch(() => {});
 
   useEffect(() => {
     loadTopo();
@@ -84,19 +82,10 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     onActive();
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
     api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
-    reloadBatteries();
-    reloadControllers();
-    reloadRonts();
-    reloadMeasurements();
+    reloadEquipment();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
-
-  // seed the runtime DER state from the topology
-  useEffect(() => {
-    setEvBuses(topo?.ev_buses ?? []);
-    setPvBuses(topo?.pv_buses ?? []);
-  }, [topo]);
 
   // default to the real OSM map for grids that carry geo-coordinates, else schematic
   useEffect(() => {
@@ -107,13 +96,8 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     }
   }, [topo]);
 
-  // meter changes made in the menu bar (presets, TAF mode) -> refresh placement
-  useEffect(() => {
-    if (measStamp > 0) reloadMeasurements();
-  }, [measStamp]);
-
-  // drop stale sections when the grid changes; batteries + meters reset with it
-  useEffect(() => { setSections([]); setMenu(null); reloadBatteries(); reloadControllers(); reloadMeasurements(); }, [topo?.name]);
+  // drop stale sections when the grid changes; equipment + meters reset with it
+  useEffect(() => { setSections([]); setMenu(null); reloadEquipment(); reloadMeasurements(); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -222,109 +206,41 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const selectLine = onElemClick("line");
   const selectTrafo = onElemClick("trafo");
 
-  // ---- equipment actions (from the menu / the element sections) ------------ //
+  // ---- equipment actions: hook round-trips + section pinning --------------- //
   const addBatteryAt = async (kind: SelKind, id: number) => {
     const bus = busForElement(kind, id);
     if (bus == null) return;
-    // deploys with the default strategy; switched later in the node's section
-    try { await api.addBattery({ bus, capacity_kwh: 10, power_kw: 5, mode: "self" }); } finally { reloadBatteries(); }
+    await addBattery(bus);
     pinSection(kind, id);
   };
   const addControllerAt = async (kind: SelKind, id: number) => {
-    try {
-      if (kind === "trafo") {
-        const cc = cellAtTrafo(id);
-        if (cc) await api.addController({ scope: "cell", cell: cc.id });
-        else await api.addController({ scope: "station" });
-      } else if (kind === "bus") {
-        const cc = cellAtBus(id);
-        if (cc) await api.addController({ scope: "cell", cell: cc.id });
-        else if (extBuses.includes(id) && cells.length) await api.addController({ scope: "mv" });
-        else await api.addController({ scope: "bus", bus: id });
-      } else return;
-    } finally { reloadControllers(); }
+    // vertical dispatch: cell station -> Steuerbox, UW/slack -> coordinator
+    if (kind === "trafo") {
+      const cc = cellAtTrafo(id);
+      await addController(cc ? { scope: "cell", cell: cc.id } : { scope: "station" });
+    } else if (kind === "bus") {
+      const cc = cellAtBus(id);
+      if (cc) await addController({ scope: "cell", cell: cc.id });
+      else if (extBuses.includes(id) && cells.length) await addController({ scope: "mv" });
+      else await addController({ scope: "bus", bus: id });
+    } else return;
     pinSection(kind, id);
   };
   const addRontAt = async (trafo: number) => {
-    try { await api.addRont({ trafo }); } finally { reloadRonts(); }
+    await addRont(trafo);
     pinSection("trafo", trafo);
   };
-  const removeRontById = async (rid: number) => {
-    try { await api.removeRont(rid); } finally { reloadRonts(); }
-  };
-  const setRontTargetAt = async (rid: number, v_target: number) => {
-    try { await api.setRont(rid, v_target); } finally { reloadRonts(); }
-  };
-  const removeControllerById = async (cid: number) => {
-    try { await api.removeController(cid); } finally { reloadControllers(); }
-  };
-  const setControllerLimitAt = async (cid: number, pct: number) => {
-    try {
-      const r = await api.setControllerLimit(cid, pct);
-      setControllers(r.controllers);
-    } catch { reloadControllers(); }
-  };
   const addPvAt = async (bus: number) => {
-    await api.addPv(bus, 5);
-    setPvBuses((prev) => (prev.includes(bus) ? prev : [...prev, bus]));
-    setDerStamp((v) => v + 1);
+    await addPv(bus);
     pinSection("bus", bus);
   };
   const addEvAt = async (bus: number) => {
-    await api.addEv(bus);
-    setEvBuses((prev) => (prev.includes(bus) ? prev : [...prev, bus]));
-    setDerStamp((v) => v + 1);
+    await addEv(bus);
     pinSection("bus", bus);
   };
-  const removePvAt = async (bus: number) => {
-    const der = await api.nodeDer(bus);
-    if (der.pv) await api.removePv(der.pv.sgen);
-    setPvBuses((prev) => prev.filter((b) => b !== bus));
-    setDerStamp((v) => v + 1);
-  };
-  const removeEvAt = async (bus: number) => {
-    const der = await api.nodeDer(bus);
-    if (der.ev) await api.removeEv(der.ev.load);
-    setEvBuses((prev) => prev.filter((b) => b !== bus));
-    setDerStamp((v) => v + 1);
-  };
-  const changeBatteryMode = async (index: number, mode: BatteryMode) => {
-    try {
-      const r = await api.setBatteryMode(index, mode);
-      setBatteries(r.batteries);
-    } catch { reloadBatteries(); }
-  };
-  const changeBatterySize = async (index: number, kwh: number, kw: number) => {
-    try {
-      const r = await api.setBatterySize(index, kwh, kw);
-      setBatteries(r.batteries);
-    } catch { reloadBatteries(); }
-  };
-  const removeBattery = async (idx: number) => {
-    try { await api.removeBattery(idx); } finally { reloadBatteries(); }
-  };
   const placeMeterAt = async (kind: SelKind, id: number) => {
-    if (kind === "bus") setPlacement(await api.placeNodeMeter(id));
-    else if (kind === "trafo") setPlacement(await api.placeTrafoMeter(id));
-    setMeterStamp((s) => s + 1);
+    await placeMeter(kind, id);
     pinSection(kind, id);
-  };
-  const removeMeterAt = async (kind: SelKind, id: number) => {
-    if (kind === "bus") setPlacement(await api.removeNodeMeter(id));
-    else if (kind === "trafo") setPlacement(await api.removeTrafoMeter(id));
-    setMeterStamp((s) => s + 1);
-  };
-  const meterPreset = async (name: MeterPreset) => setPlacement(await api.meterPreset(name));
-  const meterMode = async (name: MeterMode) => setPlacement(await api.meterMode(name));
-  // per-device TAF fidelity (the upsert POST also changes an existing meter)
-  const meterModeAt = (kind: SelKind, id: number): MeterMode =>
-    ((kind === "trafo" ? placement?.trafo_modes?.[String(id)]
-                       : placement?.node_modes?.[String(id)])
-     ?? placement?.mode ?? "full");
-  const setMeterModeAt = async (kind: SelKind, id: number, m: MeterMode) => {
-    if (kind === "bus") setPlacement(await api.placeNodeMeter(id, m));
-    else if (kind === "trafo") setPlacement(await api.placeTrafoMeter(id, m));
-    setMeterStamp((s) => s + 1);   // day graphs refetch in the device's new raster
   };
 
   const toggleRun = async () => {
@@ -676,7 +592,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
               {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
 
               {sec.kind === "bus" && (evBuses.includes(sec.id) || pvBuses.includes(sec.id)) && (
-                <DerPanel bus={sec.id} stamp={derStamp} onChanged={() => setDerStamp((v) => v + 1)} />
+                <DerPanel bus={sec.id} stamp={derStamp} onChanged={bumpDer} />
               )}
 
               {metered && (
@@ -853,106 +769,6 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           </span>
         </label>
       </div>
-    </div>
-  );
-}
-
-// classic home-storage units (kWh · kW); the busbar battery is sized freely
-const HOME_SIZES: [number, number][] = [[5, 2.5], [10, 5], [15, 7.5], [20, 10]];
-const numStyle: CSSProperties = {
-  width: 64, fontSize: "0.72rem", background: "var(--panel-2)",
-  color: "var(--text)", border: "1px solid var(--border)", borderRadius: 4,
-  padding: "1px 4px",
-};
-
-function BatterySize({ bat, free, onSize }: {
-  bat: Battery; free: boolean; onSize: (kwh: number, kw: number) => void;
-}) {
-  const { t } = useTranslation();
-  const [kwh, setKwh] = useState(bat.capacity_kwh);
-  const [kw, setKw] = useState(bat.power_kw);
-  useEffect(() => { setKwh(bat.capacity_kwh); setKw(bat.power_kw); },
-            [bat.capacity_kwh, bat.power_kw]);
-  if (!free) {
-    const cur = `${bat.capacity_kwh}|${bat.power_kw}`;
-    const known = HOME_SIZES.some(([c, p]) => `${c}|${p}` === cur);
-    return (
-      <select value={cur} style={{ fontSize: "0.72rem" }}
-              title={t("bat.sizeTitle")}
-              onChange={(e) => { const [c, p] = e.target.value.split("|").map(Number); onSize(c, p); }}>
-        {!known && <option value={cur}>{bat.capacity_kwh} kWh · {bat.power_kw} kW</option>}
-        {HOME_SIZES.map(([c, p]) => (
-          <option key={c} value={`${c}|${p}`}>{c} kWh · {p} kW</option>
-        ))}
-      </select>
-    );
-  }
-  const dirty = kwh !== bat.capacity_kwh || kw !== bat.power_kw;
-  const valid = kwh > 0 && kw > 0;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: "0.72rem" }}
-          title={t("bat.sizeTitle")}>
-      <input type="number" min={1} step={1} value={kwh} style={numStyle}
-             onChange={(e) => setKwh(+e.target.value)} /> kWh
-      <input type="number" min={1} step={1} value={kw} style={{ ...numStyle, width: 56 }}
-             onChange={(e) => setKw(+e.target.value)} /> kW
-      {dirty && (
-        <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
-                disabled={!valid} onClick={() => onSize(kwh, kw)}>
-          {t("bat.apply")}
-        </button>
-      )}
-    </span>
-  );
-}
-
-function ControllerLimit({ ctrl, onLimit }: {
-  ctrl: GridController; onLimit: (pct: number) => void;
-}) {
-  const { t } = useTranslation();
-  const [v, setV] = useState(ctrl.limit_pct);
-  useEffect(() => setV(ctrl.limit_pct), [ctrl.limit_pct]);
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: "0.72rem" }}
-          title={t("ctrl.limitTitle")}>
-      {t("ctrl.limit")}
-      <input type="number" min={20} max={150} step={5} value={v} style={{ ...numStyle, width: 52 }}
-             onChange={(e) => setV(+e.target.value)}
-             onBlur={() => v !== ctrl.limit_pct && v >= 20 && v <= 150 && onLimit(v)}
-             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> %
-    </span>
-  );
-}
-
-function RontTarget({ ront, onTarget }: {
-  ront: RontInfo; onTarget: (v_target: number) => void;
-}) {
-  const { t } = useTranslation();
-  const [v, setV] = useState(Math.round(ront.v_target * V_BASE * 10) / 10);
-  useEffect(() => setV(Math.round(ront.v_target * V_BASE * 10) / 10), [ront.v_target]);
-  const commit = () => {
-    const pu = v / V_BASE;
-    if (pu >= 0.9 && pu <= 1.1 && Math.abs(pu - ront.v_target) > 1e-6) onTarget(pu);
-  };
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: "0.72rem" }}
-          title={t("ront.targetTitle")}>
-      {t("ront.target")}
-      <input type="number" min={207} max={253} step={0.5} value={v} style={{ ...numStyle, width: 58 }}
-             onChange={(e) => setV(+e.target.value)}
-             onBlur={commit}
-             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /> V
-    </span>
-  );
-}
-
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="stat-row">
-      <span className="muted">{label}</span>
-      <span className="v" style={color ? { color } : undefined}>
-        {value}
-      </span>
     </div>
   );
 }
