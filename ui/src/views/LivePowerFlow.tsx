@@ -15,6 +15,9 @@ import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import DerPanel from "../components/DerPanel";
 import Section from "../components/Section";
+import OverviewSection from "../components/OverviewSection";
+import AmpelSection from "../components/AmpelSection";
+import CellsSection from "../components/CellsSection";
 import { BatterySize, ControllerLimit, RontTarget, Stat } from "../components/EquipmentControls";
 import { gridDisplayName } from "../gridname";
 import type { LiveView } from "../App";
@@ -281,7 +284,6 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const mode = viewMode === "truth" && !canReveal ? "observed"
     : viewMode === "est" && !est ? (canReveal ? "truth" : "observed")
     : viewMode;
-  const reveal = mode === "truth";
   // the day graphs load only the layers this perspective may see (the backend
   // enforces it): Lastfluss = truth curves, Gemessen = the meters' own
   // readings in the metering raster, Schätzung = all layers overlaid
@@ -409,64 +411,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           {t("live.gridInfo", { name: gridDisplayName(gridId, topo.name, t), buses: topo.buses.length, ws: wsStatus })}
         </div>
 
-        <Section title={t("sec.overview")} open={ovOpen} onToggle={() => setOvOpen((v) => !v)}>
-          {mode === "est" && est ? (
-            // the operator's calculated view: aggregates over the WLS estimate
-            <>
-              <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
-                🧮 {t("live.estCaption")}
-              </div>
-              <Stat label={t("live.vminmax")}
-                    value={(() => { const v = est.buses.map((b) => b.vm_pu).filter((x): x is number => x != null);
-                                    return v.length ? `${fmt(Math.min(...v) * V_BASE, 1)} / ${fmt(Math.max(...v) * V_BASE, 1)} V` : t("live.na"); })()} />
-              <Stat label={t("live.maxLine")}
-                    value={(() => { const v = est.lines.map((l) => l.loading_percent).filter((x): x is number => x != null);
-                                    return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
-                    color={loadingColor(Math.max(0, ...est.lines.map((l) => l.loading_percent ?? 0)))} />
-              <Stat label={t("live.maxTrafo")}
-                    value={(() => { const v = est.trafos.map((tr) => tr.loading_percent).filter((x): x is number => x != null);
-                                    return v.length ? `${fmt(Math.max(...v), 1)} %` : t("live.na"); })()}
-                    color={loadingColor(Math.max(0, ...est.trafos.map((tr) => tr.loading_percent ?? 0)))} />
-              {est.error?.max_dv_pu != null && (
-                <Stat label={t("live.estErrV")} value={`${fmt(est.error.max_dv_pu * V_BASE, 2)} V`} />
-              )}
-              <Stat label={t("live.estSolve")} value={`${fmt(est.solve_ms, 0)} ms`} />
-            </>
-          ) : reveal && s ? (
-            // ground truth (revealed): the true system-wide summary
-            <>
-              <div className="muted" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
-                👁 {t("live.groundTruth")}
-              </div>
-              <Stat label={t("live.vminmax")} value={`${fmt(s.vm_pu_min * V_BASE, 1)} / ${fmt(s.vm_pu_max * V_BASE, 1)} V`} />
-              <Stat label={t("live.maxLine")} value={`${fmt(s.max_line_loading_percent, 1)} %`} color={loadingColor(s.max_line_loading_percent)} />
-              <Stat label={t("live.maxTrafo")} value={s.max_trafo_loading_percent != null ? `${fmt(s.max_trafo_loading_percent, 1)} %` : t("live.na")} color={loadingColor(s.max_trafo_loading_percent)} />
-              <Stat label={t("live.totalLoad")} value={`${fmt(s.total_load_mw * 1000, 1)} kW`} />
-              <Stat label={t("live.generation")} value={`${fmt(s.total_gen_mw * 1000, 1)} kW`} />
-              <Stat label={t("live.slack")} value={`${fmt(s.total_ext_grid_mw * 1000, 1)} kW`} />
-              <Stat label={t("live.losses")} value={`${fmt(s.total_losses_mw * 1000, 2)} kW`} />
-            </>
-          ) : (
-            // observed only: aggregates over placed meters
-            <>
-              <Stat label={t("live.measuredVmm")}
-                    value={os?.vm_pu_min != null && os?.vm_pu_max != null ? `${fmt(os.vm_pu_min * V_BASE, 1)} / ${fmt(os.vm_pu_max * V_BASE, 1)} V` : t("live.na")} />
-              <Stat label={t("live.measuredTrafo")}
-                    value={os?.max_trafo_loading_percent != null ? `${fmt(os.max_trafo_loading_percent, 1)} %` : t("live.na")}
-                    color={loadingColor(os?.max_trafo_loading_percent)} />
-              <Stat label={t("live.measuredLoad")}
-                    value={os?.measured_node_p_mw != null ? `${fmt(os.measured_node_p_mw * 1000, 1)} kW` : t("live.na")} />
-              <Stat label={t("live.coverage")}
-                    value={os ? `${os.n_node_meter}/${os.n_bus} · ${os.n_trafo_meter}/${os.n_trafo}` : "—"} />
-            </>
-          )}
-          <Stat label={t("live.solveTime")} value={latest ? `${fmt(latest.solve_ms, 1)} ms` : "—"} />
-          {!reveal && (
-            <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>
-              {t("live.observedNote")}{!canReveal ? ` ${t("live.truthHidden")}` : ""}
-            </div>
-          )}
-        </Section>
+        <OverviewSection open={ovOpen} onToggle={() => setOvOpen((v) => !v)}
+                         mode={mode} est={est} summary={s} observed={os}
+                         solveMs={latest?.solve_ms ?? null} canReveal={canReveal} />
 
         {placement && (
           <Section title={t("meas.heading")} open={measOpen} onToggle={() => setMeasOpen((v) => !v)}
@@ -476,95 +423,22 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
         )}
 
         {(coordLive || cellCtrlCount > 0) && (
-          <Section title={`🚦 ${t("ampel.heading")}`} open={ampelOpen}
-                   onToggle={() => setAmpelOpen((v) => !v)}
-                   badges={signalBuses.length ? [`⚡ ${signalBuses.length}`] : []}>
-            {coordLive ? (
-              <>
-                <div className="row" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontWeight: 600 }}>{t("ampel.coordinator")}</span>
-                  <ControllerLimit ctrl={coordLive}
-                                   onLimit={(p) => setControllerLimitAt(coordLive.id, p)} />
-                  <button className="mini" title={t("ctrl.remove")} style={{ marginLeft: "auto" }}
-                          onClick={() => removeControllerById(coordLive.id)}>✕</button>
-                </div>
-                <Stat label={t("ctrl.seen")}
-                      value={coordLive.seen_pct != null
-                        ? `${fmt(coordLive.seen_pct, 1)} % (${t(coordLive.seen_src === "meter" ? "ctrl.srcMeter" : "ctrl.srcEst")})`
-                        : `⚠️ ${t("ctrl.blind")}`}
-                      color={coordLive.seen_pct != null && coordLive.seen_pct > coordLive.limit_pct ? "#e05c4a" : undefined} />
-                <Stat label={t("ampel.signalEv")} value={`${Math.round(coordLive.ev_factor * 100)} %`}
-                      color={coordLive.ev_factor < 1 ? "#e0a83a" : undefined} />
-                <Stat label={t("ampel.signalPv")} value={`${Math.round(coordLive.pv_factor * 100)} %`}
-                      color={coordLive.pv_factor < 1 ? "#e0a83a" : undefined} />
-              </>
-            ) : (
-              <div className="muted" style={{ fontSize: "0.78rem" }}>{t("ampel.noCoord")}</div>
-            )}
-            <Stat label={t("ampel.cells")} value={`${cells.length}`} />
-            <Stat label={t("ampel.boxes")} value={`${cellCtrlCount}`} />
-            <Stat label={t("ampel.dimming")} value={`${signalBuses.length}`}
-                  color={signalBuses.length ? "#e0a83a" : undefined} />
-          </Section>
+          <AmpelSection open={ampelOpen} onToggle={() => setAmpelOpen((v) => !v)}
+                        coordinator={coordLive} nCells={cells.length}
+                        nBoxes={cellCtrlCount} nDimming={signalBuses.length}
+                        onLimit={setControllerLimitAt} onRemove={removeControllerById} />
         )}
 
         {cells.length > 0 && (
-          <Section title={t("cells.heading")} open={cellsOpen}
-                   onToggle={() => setCellsOpen((v) => !v)}
-                   badges={[`${cells.length}`]}>
-            {focusCell && (
-              <button className="ghost" style={{ fontSize: "0.72rem", marginBottom: 4 }}
-                      onClick={() => setFocusCell(null)}>← {t("cells.back")}</button>
-            )}
-            <div style={{ maxHeight: 280, overflowY: "auto", fontSize: "0.74rem" }}>
-              {(() => {
-                const trafoRead = new Map((latest?.measurements?.trafos ?? [])
-                  .map((m) => [m.trafo, m]));
-                const nodeRead = new Map((latest?.measurements?.nodes ?? [])
-                  .map((m) => [m.bus, m]));
-                const sigSet = new Set(signalBuses);
-                const boxSet = new Set(controllers
-                  .filter((c) => c.scope === "cell").map((c) => c.cell));
-                return cells.map((c) => {
-                  const tm = c.station_trafos.length
-                    ? trafoRead.get(c.station_trafos[0]) : undefined;
-                  const nm = c.lumped && c.mv_bus != null
-                    ? nodeRead.get(c.mv_bus) : undefined;
-                  const stationBus = c.lumped ? c.mv_bus : c.lv_busbar;
-                  const dimming = stationBus != null && sigSet.has(stationBus);
-                  const overload = tm?.loading_percent != null && tm.loading_percent > 100;
-                  const noData = !tm && !nm;
-                  const dot = overload ? "#f85149" : dimming ? "#f2ae00"
-                    : noData ? "#8b949e" : "#3fb950";
-                  const reading = tm?.loading_percent != null
-                    ? `${fmt(tm.loading_percent, 0)} %`
-                    : nm?.p_mw != null ? `${fmt(nm.p_mw * 1000, 0)} kW` : "—";
-                  return (
-                    <div key={c.id} className="cell-row"
-                         onClick={() => openCell(c)}
-                         style={{ display: "flex", alignItems: "center", gap: 6,
-                                  cursor: "pointer", padding: "1px 2px",
-                                  background: focusCell === c.id ? "var(--border)" : undefined }}>
-                      <span style={{ color: dot }}>●</span>
-                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis",
-                                     whiteSpace: "nowrap" }}
-                            title={c.name}>{c.name.replace(/^lv_/, "")}</span>
-                      <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>{reading}</span>
-                      <span style={{ width: 30, textAlign: "right" }}>
-                        {c.station_trafos.some((tId) => (placement?.trafo_idxs ?? []).includes(tId))
-                          || (c.lumped && c.mv_bus != null && (placement?.node_buses ?? []).includes(c.mv_bus))
-                          ? "📟" : ""}
-                        {boxSet.has(c.id) ? "🎛" : ""}
-                      </span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-            <div className="muted" style={{ fontSize: "0.68rem", marginTop: 4 }}>
-              {t("cells.hint")}
-            </div>
-          </Section>
+          <CellsSection open={cellsOpen} onToggle={() => setCellsOpen((v) => !v)}
+                        cells={cells}
+                        nodeMeas={latest?.measurements?.nodes ?? []}
+                        trafoMeas={latest?.measurements?.trafos ?? []}
+                        signalBuses={signalBuses}
+                        boxCells={controllers.filter((c) => c.scope === "cell").map((c) => c.cell)}
+                        meterBuses={meterBuses} meterTrafos={meterTrafos}
+                        focusCell={focusCell} onBack={() => setFocusCell(null)}
+                        onOpen={openCell} />
         )}
 
         {sections.map((sec) => {
