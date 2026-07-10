@@ -3,7 +3,10 @@
 > This file is the handoff/context document for future development sessions.
 > It captures **what exists, how it fits together, what is verified, and what is
 > not** so work can resume without re-deriving the design. User-facing docs live
-> in [`README.md`](README.md) and [`visualization/README.md`](visualization/README.md).
+> in [`README.md`](README.md) and [`visualization/README.md`](visualization/README.md);
+> developer docs in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
+> [`docs/API.md`](docs/API.md) (generated — rerun `scripts/gen_api_doc.py`
+> after API changes).
 
 ---
 

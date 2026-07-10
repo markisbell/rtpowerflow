@@ -41,6 +41,7 @@ def batteries():
 
 @router.post("/battery")
 async def add_battery(req: BatteryRequest):
+    """Deploy a battery at a bus (strategy self | peak | price)."""
     sim = runtime.engine.sim
     if req.bus not in sim.net.bus.index:
         raise HTTPException(404, f"unknown bus {req.bus}")
@@ -73,6 +74,7 @@ async def battery_size(idx: int,
 
 @router.delete("/battery/{idx}")
 async def remove_battery(idx: int):
+    """Remove a deployed battery."""
     if not runtime.engine.sim.remove_battery(idx):
         raise HTTPException(404, f"no battery with index {idx}")
     return {"removed": idx}
@@ -127,6 +129,7 @@ async def controller_config(cid: int, limit_pct: float = Query(..., ge=20, le=15
 
 @router.delete("/controller/{cid}")
 async def remove_controller(cid: int):
+    """Remove an overload controller."""
     if not runtime.engine.sim.remove_controller(cid):
         raise HTTPException(404, f"no controller {cid}")
     return {"removed": cid}
@@ -171,6 +174,7 @@ async def ront_config(rid: int,
 
 @router.delete("/ront/{rid}")
 async def remove_ront(rid: int):
+    """Deactivate an rONT (the transformer's original tap data is restored)."""
     if not runtime.engine.sim.remove_ront(rid):
         raise HTTPException(404, f"no rONT {rid}")
     return {"removed": rid}

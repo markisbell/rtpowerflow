@@ -45,16 +45,20 @@ def manual():
 
 @router.get("/health")
 def health():
+    """Liveness probe."""
     return {"status": "ok"}
 
 
 @router.get("/status")
 def status():
+    """Engine state: running, step, day, steps_per_day, tick interval, n_days."""
     return runtime.engine.status
 
 
 @router.get("/network")
 def network():
+    """Static topology: buses (with layout coordinates), lines, transformers,
+    ext_grids, ONS cells, element counts — the id directory for all other calls."""
     return runtime.engine.sim.topology()
 
 
@@ -91,6 +95,7 @@ def trafo_profiles(trafo: int, view: Literal["truth", "measured", "est"] = "est"
 
 @router.get("/state")
 def state():
+    """The latest solved StepResult (404 until the first solve)."""
     latest = runtime.store.latest
     if latest is None:
         raise HTTPException(404, "No result computed yet.")
@@ -99,6 +104,7 @@ def state():
 
 @router.get("/history")
 def history(limit: int = Query(default=96, ge=1, le=10_000)):
+    """Recent StepResults from the in-memory ring buffer (newest last)."""
     return runtime.store.history(limit=limit)
 
 
@@ -126,6 +132,7 @@ async def ws(websocket: WebSocket):
 # --------------------------------------------------------------------------- #
 @router.get("/", response_class=HTMLResponse)
 def index():
+    """Tiny built-in HTML live monitor (WebSocket-fed; no build step needed)."""
     return """<!doctype html><html><head><meta charset="utf-8">
 <title>netzsim</title>
 <style>

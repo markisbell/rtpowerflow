@@ -13,24 +13,28 @@ router = APIRouter()
 # from FastAPI's sync-endpoint threadpool ("no running event loop").
 @router.post("/control/start")
 async def control_start():
+    """Start the realtime loop."""
     runtime.engine.start_loop()
     return runtime.engine.status
 
 
 @router.post("/control/pause")
 async def control_pause():
+    """Pause the loop (the last result stays served)."""
     runtime.engine.pause()
     return runtime.engine.status
 
 
 @router.post("/control/resume")
 async def control_resume():
+    """Resume a paused loop."""
     runtime.engine.resume()
     return runtime.engine.status
 
 
 @router.post("/control/seek")
 async def control_seek(step: int = Query(..., ge=0)):
+    """Jump to a step within the day (wraps at steps_per_day)."""
     runtime.engine.seek(step)
     return runtime.engine.status
 
