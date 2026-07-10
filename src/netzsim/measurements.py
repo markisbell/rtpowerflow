@@ -47,7 +47,9 @@ METER_MODES = ("full", "standard")
 
 
 def _r(value, ndigits: int = 6):
-    """Round to a JSON-safe float; non-finite → ``None`` (mirrors simulator._r)."""
+    """Round to a JSON-safe float; non-finite → ``None``. The CANONICAL copy —
+    simulator.py and sweeps.py import it from here (all result floats must go
+    through this, or Python's json emits literal NaN and browsers drop frames)."""
     try:
         f = float(value)
     except (TypeError, ValueError):
