@@ -409,16 +409,20 @@ eyeballed in the browser.
 - **No result persistence in netzsim** beyond the in-memory ring buffer
   (`HISTORY_SIZE`). InfluxDB is the durable store; netzsim itself forgets history
   on restart.
-- **External nodes (docs/EXTERNAL_NODES.md): phases 1–2 are BUILT**
+- **External nodes (docs/EXTERNAL_NODES.md): ALL PHASES 1–3 BUILT**
   (backend 2026-07-10: `ext.py` + `api/ext.py`; UI 2026-07-11: element-menu
   item „📡 Externe Quelle anbinden" [buses], `useExtNodes` hook, 📡 badges
   on map/schematic, section block with applied kW/kvar + telegram age +
   ⚠-stale warning [policy consequence spelled out] + `ExtHistoryGraph`
   polling `GET /ext/{eid}/history` every 5 s — the received-value day ring;
-  an ext node keeps its section alive like a battery; i18n `ext.*` DE/EN;
-  157 tests total). Remaining: Phase 3 (demo feeder client — candidate:
-  the Pi solar InfluxDB — + scenario persistence of placements + Handbuch
-  chapter).
+  an ext node keeps its section alive like a battery; i18n `ext.*` DE/EN.
+  Phase 3 2026-07-11: `scripts/ext_feed.py` reference feeder — stdlib-only,
+  sources `sine` (synthetic PV half-wave) | `pi` (the real Pi rooftop-PV
+  InfluxDB 1.8, watts pushed signed-negative as feed-in; verified live:
+  39 W × --scale 25 → −0.975 kW applied); scenario recipes persist
+  `ext_nodes[]` placements (values start fresh/stale on load,
+  `test_scenario_persists_placements`); Benutzerhandbuch chapter „Externe
+  Quellen" (ch:extern) + ui-extern screenshot, 51 pp. 158 tests total.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
 - **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT

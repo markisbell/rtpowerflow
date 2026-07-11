@@ -127,6 +127,34 @@ def test_exporter_reset_makes_replay_deterministic():
     assert abs(float(sim.net.load.at[x.load_idx, "p_mw"]) - 0.009) < 1e-12
 
 
+def test_scenario_persists_placements(tmp_path, monkeypatch):
+    """A scenario recipe carries the PLACEMENT (bus, name, hold_s, policy,
+    bound) — never the live mailbox: after a load the node is fresh (silent,
+    stale, 0 kW) exactly like a newly attached one."""
+    from fastapi.testclient import TestClient
+
+    from netzsim.config import settings
+
+    settings.autostart = False
+    monkeypatch.setattr(settings, "scenarios_dir", tmp_path)
+    from netzsim.api import app
+
+    with TestClient(app) as client:
+        x = client.post("/ext", json={"bus": 2, "name": "Labor", "hold_s": 45,
+                                      "on_timeout": "zero", "p_max_kw": 20}).json()
+        client.put(f"/ext/{x['id']}/value", json={"p_kw": 5.0})
+        sid = client.post("/scenarios",
+                          json={"name": "ext roundtrip"}).json()["id"]
+        assert client.post(f"/scenarios/{sid}/load").status_code == 200
+        nodes = client.get("/ext").json()["ext_nodes"]
+        assert len(nodes) == 1
+        n = nodes[0]
+        assert (n["bus"], n["name"], n["hold_s"], n["on_timeout"], n["p_max_kw"]) \
+            == (2, "Labor", 45.0, "zero", 20.0)
+        assert n["stale"] is True and n["p_kw"] == 0.0 and n["age_s"] is None
+        client.delete(f"/ext/{n['id']}")
+
+
 def test_estimation_survives_external_node():
     """A driven, profile-less bus must not break the WLS: the node's
     p_max_kw widens its pseudo (like battery buses), so the estimator

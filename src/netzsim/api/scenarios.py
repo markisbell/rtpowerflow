@@ -58,6 +58,11 @@ async def scenarios_save(req: ScenarioSaveRequest):
         "ronts": [{"trafo": r.trafo, "v_target": r.v_target,
                    "deadband": r.deadband}
                   for r in sim.ronts],
+        # external nodes: the PLACEMENT is part of the recipe, the live
+        # mailbox values are not (a loaded scenario starts silent/stale)
+        "ext_nodes": [{"bus": x.bus, "name": x.name, "hold_s": x.hold_s,
+                       "on_timeout": x.on_timeout, "p_max_kw": x.p_max_kw}
+                      for x in sim.ext_nodes],
         "measurements": {"node_buses": sorted(sim.meters.node_buses),
                          "trafo_idxs": sorted(sim.meters.trafo_idxs),
                          "mode": sim.meters.mode,
@@ -149,6 +154,14 @@ async def scenarios_load(sid: str):
                          float(r.get("deadband", 0.015)))
         except Exception:  # noqa: BLE001
             log.warning("scenario '%s': skipped rONT %s", sid, r)
+    for x in doc.get("ext_nodes", []):
+        try:
+            sim.add_ext_node(int(x["bus"]), x.get("name"),
+                             float(x.get("hold_s", 30.0)),
+                             x.get("on_timeout", "hold"),
+                             float(x.get("p_max_kw", 50.0)))
+        except Exception:  # noqa: BLE001
+            log.warning("scenario '%s': skipped external node %s", sid, x)
     m = doc.get("measurements") or {}
     sim.meters.clear()
     for bus in m.get("node_buses", []):
