@@ -77,6 +77,7 @@ EXPECTED_ROUTES = {
     # external nodes: live P/Q feed per bus (docs/EXTERNAL_NODES.md)
     ("GET", "/ext"),
     ("POST", "/ext"),
+    ("GET", "/ext/{eid}/history"),
     ("PUT", "/ext/{eid}/value"),
     ("POST", "/ext/values"),
     ("DELETE", "/ext/{eid}"),
@@ -225,8 +226,11 @@ def test_ext_node_roundtrips(client):
     assert len(batch["updated"]) == 1 and len(batch["errors"]) == 1
     listed = client.get("/ext").json()["ext_nodes"]
     assert len(listed) == 1 and abs(listed[0]["p_kw"] + 5.0) < 1e-9
+    hist = client.get(f"/ext/{x['id']}/history").json()
+    assert hist["bus"] == 2 and len(hist["p_kw"]) == hist["steps_per_day"] == 1440
     assert client.delete(f"/ext/{x['id']}").json() == {"removed": x["id"]}
     assert client.get("/ext").json()["ext_nodes"] == []
+    assert client.get(f"/ext/{x['id']}/history").status_code == 404
 
 
 def test_measurement_roundtrip(client):

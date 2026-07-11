@@ -1,15 +1,20 @@
 # External nodes — live data feed for individual buses
 
-> **Status: Phase 1 BUILT (backend, 2026-07-10) — phases 2–3 pending.**
-> Implemented: `src/netzsim/ext.py` + `api/ext.py` (5 routes), StepResult
-> `ext_nodes[]`, estimator pseudo widening, deterministic exporter replay;
-> pinned by `tests/test_ext.py` (8) + the API-surface roundtrip. The five open
+> **Status: phases 1–2 BUILT (backend 2026-07-10, UI 2026-07-11) — phase 3
+> pending.** Backend: `src/netzsim/ext.py` + `api/ext.py` (6 routes incl.
+> `GET /ext/{eid}/history`), StepResult `ext_nodes[]`, estimator pseudo
+> widening, deterministic exporter replay; pinned by `tests/test_ext.py`
+> (8) + the API-surface roundtrip. UI: element-menu item „📡 Externe Quelle
+> anbinden" (buses), 📡 badge on map/schematic, section block (applied
+> kW/kvar, telegram age, ⚠ stale warning with the policy consequence,
+> remove) + `ExtHistoryGraph` rendering the received-value day ring
+> (polls the history endpoint every 5 s), i18n DE/EN. The five open
 > questions were resolved by adopting the proposals as-is (concept board:
 > Miro "netzsim — External Nodes (Konzept)", decisions column). v1 scope:
 > **PQ injection only** · timeout policy **hold | zero** (no profile
-> fallback) · **full-day ring** for the received history (UI in phase 2) ·
-> **P/Q only**, no side channels · **no AuthN**, but a per-node value bound
-> `p_max_kw` (doubles as the estimator's pseudo width). Companion documents:
+> fallback) · **full-day ring** for the received history · **P/Q only**,
+> no side channels · **no AuthN**, but a per-node value bound `p_max_kw`
+> (doubles as the estimator's pseudo width). Companion documents:
 > [`ARCHITECTURE.md`](ARCHITECTURE.md), [`VERTIKALE_INTEGRATION.md`](VERTIKALE_INTEGRATION.md).
 
 ## 1. Motivation
@@ -104,6 +109,7 @@ class ExternalNode:
 | GET | `/ext` | list with live status (last value, age_s, stale) |
 | PUT | `/ext/{id}/value` | **hot path**: `{p_kw, q_kvar?}` — validated (bounded), stored, 200 |
 | POST | `/ext/values` | batch variant `[{id, p_kw, …}]` for multi-node feeders |
+| GET | `/ext/{id}/history` | the received-value day ring (applied kW per step; feeds the UI graph) |
 | DELETE | `/ext/{id}` | remove (row + profile row, like `remove_ev`) |
 
 `StepResult` gains `ext_nodes: [{id, bus, p_mw, q_mvar, age_s, stale}]`.
@@ -111,13 +117,18 @@ REST at tick rate is sufficient (the engine consumes ≤ 1 value per tick);
 a WebSocket ingest or MQTT bridge can be added later as a thin adapter
 *outside* the core — the mailbox contract stays the same.
 
-## 6. UI draft
+## 6. UI (built, 2026-07-11)
 
-- Element menu on a node: „📡 Externe Quelle anbinden…" — places the node,
-  pins its section.
-- Section block: live value (kW/kvar), age of the last telegram, ⚠️ „Quelle
-  stumm seit …s" when stale, the timeout policy, remove button.
-- Map badge 📡 next to the existing 🔋/📟/🎛 badges.
+- Element menu on a node: „📡 Externe Quelle anbinden" — places the node
+  (defaults: 30 s hold, `hold` policy, ±50 kW), pins its section.
+- Section block: applied value (kW/kvar), age of the last telegram,
+  ⚠️ „Quelle stumm seit …s — <policy consequence>" when stale, the value
+  bound + timeout policy, remove button, and the **received-value day
+  ring** (`ExtHistoryGraph`, polls `GET /ext/{eid}/history` every 5 s) —
+  an external node has no forecast, so its day graph is what arrived.
+- Badge 📡 on map + schematic next to the existing 🔋/📟/🎛 badges; the
+  node keeps its section alive like a battery (collapse-only), and the
+  section footer shows the copy-ready feed command (`PUT /api/ext/{id}/value`).
 
 ## 7. Phasing
 
@@ -125,7 +136,7 @@ a WebSocket ingest or MQTT bridge can be added later as a thin adapter
    REST CRUD + value endpoint, StepResult fields, tests (latest-wins,
    staleness transitions, swap reset, exporter deepcopy, estimation
    honesty: unmetered external node stays invisible).
-2. **UI** — placement, badge, live section, i18n (DE/EN).
+2. **UI** — placement, badge, live section, i18n (DE/EN). *Built (see §6).*
 3. **Demo feeder + manual chapter** — example client script (candidate:
    the Pi solar InfluxDB polled at 1 Hz → `PUT /ext/{id}/value`), scenario
    persistence, Benutzerhandbuch section.

@@ -233,6 +233,7 @@ default to zeros if omitted.
 | GET | `/config/active` | Currently loaded grid metadata (id, name, counts, source, load_source, n_ev, n_pv, notes) |
 | GET | `/ext` | External nodes with live status (applied value, telegram age, stale) |
 | POST | `/ext` | Attach an external node at a bus (`{bus, name?, hold_s?, on_timeout?, p_max_kw?}`; one per bus → 409) |
+| GET | `/ext/{eid}/history` | The node's received-value day ring (applied kW per step, null = not seen) |
 | PUT | `/ext/{eid}/value` | HOT PATH: push a setpoint `{p_kw, q_kvar?}` (signed; latest wins; > p_max_kw → 422) |
 | POST | `/ext/values` | Batch variant, tolerant per entry (`{updated[], errors[]}`) |
 | DELETE | `/ext/{eid}` | Detach an external node |
@@ -413,11 +414,16 @@ eyeballed in the browser.
 - **No result persistence in netzsim** beyond the in-memory ring buffer
   (`HISTORY_SIZE`). InfluxDB is the durable store; netzsim itself forgets history
   on restart.
-- **External nodes (docs/EXTERNAL_NODES.md): Phase 1 (backend) is BUILT**
-  (2026-07-10, `ext.py` + `api/ext.py`, 157 tests total). Remaining: Phase 2
-  (UI: 📡 placement via element menu, live section with stale warning, day
-  ring graph), Phase 3 (demo feeder client — candidate: the Pi solar
-  InfluxDB — + scenario persistence of placements + Handbuch chapter).
+- **External nodes (docs/EXTERNAL_NODES.md): phases 1–2 are BUILT**
+  (backend 2026-07-10: `ext.py` + `api/ext.py`; UI 2026-07-11: element-menu
+  item „📡 Externe Quelle anbinden" [buses], `useExtNodes` hook, 📡 badges
+  on map/schematic, section block with applied kW/kvar + telegram age +
+  ⚠-stale warning [policy consequence spelled out] + `ExtHistoryGraph`
+  polling `GET /ext/{eid}/history` every 5 s — the received-value day ring;
+  an ext node keeps its section alive like a battery; i18n `ext.*` DE/EN;
+  157 tests total). Remaining: Phase 3 (demo feeder client — candidate:
+  the Pi solar InfluxDB — + scenario persistence of placements + Handbuch
+  chapter).
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
 - **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT

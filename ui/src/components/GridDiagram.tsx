@@ -30,6 +30,7 @@ interface Props {
   controllerBuses?: number[];   // 🎛 overload controllers (station = LV busbar)
   evBuses?: number[];          // runtime DER state (falls back to the topology)
   pvBuses?: number[];
+  extFeedBuses?: number[];     // 📡 external nodes (live P/Q feed)
   // observability
   meterBuses?: number[];       // buses carrying a smart meter
   meterTrafos?: number[];      // transformers carrying a meter
@@ -44,7 +45,7 @@ interface Tip {
 
 type XY = { x: number; y: number };
 
-export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [], controllerBuses = [], evBuses, pvBuses, meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
+export default function GridDiagram({ topo, latest, showValues = false, onSelectBus, selectedBuses = [], onSelectLine, selectedLines = [], onSelectTrafo, selectedTrafos = [], batteryBuses = [], controllerBuses = [], evBuses, pvBuses, extFeedBuses = [], meterBuses = [], meterTrafos = [], revealTruth = false }: Props) {
   const { t } = useTranslation();
   const meteredBus = useMemo(() => new Set(meterBuses), [meterBuses]);
   const meteredTrafo = useMemo(() => new Set(meterTrafos), [meterTrafos]);
@@ -406,6 +407,7 @@ export default function GridDiagram({ topo, latest, showValues = false, onSelect
           const tags = (batteryBuses.includes(bus.id) ? "\u{1F50B}" : "")
                      + (controllerBuses.includes(bus.id) ? "\u{1F39B}️" : "")
                      + (meteredBus.has(bus.id) ? "\u{1F4DF}" : "")
+                     + (extFeedBuses.includes(bus.id) ? "\u{1F4E1}" : "")
                      + ((evBuses ?? topo.ev_buses ?? []).includes(bus.id) ? "\u{1F50C}" : "")
                      + ((pvBuses ?? topo.pv_buses ?? []).includes(bus.id) ? "\u2600\uFE0F" : "");
           if (!tags) return null;

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import type { Battery, BatteryMode, EngineStatus, GridController, NodeMeasurement, Topology, TrafoMeasurement } from "../types";
 import { useStepStream } from "../useWebSocket";
-import { useDerState, useEquipment, useMeterPlacement, type SelKind } from "../hooks";
+import { useDerState, useEquipment, useExtNodes, useMeterPlacement, type SelKind } from "../hooks";
 import { fmt, loadingColor, voltageColor, V_BASE } from "../scales";
 import GridDiagram from "../components/GridDiagram";
 import MapDiagram from "../components/MapDiagram";
@@ -14,6 +14,7 @@ import BatteryProfile from "../components/BatteryProfile";
 import MeasurementPanel from "../components/MeasurementPanel";
 import ElementMenu, { type MenuTarget } from "../components/ElementMenu";
 import DerPanel from "../components/DerPanel";
+import ExtHistoryGraph from "../components/ExtHistoryGraph";
 import Section from "../components/Section";
 import OverviewSection from "../components/OverviewSection";
 import AmpelSection from "../components/AmpelSection";
@@ -75,6 +76,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     evBuses, pvBuses, derStamp, bump: bumpDer,
     addPv, addEv, removePv: removePvAt, removeEv: removeEvAt,
   } = useDerState(topo);
+  const { extNodes, reloadExt, addExtNode, removeExtNode } = useExtNodes();
 
   const loadTopo = () => api.network().then(setTopo).catch((e) => setError(String(e)));
   const loadStatus = () => api.status().then(setStatus).catch(() => {});
@@ -86,6 +88,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     api.pvDays().then((r) => setPvDates(r.dates)).catch(() => {});
     api.active().then((a) => setGridId(a.grid_id)).catch(() => {});
     reloadEquipment();
+    reloadExt();
     const t = setInterval(loadStatus, 2000);
     return () => clearInterval(t);
   }, []);
@@ -100,7 +103,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   }, [topo]);
 
   // drop stale sections when the grid changes; equipment + meters reset with it
-  useEffect(() => { setSections([]); setMenu(null); reloadEquipment(); reloadMeasurements(); }, [topo?.name]);
+  useEffect(() => { setSections([]); setMenu(null); reloadEquipment(); reloadMeasurements(); reloadExt(); }, [topo?.name]);
 
   // adopt the engine's current tick interval once, then it's user-driven
   useEffect(() => {
@@ -160,15 +163,18 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     setSections((prev) => prev.filter((s) => !(s.kind === kind && s.id === id)));
 
   // a battery keeps its element's section alive (collapse-only); make sure one
-  // exists for every battery not already covered (e.g. after a reload)
+  // exists for every battery not already covered (e.g. after a reload).
+  // External nodes behave the same — their section is the live-value display.
   useEffect(() => {
     if (!topo) return;
     setSections((prev) => {
       const covered = (bus: number) => prev.some((s) =>
         (s.kind === "bus" && s.id === bus) ||
         (s.kind === "trafo" && topo.trafos.find((tr) => tr.id === s.id)?.lv_bus === bus));
-      const add = batteries.filter((b) => !covered(b.bus))
-        .map((b) => ({ kind: "bus" as const, id: b.bus, open: false }));
+      const keepBuses = [...new Set([...batteries.map((b) => b.bus),
+                                     ...extNodes.map((x) => x.bus)])];
+      const add = keepBuses.filter((b) => !covered(b))
+        .map((b) => ({ kind: "bus" as const, id: b, open: false }));
       // controllers keep a section alive too (station -> its trafo section)
       const ctrlSecs = controllers
         .map((c) => (c.scope === "bus"
@@ -180,7 +186,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           && !add.some((a) => a.kind === s.kind && a.id === s.id));
       return add.length || ctrlSecs.length ? [...prev, ...add, ...ctrlSecs] : prev;
     });
-  }, [batteries, controllers, topo]);
+  }, [batteries, controllers, extNodes, topo]);
 
   // ---- element clicks: plain click opens the action menu, ctrl-click pins -- //
   const elemName = (kind: SelKind, id: number): string => {
@@ -245,6 +251,10 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
     await placeMeter(kind, id);
     pinSection(kind, id);
   };
+  const addExtNodeAt = async (bus: number) => {
+    await addExtNode(bus);
+    pinSection("bus", bus);
+  };
 
   const toggleRun = async () => {
     setStatus(status?.running ? await api.pause() : await api.start());
@@ -273,6 +283,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
   const batLive: Record<number, { soc_percent: number; p_mw: number }> = {};
   latest?.batteries?.forEach((b) => { batLive[b.index] = { soc_percent: b.soc_percent, p_mw: b.p_mw }; });
   const batteryBuses = batteries.map((b) => b.bus);
+  // external nodes: placement (badges/menu) + the per-step live values
+  const extFeedBuses = extNodes.map((x) => x.bus);
+  const extNodeAt = (bus: number) => extNodes.find((x) => x.bus === bus);
 
   // observability: placed meters + live readings
   const meterBuses = placement?.node_buses ?? [];
@@ -358,7 +371,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                       focusBuses={focusBuses}
                       selectedBuses={selBuses} selectedTrafos={selTrafos}
                       onSelectLine={selectLine} onSelectTrafo={selectTrafo}
-                      evBuses={evBuses} pvBuses={pvBuses}
+                      evBuses={evBuses} pvBuses={pvBuses} extFeedBuses={extFeedBuses}
                       meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         ) : (
           <GridDiagram topo={topo} latest={frame} showValues={showValues} batteryBuses={batteryBuses}
@@ -366,7 +379,7 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                        onSelectBus={selectBus} selectedBuses={selBuses}
                        onSelectLine={selectLine} selectedLines={selLines}
                        onSelectTrafo={selectTrafo} selectedTrafos={selTrafos}
-                       evBuses={evBuses} pvBuses={pvBuses}
+                       evBuses={evBuses} pvBuses={pvBuses} extFeedBuses={extFeedBuses}
                        meterBuses={meterBuses} meterTrafos={meterTrafos} revealTruth={mode !== "observed"} />
         )}
       </div>
@@ -388,6 +401,9 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           hasRont={menu.kind === "trafo" && ronts.some((r) => r.trafo === menu.id)}
           onAddRont={menu.kind === "trafo" ? () => addRontAt(menu.id) : undefined}
           onRemoveRont={() => { const r = ronts.find((x) => x.trafo === menu.id); if (r) removeRontById(r.id); }}
+          hasExt={menu.kind === "bus" && !!extNodeAt(menu.id)}
+          onAddExt={menu.kind === "bus" ? () => addExtNodeAt(menu.id) : undefined}
+          onRemoveExt={() => { const x = extNodeAt(menu.id); if (x) removeExtNode(x.id); }}
           onGraph={() => pinSection(menu.kind, menu.id)}
           onAddBattery={() => addBatteryAt(menu.kind, menu.id)}
           onAddPv={() => { if (menu.kind === "bus") addPvAt(menu.id); }}
@@ -453,14 +469,16 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
           const nm = sec.kind === "bus" ? liveNodeMeas.get(sec.id) : undefined;
           const tm = sec.kind === "trafo" ? liveTrafoMeas.get(sec.id) : undefined;
           const live = bat ? batLive[bat.index] : undefined;
+          const extN = sec.kind === "bus" ? extNodeAt(sec.id) : undefined;
+          const liveX = extN ? latest?.ext_nodes?.find((x) => x.id === extN.id) ?? extN : undefined;
           return (
             <Section key={key} title={elemTitle(sec.kind, sec.id)} open={sec.open}
                      badges={[...(bat ? ["🔋"] : []), ...(ctrl ? ["🎛️"] : []),
-                              ...(metered ? ["📟"] : []),
+                              ...(metered ? ["📟"] : []), ...(extN ? ["📡"] : []),
                               ...(sec.kind === "bus" && evBuses.includes(sec.id) ? ["🔌"] : []),
                               ...(sec.kind === "bus" && pvBuses.includes(sec.id) ? ["☀️"] : [])]}
                      onToggle={() => toggleOpen(sec.kind, sec.id)}
-                     onClose={bat ? undefined : () => closeSection(sec.kind, sec.id)}>
+                     onClose={bat || extN ? undefined : () => closeSection(sec.kind, sec.id)}>
               {sec.kind === "bus" && <NodeProfile embedded key={`np${derStamp}`} bus={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
               {sec.kind === "line" && <LineProfile embedded line={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
               {sec.kind === "trafo" && <TrafoProfile embedded trafo={sec.id} name={name} now={nowFrac} day={curDay} view={profileView} stamp={measStamp + meterStamp} />}
@@ -540,6 +558,36 @@ export default function LivePowerFlow({ onActive, view, onView, measStamp }: {
                   <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
                     {t("ront.band", { lo: fmt((liveRont.v_target - liveRont.deadband) * V_BASE, 1),
                                       hi: fmt((liveRont.v_target + liveRont.deadband) * V_BASE, 1) })}
+                  </div>
+                </div>
+              )}
+
+              {extN && liveX && (
+                <div style={{ marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>📡 {t("ext.title")}</span>
+                    <span className="muted" style={{ flex: 1, fontSize: "0.68rem", textAlign: "right" }}>
+                      ±{fmt(extN.p_max_kw, 0)} kW · {t(extN.on_timeout === "zero" ? "ext.zero" : "ext.hold")}
+                    </span>
+                    <button className="ghost" style={{ fontSize: "0.68rem", padding: "0 6px" }}
+                            onClick={() => removeExtNode(extN.id)}>✕</button>
+                  </div>
+                  <Stat label={t("ext.applied")}
+                        value={`${fmt(liveX.p_kw, 1)} kW${liveX.q_kvar ? ` · ${fmt(liveX.q_kvar, 1)} kvar` : ""}`}
+                        color={liveX.stale ? "#f2ae00" : undefined} />
+                  <Stat label={t("ext.age")}
+                        value={liveX.age_s != null ? t("ext.ageVal", { s: fmt(liveX.age_s, 0) }) : t("ext.never")} />
+                  {liveX.stale && (
+                    <div className="muted" style={{ fontSize: "0.7rem", marginTop: 2, color: "#f2ae00" }}>
+                      ⚠️ {liveX.age_s != null
+                        ? t("ext.stale", { s: fmt(liveX.age_s, 0),
+                                           policy: t(extN.on_timeout === "zero" ? "ext.policyZero" : "ext.policyHold") })
+                        : t("ext.staleNever", { policy: t(extN.on_timeout === "zero" ? "ext.policyZero" : "ext.policyHold") })}
+                    </div>
+                  )}
+                  <ExtHistoryGraph id={extN.id} now={nowFrac} />
+                  <div className="muted" style={{ fontSize: "0.66rem", marginTop: 3 }}>
+                    {t("ext.feedHint", { id: extN.id })}
                   </div>
                 </div>
               )}
