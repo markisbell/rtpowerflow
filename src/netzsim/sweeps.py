@@ -241,6 +241,8 @@ def daily_est(sim, day: int | None = None) -> dict:
                                       node_modes=dict(sim.meters.node_modes),
                                       trafo_modes=dict(sim.meters.trafo_modes))
         est_bats = {b.bus: b.power_mw for b in sim.batteries}
+        # external nodes: rating-bounded pseudo (their profile row is zero)
+        est_bats.update({x.bus: x.p_max_kw / 1000.0 for x in sim.ext_nodes})
         meter_raster = _raster_steps(sim, 15) if sim.meters.all_standard else 1
         est_steps = max(_raster_steps(sim, sim._est_sweep_min or 15), meter_raster)
         for t, solved in _sweep_solves(sim, net, bs, d,

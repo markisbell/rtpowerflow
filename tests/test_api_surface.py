@@ -74,6 +74,12 @@ EXPECTED_ROUTES = {
     ("POST", "/ev"),
     ("POST", "/ev/{load}"),
     ("DELETE", "/ev/{load}"),
+    # external nodes: live P/Q feed per bus (docs/EXTERNAL_NODES.md)
+    ("GET", "/ext"),
+    ("POST", "/ext"),
+    ("PUT", "/ext/{eid}/value"),
+    ("POST", "/ext/values"),
+    ("DELETE", "/ext/{eid}"),
     # observability: meter placement + estimation policy
     ("GET", "/measurements"),
     ("POST", "/measurements/node"),
@@ -205,6 +211,22 @@ def test_equipment_roundtrips(client):
     assert client.delete(f"/controller/{c['id']}").status_code == 200
     assert client.get("/ronts").json() == {"ronts": []}
     assert client.get("/node/1/der").status_code == 200
+
+
+def test_ext_node_roundtrips(client):
+    x = client.post("/ext", json={"bus": 2, "p_max_kw": 20}).json()
+    assert x["bus"] == 2 and x["stale"] is True
+    assert client.post("/ext", json={"bus": 2}).status_code == 409   # one per bus
+    v = client.put(f"/ext/{x['id']}/value", json={"p_kw": 7.5}).json()
+    assert abs(v["p_kw"] - 7.5) < 1e-9 and v["stale"] is False
+    assert client.put(f"/ext/{x['id']}/value", json={"p_kw": 99}).status_code == 422
+    batch = client.post("/ext/values", json=[{"id": x["id"], "p_kw": -5},
+                                             {"id": 999, "p_kw": 1}]).json()
+    assert len(batch["updated"]) == 1 and len(batch["errors"]) == 1
+    listed = client.get("/ext").json()["ext_nodes"]
+    assert len(listed) == 1 and abs(listed[0]["p_kw"] + 5.0) < 1e-9
+    assert client.delete(f"/ext/{x['id']}").json() == {"removed": x["id"]}
+    assert client.get("/ext").json()["ext_nodes"] == []
 
 
 def test_measurement_roundtrip(client):

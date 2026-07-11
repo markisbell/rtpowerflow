@@ -12,6 +12,7 @@ import pandapower as pp
 from . import battery as bat
 from . import control_runtime
 from . import der
+from . import ext
 from . import sweeps
 from .battery import MODES, Battery
 from .controller import SCOPES, Controller
@@ -41,6 +42,8 @@ class StepResult:
     controllers: list[dict[str, Any]] = field(default_factory=list)
     # activated rONTs (on-load tap changers) with their live tap positions
     ronts: list[dict[str, Any]] = field(default_factory=list)
+    # external nodes (live P/Q feed, ext.py): applied value + age + stale flag
+    ext_nodes: list[dict[str, Any]] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
     # Observability projection: what the placed measurement devices reveal (see
@@ -175,6 +178,10 @@ class Simulator:
         self.ronts: list[Ront] = []
         self._next_rid = 1
         self._ront_orig: dict[int, dict[str, Any]] = {}
+        # external nodes (live P/Q feed): per-simulator like batteries/meters,
+        # so placements reset on grid swap and deep-copy with the exporter
+        self.ext_nodes: list[ext.ExternalNode] = []
+        self._next_ext_id = 1
         self.prices: np.ndarray | None = None   # [n_days, 24] EUR/MWh, aligned to pv days
         self._loads_at: dict[int, list[int]] = {}
         for i, li in enumerate(self.prof.load_idx):
@@ -461,6 +468,20 @@ class Simulator:
     def remove_ev(self, load: int) -> bool:
         return der.remove_ev(self, load)
 
+    # ---- external nodes: live P/Q feed (ext.py) ---------------------------- #
+
+    def add_ext_node(self, bus: int, name: str | None = None,
+                     hold_s: float = 30.0, on_timeout: str = "hold",
+                     p_max_kw: float = 50.0) -> "ext.ExternalNode":
+        return ext.add_ext_node(self, bus, name, hold_s, on_timeout, p_max_kw)
+
+    def remove_ext_node(self, eid: int) -> bool:
+        return ext.remove_ext_node(self, eid)
+
+    def set_ext_value(self, eid: int, p_kw: float,
+                      q_kvar: float = 0.0) -> "ext.ExternalNode | None":
+        return ext.set_ext_value(self, eid, p_kw, q_kvar)
+
     def _rebuild_storage(self) -> None:
         """Recreate the pandapower storage table from ``self.batteries`` (keeps
         indices in sync after add/remove)."""
@@ -557,6 +578,10 @@ class Simulator:
         if p.ext_idx:
             self.net.ext_grid.loc[p.ext_idx, "vm_pu"] = p.ext_vm[:, t]
             self.net.ext_grid.loc[p.ext_idx, "va_degree"] = p.ext_va[:, t]
+        # external nodes override their (zeroed) profile row with the latest
+        # pushed value — BEFORE controller factors, which must not touch them
+        if self.ext_nodes:
+            ext.apply_ext_nodes(self, t)
         # overload controllers throttle EV/PV before the batteries react, so a
         # battery sees the actually available (curtailed) local generation/load
         if self.controllers:
@@ -619,6 +644,10 @@ class Simulator:
             now = time.monotonic()
             if t % raster == 0 and now - self._est_wall >= 2.0 * self._est_ms / 1000.0:
                 bats = {b.bus: b.power_mw for b in self.batteries}
+                # external nodes get the same rating-bounded pseudo treatment:
+                # their profile row is zero, so without this the WLS would pin
+                # the bus near 0 kW with a tiny std (overconfident + wrong)
+                bats.update({x.bus: x.p_max_kw / 1000.0 for x in self.ext_nodes})
                 est = self._estimator.run(self.net, res.measurements,
                                           self._sgen_day_mean(day), bats)
                 self._est_wall = time.monotonic()
@@ -655,6 +684,8 @@ class Simulator:
             timestamp=time.time(),
             error=error,
         )
+        if self.ext_nodes:      # placement status even on a failed solve
+            res.ext_nodes = [x.as_dict() for x in self.ext_nodes]
         if not converged:
             # No readings without a solve, but keep coverage so the UI can still
             # show where meters are placed.

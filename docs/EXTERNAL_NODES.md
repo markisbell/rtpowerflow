@@ -1,8 +1,15 @@
 # External nodes — live data feed for individual buses
 
-> **Status: PROPOSAL (2026-07-10).** Design draft ahead of the concept work
-> (whiteboard session); nothing is implemented yet. Decisions marked
-> *(open)* are explicitly up for discussion. Companion documents:
+> **Status: Phase 1 BUILT (backend, 2026-07-10) — phases 2–3 pending.**
+> Implemented: `src/netzsim/ext.py` + `api/ext.py` (5 routes), StepResult
+> `ext_nodes[]`, estimator pseudo widening, deterministic exporter replay;
+> pinned by `tests/test_ext.py` (8) + the API-surface roundtrip. The five open
+> questions were resolved by adopting the proposals as-is (concept board:
+> Miro "netzsim — External Nodes (Konzept)", decisions column). v1 scope:
+> **PQ injection only** · timeout policy **hold | zero** (no profile
+> fallback) · **full-day ring** for the received history (UI in phase 2) ·
+> **P/Q only**, no side channels · **no AuthN**, but a per-node value bound
+> `p_max_kw` (doubles as the estimator's pseudo width). Companion documents:
 > [`ARCHITECTURE.md`](ARCHITECTURE.md), [`VERTIKALE_INTEGRATION.md`](VERTIKALE_INTEGRATION.md).
 
 ## 1. Motivation
@@ -125,20 +132,22 @@ a WebSocket ingest or MQTT bridge can be added later as a thin adapter
 4. *(optional later)* WS/MQTT ingest adapter, `steerable` flag,
    voltage-controlled mode.
 
-## 8. Open questions (for the whiteboard)
+## 8. Decisions (resolved 2026-07-10, proposals adopted)
 
-1. **PQ only or also voltage control?** v1 proposal: PQ injection only.
-   A voltage-regulated node (PV node / ext_grid-like) changes solver
-   semantics and estimation assumptions — separate mode, later.
-2. **`on_timeout="profile"`?** Fall back to a configured profile instead
-   of hold/zero — useful for "device usually follows a profile, external
-   feed overrides when present"?
-3. **History depth** for the received-values graph (full day ring vs.
-   last N minutes)?
-4. **Multi-quantity feeds** — only P/Q, or also a temperature/price side
-   channel for future coupling experiments?
-5. **AuthN** — none today (local teaching tool); does an external-feed
-   interface change that judgement?
+1. **PQ only** in v1. A voltage-regulated node (PV node / ext_grid-like)
+   changes solver semantics and estimation assumptions — separate `mode`
+   flag, later phase if needed.
+2. **No `profile` fallback**: `on_timeout` is `hold | zero`. The
+   "device usually follows a profile, feed overrides" idea stays a noted
+   later option.
+3. **Full-day ring** (1440 slots, last value per minute) for the received
+   history; rendered by the node's profile panel in phase 2.
+4. **P/Q only** — no temperature/price side channels until a concrete
+   coupling experiment needs them.
+5. **No AuthN** (consistent with the rest of the local teaching API);
+   protection = validation only. Each node carries a bound `p_max_kw`
+   (default 50): the API rejects values beyond it, and the estimator uses
+   it as the width of the node's rating-bounded pseudo-measurement.
 
 ## 9. Component fit
 

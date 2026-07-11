@@ -23,7 +23,7 @@ from ..realpv import load_prices, load_pv_days
 from ..recorder import Recorder
 from ..simulator import Simulator
 from ..state import StateStore
-from . import control, core, equipment, grids, measurements, recordings, scenarios
+from . import control, core, equipment, ext, grids, measurements, recordings, scenarios
 from .measurements import EstimationConfigModel
 from .runtime import API_VERSION, App, _active_meta, _recording_meta, runtime
 
@@ -89,6 +89,7 @@ app.include_router(core.router)
 app.include_router(control.router)
 app.include_router(recordings.router)
 app.include_router(equipment.router)
+app.include_router(ext.router)
 app.include_router(measurements.router)
 app.include_router(grids.router)
 app.include_router(scenarios.router)
