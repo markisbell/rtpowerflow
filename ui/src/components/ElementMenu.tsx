@@ -16,6 +16,7 @@ export interface MenuTarget {
 export default function ElementMenu({
   target, hasBattery, hasMeter, hasPv, hasEv, hasController, controllerLabel,
   hasRont, onAddRont, onRemoveRont,
+  hasExt, onAddExt, onRemoveExt,
   onGraph, onAddBattery, onRemoveBattery, onPlaceMeter, onRemoveMeter,
   onAddPv, onAddEv, onRemovePv, onRemoveEv,
   onAddController, onRemoveController, onClose,
@@ -32,6 +33,10 @@ export default function ElementMenu({
   hasRont?: boolean;
   onAddRont?: () => void;
   onRemoveRont?: () => void;
+  /** external node (live P/Q feed) — buses only */
+  hasExt?: boolean;
+  onAddExt?: () => void;
+  onRemoveExt?: () => void;
   onGraph: () => void;
   onAddBattery: () => void;
   onRemoveBattery: () => void;
@@ -86,6 +91,9 @@ export default function ElementMenu({
         {target.kind === "bus" && (hasEv
           ? item(`🔌 ${t("menu.removeEv")}`, onRemoveEv)
           : item(`🔌 ${t("menu.addEv")}`, onAddEv))}
+        {target.kind === "bus" && onAddExt && (hasExt
+          ? item(`📡 ${t("menu.removeExt")}`, onRemoveExt ?? (() => {}))
+          : item(`📡 ${t("menu.addExt")}`, onAddExt))}
       </div>
     </>
   );

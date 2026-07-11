@@ -8,6 +8,7 @@ import { api } from "./api";
 import type {
   Battery,
   BatteryMode,
+  ExtNode,
   GridController,
   MeasurementsResponse,
   MeterMode,
@@ -87,6 +88,25 @@ export function useEquipment() {
     addController, removeController, setControllerLimit,
     addRont, removeRont, setRontTarget,
   };
+}
+
+/** External nodes (live P/Q feed per bus): placement list + CRUD. The live
+ *  values arrive per step via StepResult.ext_nodes; this hook only tracks
+ *  WHICH buses carry a node (badges, menu state, section lifetime). */
+export function useExtNodes() {
+  const [extNodes, setExtNodes] = useState<ExtNode[]>([]);
+
+  const reloadExt = () => api.extNodes()
+    .then((r) => setExtNodes(r.ext_nodes)).catch(() => {});
+
+  const addExtNode = async (bus: number) => {
+    try { await api.addExtNode({ bus }); } finally { reloadExt(); }
+  };
+  const removeExtNode = async (id: number) => {
+    try { await api.removeExtNode(id); } finally { reloadExt(); }
+  };
+
+  return { extNodes, reloadExt, addExtNode, removeExtNode };
 }
 
 /** Meter placement + per-device TAF fidelity. `meterStamp` bumps on every

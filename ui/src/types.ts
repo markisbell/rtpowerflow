@@ -243,8 +243,34 @@ export interface StepResult {
   batteries: { index: number; bus: number; name: string; mode: BatteryMode; soc_percent: number; p_mw: number; capacity_kwh: number; power_kw: number }[];
   controllers?: GridController[];
   ronts?: RontInfo[];
+  ext_nodes?: ExtNode[];
   summary?: StepSummary;
   error: string | null;
+}
+
+/** An external node: a bus whose injection is pushed live from outside
+ *  (mailbox + sample-and-hold, docs/EXTERNAL_NODES.md). `p_kw` is the value
+ *  the engine currently APPLIES (signed: + consumption, − feed-in); `stale`
+ *  means the last telegram is older than `hold_s` (never-fed counts too). */
+export interface ExtNode {
+  id: number;
+  bus: number;
+  name: string;
+  p_kw: number;
+  q_kvar: number;
+  age_s: number | null;
+  stale: boolean;
+  hold_s: number;
+  on_timeout: "hold" | "zero";
+  p_max_kw: number;
+}
+/** The node's received-value day ring: applied kW per step, null = not seen. */
+export interface ExtHistory {
+  id: number;
+  bus: number;
+  name: string;
+  steps_per_day: number;
+  p_kw: (number | null)[];
 }
 
 /** A placed overload controller (netzdienliche Steuerung): throttles EV

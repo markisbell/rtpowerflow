@@ -296,6 +296,24 @@ const en = {
     removeBattery: "Remove battery",
     addPv: "Add PV system", addEv: "Add EV charging",
     removePv: "Remove PV system", removeEv: "Remove EV charging",
+    addExt: "Attach external source", removeExt: "Remove external source",
+  },
+
+  ext: {
+    title: "External source",
+    applied: "applied value",
+    age: "last telegram",
+    ageVal: "{{s}} s ago",
+    never: "no telegram yet",
+    stale: "source silent for {{s}} s — {{policy}}",
+    staleNever: "no telegram received yet — {{policy}}",
+    policyHold: "the last value is held",
+    policyZero: "the value drops to 0",
+    hold: "hold on timeout",
+    zero: "zero on timeout",
+    bound: "value bound",
+    history: "received",
+    feedHint: "Feed live values: PUT /api/ext/{{id}}/value with {\"p_kw\": …} (signed: + load, − feed-in).",
   },
 
   scen: {
@@ -641,6 +659,24 @@ const de: typeof en = {
     removeBattery: "Batterie entfernen",
     addPv: "PV-Anlage hinzufügen", addEv: "E-Auto-Ladung hinzufügen",
     removePv: "PV-Anlage entfernen", removeEv: "E-Auto-Ladung entfernen",
+    addExt: "Externe Quelle anbinden", removeExt: "Externe Quelle entfernen",
+  },
+
+  ext: {
+    title: "Externe Quelle",
+    applied: "angewandter Wert",
+    age: "letztes Telegramm",
+    ageVal: "vor {{s}} s",
+    never: "noch kein Telegramm",
+    stale: "Quelle stumm seit {{s}} s — {{policy}}",
+    staleNever: "noch kein Telegramm empfangen — {{policy}}",
+    policyHold: "der letzte Wert wird gehalten",
+    policyZero: "der Wert fällt auf 0",
+    hold: "bei Timeout halten",
+    zero: "bei Timeout auf 0",
+    bound: "Wertgrenze",
+    history: "empfangen",
+    feedHint: "Live-Werte einspeisen: PUT /api/ext/{{id}}/value mit {\"p_kw\": …} (vorzeichenbehaftet: + Last, − Einspeisung).",
   },
 
   scen: {

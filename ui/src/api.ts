@@ -7,6 +7,8 @@ import type {
   BatteryMode,
   BatteryProfiles,
   EngineStatus,
+  ExtHistory,
+  ExtNode,
   GridController,
   RontInfo,
   GridPreview,
@@ -144,6 +146,14 @@ export const api = {
   removeController: (id: number) => del<{ removed: number }>(`/controller/${id}`),
   setControllerLimit: (id: number, limit_pct: number) =>
     post<{ controllers: GridController[] }>(`/controller/${id}/config?limit_pct=${limit_pct}`),
+  // external nodes: live P/Q feed per bus (docs/EXTERNAL_NODES.md)
+  extNodes: () => get<{ ext_nodes: ExtNode[] }>("/ext"),
+  addExtNode: (body: { bus: number; name?: string; hold_s?: number;
+                       on_timeout?: "hold" | "zero"; p_max_kw?: number }) =>
+    post<ExtNode>("/ext", body),
+  removeExtNode: (id: number) => del<{ removed: number }>(`/ext/${id}`),
+  extHistory: (id: number) => get<ExtHistory>(`/ext/${id}/history`),
+
   ronts: () => get<{ ronts: RontInfo[] }>("/ronts"),
   addRont: (body: { trafo: number; v_target?: number; deadband?: number }) =>
     post<RontInfo>("/ront", body),

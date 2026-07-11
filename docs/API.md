@@ -385,6 +385,17 @@ Body (`ExtCreateRequest`):
 | `on_timeout` | 'hold' \| 'zero' | 'hold' |
 | `p_max_kw` | number | 50.0 |
 
+### `GET /ext/{eid}/history`
+
+The node's received-value day ring: the APPLIED kW per step of the
+current day (null = the engine has not passed that step since the node
+was placed). This is the node's 'day graph' — an external node has no
+forecast, only what actually arrived.
+
+| parameter | in | type | required |
+|---|---|---|---|
+| `eid` | path | integer | yes |
+
 ### `PUT /ext/{eid}/value`
 
 THE hot path: push a setpoint into the node's mailbox (latest wins;

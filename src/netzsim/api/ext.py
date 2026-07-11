@@ -53,6 +53,19 @@ async def add_ext_node(req: ExtCreateRequest):
     return x.as_dict()
 
 
+@router.get("/ext/{eid}/history")
+def ext_history(eid: int):
+    """The node's received-value day ring: the APPLIED kW per step of the
+    current day (null = the engine has not passed that step since the node
+    was placed). This is the node's 'day graph' — an external node has no
+    forecast, only what actually arrived."""
+    x = next((n for n in runtime.engine.sim.ext_nodes if n.eid == eid), None)
+    if x is None:
+        raise HTTPException(404, f"no external node {eid}")
+    return {"id": x.eid, "bus": x.bus, "name": x.name,
+            "steps_per_day": len(x.history), "p_kw": x.history}
+
+
 @router.put("/ext/{eid}/value")
 async def set_ext_value(eid: int, req: ExtValueRequest):
     """THE hot path: push a setpoint into the node's mailbox (latest wins;
