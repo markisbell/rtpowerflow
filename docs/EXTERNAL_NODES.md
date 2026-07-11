@@ -1,14 +1,20 @@
 # External nodes — live data feed for individual buses
 
-> **Status: phases 1–2 BUILT (backend 2026-07-10, UI 2026-07-11) — phase 3
-> pending.** Backend: `src/netzsim/ext.py` + `api/ext.py` (6 routes incl.
+> **Status: ALL PHASES 1–3 BUILT (backend 2026-07-10, UI + demo feeder +
+> scenario persistence + manual chapter 2026-07-11).**
+> Backend: `src/netzsim/ext.py` + `api/ext.py` (6 routes incl.
 > `GET /ext/{eid}/history`), StepResult `ext_nodes[]`, estimator pseudo
 > widening, deterministic exporter replay; pinned by `tests/test_ext.py`
 > (8) + the API-surface roundtrip. UI: element-menu item „📡 Externe Quelle
 > anbinden" (buses), 📡 badge on map/schematic, section block (applied
 > kW/kvar, telegram age, ⚠ stale warning with the policy consequence,
 > remove) + `ExtHistoryGraph` rendering the received-value day ring
-> (polls the history endpoint every 5 s), i18n DE/EN. The five open
+> (polls the history endpoint every 5 s), i18n DE/EN. Phase 3:
+> `scripts/ext_feed.py` (reference feeder client — synthetic sine PV or the
+> real Pi rooftop-PV InfluxDB, verified live against both), scenario recipes
+> persist placements (`ext_nodes[]`, values start fresh/stale on load),
+> manual chapter „Externe Quellen" (ch:extern, 51 pp) with the ui-extern
+> screenshot. The five open
 > questions were resolved by adopting the proposals as-is (concept board:
 > Miro "netzsim — External Nodes (Konzept)", decisions column). v1 scope:
 > **PQ injection only** · timeout policy **hold | zero** (no profile
@@ -139,7 +145,8 @@ a WebSocket ingest or MQTT bridge can be added later as a thin adapter
 2. **UI** — placement, badge, live section, i18n (DE/EN). *Built (see §6).*
 3. **Demo feeder + manual chapter** — example client script (candidate:
    the Pi solar InfluxDB polled at 1 Hz → `PUT /ext/{id}/value`), scenario
-   persistence, Benutzerhandbuch section.
+   persistence, Benutzerhandbuch section. *Built: `scripts/ext_feed.py`
+   (sources `sine` | `pi`), recipe field `ext_nodes[]`, manual ch:extern.*
 4. *(optional later)* WS/MQTT ingest adapter, `steerable` flag,
    voltage-controlled mode.
 

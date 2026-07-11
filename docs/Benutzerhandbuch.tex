@@ -1047,6 +1047,130 @@ Preis-Batterie kauft dann genau dann ein, wenn auch das Netz
 entlastet werden müsste.
 
 % ===================================================================
+\chapter{Externe Quellen: Live-Daten an einzelnen Knoten}
+\label{ch:extern}
+
+Neben synthetischen Tagesprofilen und aufgezeichneten PV-Messtagen
+(Kapitel~\ref{ch:realpv}) kennt netzsim eine dritte Datenquelle: den
+\emph{externen Knoten}. Seine Einspeisung bzw.\ Last wird nicht aus
+einem Profil gelesen, sondern \emph{live von außen} gesetzt --- ein
+vollständig ferngesteuerter Knoten mitten im simulierten Netz.
+Typische Anwendungen:
+
+\begin{itemize}[nosep]
+  \item \textbf{Hardware-in-the-Loop:} ein reales Gerät (Laboraufbau,
+    Wechselrichter, Smart-Meter-Auslesung) speist seine Messwerte in
+    das simulierte Netz ein.
+  \item \textbf{Co-Simulation:} ein externes Skript oder
+    Energiemanagementsystem spielt einen Haushalt und reagiert auf
+    das, was es beobachtet.
+  \item \textbf{Echte Live-Daten:} etwa eine reale Dach-PV-Anlage als
+    Live-Feed statt aufgezeichneter Tageskurven.
+  \item \textbf{Interaktive Lehre:} eine zweite Person steuert von
+    ihrem Laptop aus ,,ihr`` Haus, während die Gruppe zusieht, wie
+    das Netz reagiert.
+\end{itemize}
+
+\section{Anbinden und beobachten}
+
+Ein Klick auf einen Knoten öffnet das Element-Menü;
+\ui{Externe Quelle anbinden} legt den externen Knoten dort an. Auf
+Karte und Schema markiert ihn ein Antennen-Symbol, und seine
+Seitenleisten-Sektion bleibt --- wie bei einer Batterie --- dauerhaft
+bestehen. Sie zeigt (Abbildung~\ref{fig:ui-extern}):
+
+\begin{itemize}[nosep]
+  \item den \textbf{angewandten Wert} in kW/kvar --- vorzeichenbehaftet:
+    positiv = Last, negativ = Einspeisung;
+  \item das \textbf{Alter des letzten Telegramms} in Sekunden;
+  \item die \textbf{Wertgrenze} ($\pm$50\,kW ab Werk) und die
+    Timeout-Richtlinie;
+  \item den Graphen \ui{empfangen}: die tatsächlich angekommenen Werte
+    des laufenden Tages. Ein externer Knoten hat keine Zukunft --- wo
+    andere Knoten ihre Profil-Tageskurve zeigen, zeigt er nur, was
+    bereits eintraf.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{ui-extern}
+  \caption{Externe Quelle am Strangende: Der Knoten empfängt live
+    $-6{,}4$\,kW Einspeisung (Antennen-Symbol am Knoten, Sektion
+    rechts). Der \emph{empfangen}-Graph ist der Tagesring der
+    tatsächlich angekommenen Werte --- eine Prognose gibt es für
+    einen ferngesteuerten Knoten nicht.}
+  \label{fig:ui-extern}
+\end{figure}
+
+\section{Briefkasten mit Sample-and-Hold}
+
+Die Engine wartet nie auf das Netzwerk: Externe Clients
+\emph{schieben} Sollwerte, wann immer sie wollen; die Simulation liest
+pro Rechenschritt den \emph{jüngsten} Wert (Briefkasten-Prinzip,
+,,latest wins``). Bleiben die Telegramme aus, wird der Knoten nach
+\texttt{hold\_s} Sekunden (Vorgabe 30) als \textbf{stumm} markiert ---
+die Sektion zeigt dann eine Warnung mitsamt der Konsequenz der
+gewählten Richtlinie:
+
+\begin{description}
+  \item[\texttt{hold}] der letzte Wert wird eingefroren
+    weiterverwendet (Vorgabe);
+  \item[\texttt{zero}] der Knoten fällt auf 0\,kW zurück.
+\end{description}
+
+Ein stummer Feed ist damit \emph{sichtbar}, verfälscht die Simulation
+aber nie unbemerkt. Die Wertgrenze \texttt{p\_max\_kw} schützt in
+beide Richtungen: Werte darüber weist die API ab, und die
+Zustandsschätzung (Kapitel~\ref{ch:observability}) verwendet dieselbe
+Grenze als Unsicherheit des Knotens --- ein unbeobachteter externer
+Knoten ist für den Netzbetreiber bewusst der am schwersten schätzbare.
+Überlast-Regler und Netzampel fassen externe Knoten grundsätzlich
+nicht an: ,,ferngesteuert`` heißt, die Steuerbox hat dort keinen
+Hebel.
+
+\section{Werte einspeisen}
+
+Der heiße Pfad ist ein einzelner REST-Aufruf --- jede Sprache, jedes
+Tool mit HTTP genügt:
+
+\begin{lstlisting}
+curl -X PUT http://localhost:8000/ext/1/value \
+     -H "Content-Type: application/json" \
+     -d '{"p_kw": -6.4}'
+\end{lstlisting}
+
+Als Referenz-Client liegt \texttt{scripts/ext\_feed.py} bei. Er legt
+den Knoten bei Bedarf selbst an und schiebt einmal pro Sekunde einen
+Wert:
+
+\begin{lstlisting}
+# synthetische PV-Halbwelle, kein Zubehoer noetig:
+python scripts/ext_feed.py --bus 3
+
+# reale Dach-PV aus einer InfluxDB (Raspberry Pi),
+# 600-W-Anlage auf ein 15-kW-Dach skaliert:
+python scripts/ext_feed.py --bus 3 --source pi --scale 25
+\end{lstlisting}
+
+\begin{beispiel}[Der Stumm-Fall gehört zur Vorführung]
+Das Skript mit \texttt{Strg+C} zu stoppen ist Teil der Demo: Nach
+\texttt{hold\_s} Sekunden erscheint die Warnung ,,Quelle stumm``, und
+je nach Richtlinie hält der Knoten seinen letzten Wert oder fällt
+hörbar auf 0\,kW --- auf der Karte springt die Leitungsfärbung. So
+wird diskutierbar, was ein Netzbetreiber mit ausgefallenen
+Live-Feeds tun sollte.
+\end{beispiel}
+
+Externe Knoten sind Teil der Szenario-Rezepte
+(Kapitel~\ref{ch:scenarios}): Gespeichert wird die \emph{Platzierung}
+(Knoten, Name, Timeout-Richtlinie, Wertgrenze), nie der letzte
+Live-Wert --- ein geladenes Szenario startet mit stummen, frischen
+Knoten. Der Daten-Export (Kapitel~\ref{ch:export}) spielt Tage
+deterministisch nach; externe Knoten liefern dabei 0\,kW, denn ein
+Export darf nicht davon abhängen, was ein Live-Feed zufällig gerade
+sendete.
+
+% ===================================================================
 \chapter{Szenarien}
 \label{ch:scenarios}
 
