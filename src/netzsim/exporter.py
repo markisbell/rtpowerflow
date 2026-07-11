@@ -32,6 +32,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
+from .ext import reset_ext_values
 from .recorder import Recorder
 
 log = logging.getLogger("netzsim.exporter")
@@ -140,6 +141,9 @@ class BulkExporter:
         sim._est_last = None
         sim._est_ms = 0.0
         sim._est_wall = float("inf") if not estimate else 0.0
+        # external nodes: forget the live mailbox so a replay never depends
+        # on what a feed happened to send (nodes start silent = 0 kW)
+        reset_ext_values(sim)
         for b in sim.batteries:
             b.soc_mwh = 0.5 * b.capacity_mwh
         for c in sim.controllers:

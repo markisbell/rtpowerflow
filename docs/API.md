@@ -361,6 +361,66 @@ Remove an EV charging load.
 | `load` | path | integer | yes |
 
 
+## External nodes
+
+Live P/Q feed for individual buses — fully controlled nodes, see `docs/EXTERNAL_NODES.md` (`api/ext.py`).
+
+### `GET /ext`
+
+Placed external nodes with their live status (applied value, telegram
+age, stale flag).
+
+### `POST /ext`
+
+Attach an external node at a bus: from now on the bus's injection is
+fully controlled by pushed values (one node per bus).
+
+Body (`ExtCreateRequest`):
+
+| field | type | default |
+|---|---|---|
+| `bus` | integer | required |
+| `name` | string \| null | — |
+| `hold_s` | number | 30.0 |
+| `on_timeout` | 'hold' \| 'zero' | 'hold' |
+| `p_max_kw` | number | 50.0 |
+
+### `PUT /ext/{eid}/value`
+
+THE hot path: push a setpoint into the node's mailbox (latest wins;
+the engine samples it non-blocking on its next tick).
+
+| parameter | in | type | required |
+|---|---|---|---|
+| `eid` | path | integer | yes |
+
+Body (`ExtValueRequest`):
+
+| field | type | default |
+|---|---|---|
+| `p_kw` | number | required |
+| `q_kvar` | number | 0.0 |
+
+### `POST /ext/values`
+
+Batch variant for multi-node feeders — tolerant per entry (unknown ids
+and out-of-bound values are reported, valid entries still apply).
+
+Body (`body`):
+
+| field | type | default |
+|---|---|---|
+
+### `DELETE /ext/{eid}`
+
+Detach an external node (the bus falls back to its grid profile — for
+an external node's zeroed row that means 0 kW).
+
+| parameter | in | type | required |
+|---|---|---|---|
+| `eid` | path | integer | yes |
+
+
 ## Observability & estimation
 
 Meter placement (per-device TAF fidelity) and the WLS estimation policy (`api/measurements.py`).

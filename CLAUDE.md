@@ -76,6 +76,10 @@ EchtzeitNetzSimulator/
 │   │                         #   (tests/test_sweeps.py pins TAF raster + deepcopy independence)
 │   ├── der.py                #   runtime PV/EV mutators, node_der, DER journal (apply_der_op)
 │   ├── control_runtime.py    #   controller/rONT per-step passes (domain views, signals, taps)
+│   ├── ext.py                # EXTERNAL NODES (live P/Q feed per bus, docs/EXTERNAL_NODES.md):
+│   │                         #   mailbox + sample-and-hold, staleness hold|zero, p_max_kw bound
+│   │                         #   (= estimator pseudo width), day ring; applied in _apply_step
+│   │                         #   BEFORE controller factors; exporter replay resets mailboxes
 │   ├── measurements.py       # OBSERVABILITY layer: MeasurementSet (meter placement + observe(net))
 │   ├── engine.py             # async realtime loop (tick, day-wrap, pause/seek)
 │   ├── state.py              # latest + history ring buffer + WS broadcast (+ strict-mode truth strip, recorder sink)
@@ -227,6 +231,11 @@ default to zeros if omitted.
 | POST | `/loadgen/assign` | Body `{grid_id, policy}` → preview net curve (load + EV − PV) + assignment + `trafo_sn_mva`, `n_households`, `n_mfh` |
 | POST | `/config/apply` | Body `{grid_id, loadgen?}` → convert (+ LPG loads, EV, PV) + `engine.reconfigure` |
 | GET | `/config/active` | Currently loaded grid metadata (id, name, counts, source, load_source, n_ev, n_pv, notes) |
+| GET | `/ext` | External nodes with live status (applied value, telegram age, stale) |
+| POST | `/ext` | Attach an external node at a bus (`{bus, name?, hold_s?, on_timeout?, p_max_kw?}`; one per bus → 409) |
+| PUT | `/ext/{eid}/value` | HOT PATH: push a setpoint `{p_kw, q_kvar?}` (signed; latest wins; > p_max_kw → 422) |
+| POST | `/ext/values` | Batch variant, tolerant per entry (`{updated[], errors[]}`) |
+| DELETE | `/ext/{eid}` | Detach an external node |
 | GET | `/measurements` | Meter placement (`node_buses`, `trafo_idxs`), `coverage`, `presets`, `expose_ground_truth` |
 | POST | `/measurements/node` | Body `{bus}` → install a smart meter at a bus |
 | DELETE | `/measurements/node/{bus}` | Remove a node's smart meter |
@@ -404,6 +413,11 @@ eyeballed in the browser.
 - **No result persistence in netzsim** beyond the in-memory ring buffer
   (`HISTORY_SIZE`). InfluxDB is the durable store; netzsim itself forgets history
   on restart.
+- **External nodes (docs/EXTERNAL_NODES.md): Phase 1 (backend) is BUILT**
+  (2026-07-10, `ext.py` + `api/ext.py`, 157 tests total). Remaining: Phase 2
+  (UI: 📡 placement via element menu, live section with stale warning, day
+  ring graph), Phase 3 (demo feeder client — candidate: the Pi solar
+  InfluxDB — + scenario persistence of placements + Handbuch chapter).
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
 - **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT

@@ -39,6 +39,10 @@ GROUPS: list[tuple[str, str, list[str]]] = [
                           "runs (`api/equipment.py`).",
      ["/batteries", "/battery", "/controllers", "/controller", "/ronts",
       "/ront", "/node/{bus}/der", "/pv", "/ev"]),
+    ("External nodes", "Live P/Q feed for individual buses — fully "
+                       "controlled nodes, see `docs/EXTERNAL_NODES.md` "
+                       "(`api/ext.py`).",
+     ["/ext"]),
     ("Observability & estimation", "Meter placement (per-device TAF "
                                    "fidelity) and the WLS estimation policy "
                                    "(`api/measurements.py`).",
