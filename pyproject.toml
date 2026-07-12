@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "netzsim"
 version = "0.1.0"
 description = "Lightweight realtime power-flow time-series simulation built on pandapower"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "pandapower>=3.0,<4",

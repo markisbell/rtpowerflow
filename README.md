@@ -1,5 +1,16 @@
 # netzsim — a realtime distribution-grid teaching platform
 
+![license](https://img.shields.io/badge/license-MIT-blue)
+![AI-generated](https://img.shields.io/badge/source-AI--generated-8A2BE2)
+
+> [!NOTE]
+> **AI-generated code.** The source code, tests and documentation of this
+> platform — including the German user manual — were written by an AI coding
+> agent (Claude Code, Anthropic), working under human direction: a person
+> specified the requirements and domain decisions, reviewed the results and
+> verified every feature live against the running system. Treat it
+> accordingly — read before you trust.
+
 netzsim runs a **continuous time-series power flow** on a distribution grid with
 [pandapower](https://github.com/e2nIEE/pandapower) and turns it into an
 interactive teaching tool for grid operation, observability and control. It
@@ -190,3 +201,21 @@ pip install -e ".[dev]"   # or: pip install pytest httpx
 pytest                    # backend suite
 cd ui && npm run build    # type-check + build the frontend
 ```
+
+---
+
+## License
+
+The source code (backend, UI, collector, scripts) and the documentation are
+licensed under the [MIT License](LICENSE). All runtime dependencies are
+permissively licensed (pandapower/numpy/pandas/uvicorn/Leaflet: BSD;
+FastAPI/pydantic/React/i18next/Vite: MIT); Grafana (AGPL-3.0) and InfluxDB
+are only *operated* as separate containers, not linked or embedded.
+
+The committed grid **dataset** under `data/` is derived from
+[OpenStreetMap](https://www.openstreetmap.org/copyright) data
+(© OpenStreetMap contributors, [ODbL](https://opendatacommons.org/licenses/odbl/)) —
+generated with [ding0](https://github.com/openego/ding0) and this project's
+own street-routing — and the household profiles were generated with the
+[LoadProfileGenerator](https://www.loadprofilegenerator.de/). The map view
+uses CARTO/OSM tiles with attribution at runtime.
