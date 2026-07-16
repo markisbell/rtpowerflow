@@ -1,11 +1,22 @@
 # Benchmark plan: validating netzsim against OpenDSS and MATPOWER
 
-> **Status: PLANNED (2026-07-16) — this document is the execution plan for a
-> coding agent.** Nothing under `benchmarks/` exists yet. The plan was
-> researched against the July-2026 state of the toolchains (exact versions
-> below, every claim source-checked); an implementing agent should still
-> re-verify version pins at execution time and update this document as
-> sections land (mark them ✅ BUILT, like `EXTERNAL_NODES.md` did).
+> **Status: Phase 0 ✅ BUILT (2026-07-16) — phases 1–4 planned.** The
+> environment stands and `benchmarks/check_env.py` is green on all six
+> checks (Python 3.12.10 in `.venv-bench`, pandapower 3.4.0,
+> OpenDSSDirect.py 0.9.4 [AltDSS engine, OpenDSS SVN 3723 base],
+> py-dss-interface 2.3.0 [**official EPRI engine 11.0.0.1
+> "Charlottesville"** — the same version as the current SourceForge
+> installer], Octave 11.3.0 portable at `C:\Users\bell\octave\`,
+> MATPOWER 8.1). Two Phase-0 findings baked into this plan:
+> (a) **oct2py 6.x is incompatible with pandapower 3.4.0** (scipy>=1.17.1
+> vs scipy<1.17) — pin `oct2py==5.8.0`; (b) **py-dss-interface's
+> `text()` hangs in non-interactive shells** — `check_env` reads the
+> engine version via the property API, and Phase 1 must clarify the
+> command-driving path for that engine (candidates: run it under a real
+> terminal, or drive `.dss` files via OpenDSSDirect.py and use
+> py-dss-interface only for the cross-check solve). The plan was
+> researched against the July-2026 state of the toolchains; the
+> implementing agent updates this header as further phases land.
 
 ## 1. Goal and trust argument
 
@@ -78,7 +89,9 @@ OpenDSSDirect.py==0.9.4    # dss-extensions AltDSS engine (pip, cross-platform)
 py-dss-interface==2.3.0    # bundles the OFFICIAL "OpenDSS Powered by EPRI" C++ engine (Windows)
 # --- MATPOWER via Octave ---
 matpower==8.1.0.2.3.0      # bundles real MATPOWER 8.1 (yasirroni/matpower-pip)
-oct2py==6.0.3              # Octave bridge (needs Python >= 3.11)
+oct2py==5.8.0              # Octave bridge — NOT 6.x: oct2py 6.x requires
+                           # scipy>=1.17.1, pandapower 3.4.0 pins scipy<1.17
+                           # (found the hard way during Phase 0)
 ```
 
 ### 3.2 GNU Octave (for real MATPOWER)
