@@ -1,0 +1,18 @@
+{
+  "fixture": "g2_lv_suburban",
+  "engine": "altdss",
+  "steps": 1440,
+  "trafo_model": "aligned (magnetizing zeroed, plan \u00a75.2)",
+  "max_dv_pu": 5.129017404215119e-07,
+  "mean_dv_pu": 2.4676978950738735e-07,
+  "max_dv_volt": 0.00020516069616860477,
+  "max_di_a": 0.0005113441093982374,
+  "mean_di_a": 0.00021805313153498154,
+  "worst_bus": 30,
+  "worst_step": 886,
+  "wall_s": 0.4,
+  "gate_dv_pu": 1e-05,
+  "fail_dv_pu": 0.0001,
+  "gate_di_a": 0.1,
+  "pass": true
+}

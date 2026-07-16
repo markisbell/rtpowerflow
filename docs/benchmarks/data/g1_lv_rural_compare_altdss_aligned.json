@@ -1,0 +1,18 @@
+{
+  "fixture": "g1_lv_rural",
+  "engine": "altdss",
+  "steps": 1440,
+  "trafo_model": "aligned (magnetizing zeroed, plan \u00a75.2)",
+  "max_dv_pu": 5.07909580278465e-07,
+  "mean_dv_pu": 2.415809814194087e-07,
+  "max_dv_volt": 0.000203163832111386,
+  "max_di_a": 0.0005048670659449916,
+  "mean_di_a": 0.0002071728828236447,
+  "worst_bus": 20,
+  "worst_step": 711,
+  "wall_s": 0.2,
+  "gate_dv_pu": 1e-05,
+  "fail_dv_pu": 0.0001,
+  "gate_di_a": 0.1,
+  "pass": true
+}

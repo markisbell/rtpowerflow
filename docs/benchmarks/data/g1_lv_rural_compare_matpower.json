@@ -1,0 +1,13 @@
+{
+  "fixture": "g1_lv_rural",
+  "engine": "matpower-8.1-octave",
+  "steps": 1440,
+  "trafo_model": "aligned (magnetizing zeroed, plan \u00a75.2)",
+  "max_dv_pu": 5.061150647467372e-07,
+  "mean_dv_pu": 2.4157667100688947e-07,
+  "worst_bus": 20,
+  "worst_step": 711,
+  "wall_s": 131.7,
+  "gate_dv_pu": 1e-05,
+  "pass": true
+}

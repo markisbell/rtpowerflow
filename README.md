@@ -2,6 +2,7 @@
 
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![AI-generated](https://img.shields.io/badge/source-AI--generated-8A2BE2)
+![validated](https://img.shields.io/badge/validated-OpenDSS%20%7C%20MATPOWER-brightgreen)
 
 > [!NOTE]
 > **AI-generated code.** The source code, tests and documentation of this
@@ -201,6 +202,21 @@ pip install -e ".[dev]"   # or: pip install pytest httpx
 pytest                    # backend suite
 cd ui && npm run build    # type-check + build the frontend
 ```
+
+---
+
+## Validation
+
+netzsim's physics is **benchmarked against OpenDSS (EPRI) and real MATPOWER
+8.1** — full report with error tables, daily profile overlays and exact
+engine versions in [`docs/benchmarks/`](docs/benchmarks/README.md), method
+and reproduction steps in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+Headline numbers: on byte-identical IEEE cases (14/30/118-bus) pandapower
+and MATPOWER agree to **≤ 2.6e-10 pu**; the committed teaching grids
+(30–475 buses) simulated over full 1440-step days agree with OpenDSS and
+MATPOWER to **≈ 5e-7 pu (0.2 mV)** per step. Inputs are frozen fixtures
+(`benchmarks/fixtures/`), regenerate everything with
+`python benchmarks/run_all.py`.
 
 ---
 

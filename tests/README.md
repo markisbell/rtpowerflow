@@ -69,6 +69,7 @@ GitHub-side).
 | `test_exporter.py` | Bulk export: offline replay reproduces LIVE physics (batteries across midnight, meter raster), honors the estimate switch, reports progress, cancels into a finalized partial pack, refuses concurrent runs. |
 | `test_scenarios.py` | Scenario recipes: the DER journal captures runtime mutations coalesced, and replaying journal + batteries + meters on a FRESH simulator reproduces the setup. |
 | `test_scenario4.py` | Reference scenario 4 recipe sanity: pins the committed artifact's structure (42 wallbox blocks, 42 Steuerboxen, clock) and that the trimmed picker manifest carries its district. |
+| `test_benchmark_fixtures.py` | The frozen validation fixtures (`benchmarks/fixtures/`) load, build, solve, and still match their MANIFEST metadata incl. the noon-physics anchor — trips BEFORE a pipeline change silently invalidates the published OpenDSS/MATPOWER benchmark numbers (no OpenDSS/Octave needed here). |
 
 ## Conventions worth knowing
 
