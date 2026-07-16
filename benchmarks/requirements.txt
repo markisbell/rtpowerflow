@@ -1,0 +1,18 @@
+# Benchmark harness environment (docs/BENCHMARKS.md §3) — Python 3.12 venv.
+# Pins verified 2026-07-16; the dev venv (3.14) is NOT suitable: the
+# dss-extensions wheels are only tested up to CPython 3.12.
+pandapower==3.4.0          # the version under test (same as the dev venv)
+numpy>=1.26,<2.4           # pandapower 3.4.0's own range
+scipy>=1.11,<1.17          # pandapower 3.4.0 pins scipy<1.17
+matplotlib>=3.8            # result plots
+
+# --- OpenDSS: two engines, deliberate redundancy (plan §3.3) ---
+OpenDSSDirect.py==0.9.4    # dss-extensions AltDSS engine (portable leg)
+py-dss-interface==2.3.0    # bundles the OFFICIAL "OpenDSS Powered by EPRI" engine
+
+# --- real MATPOWER 8.1 via Octave ---
+matpower==8.1.0.2.3.0      # yasirroni/matpower-pip, bundles MATPOWER 8.1
+# oct2py 6.x requires scipy>=1.17.1 which collides with pandapower 3.4.0's
+# scipy<1.17 pin — 5.8.0 (scipy>=0.17) is the newest compatible release and
+# satisfies matpower-pip's oct2py>=5.7.0.
+oct2py==5.8.0
