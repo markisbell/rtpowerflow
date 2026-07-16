@@ -31,12 +31,19 @@ from netzsim.data_loader import load_inputs   # noqa: E402
 from netzsim.simulator import Simulator       # noqa: E402
 
 
-def run(fixture: str, steps: int) -> Path:
+def run(fixture: str, steps: int, align_trafo: bool = False) -> Path:
     fdir = ROOT / "benchmarks" / "fixtures" / fixture
     if not fdir.exists():
         raise SystemExit(f"unknown fixture '{fixture}' — run make_fixtures.py")
     data = load_inputs(fdir)
     sim = Simulator(data, warm_start=True)
+    if align_trafo and len(sim.net.trafo):
+        # model alignment (plan §5.2): with the magnetizing branch zeroed,
+        # pandapower's T model is exactly a series branch and matches
+        # OpenDSS/MATPOWER by construction — the full-model run stays the
+        # supplementary measurement of the shunt-position difference.
+        sim.net.trafo.pfe_kw = 0.0
+        sim.net.trafo.i0_percent = 0.0
     n_bus, n_line = len(sim.net.bus), len(sim.net.line)
 
     vm = np.full((n_bus, steps), np.nan)
@@ -61,7 +68,8 @@ def run(fixture: str, steps: int) -> Path:
 
     out = ROOT / "benchmarks" / "out"
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"{fixture}_netzsim.npz"
+    suffix = "_aligned" if align_trafo else ""
+    path = out / f"{fixture}_netzsim{suffix}.npz"
     np.savez_compressed(
         path, vm_pu=vm, i_ka=ika, loading=loading, p_slack=p_slack,
         solve_ms=solve_ms,
@@ -82,5 +90,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("fixture")
     ap.add_argument("--steps", type=int, default=1440)
+    ap.add_argument("--align-trafo", action="store_true",
+                    help="zero the trafo magnetizing branch (plan §5.2)")
     a = ap.parse_args()
-    run(a.fixture, a.steps)
+    run(a.fixture, a.steps, a.align_trafo)
