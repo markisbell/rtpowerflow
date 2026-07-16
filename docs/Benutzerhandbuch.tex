@@ -60,6 +60,8 @@ EchtzeitNetzSimulators sowie dieses Handbuch wurden mit einem
 \textbf{KI-Coding-Agenten} (Claude Code, Anthropic) erstellt --- unter
 menschlicher Anleitung: Anforderungen, fachliche Entscheidungen,
 Review und die Live-Verifikation der Ergebnisse stammen von Menschen.
+Die Lastfluss-Physik ist gegen OpenDSS und MATPOWER validiert
+(Abschnitt~\ref{sec:validierung}).
 Quellcode und Handbuch stehen unter der MIT-Lizenz; die mitgelieferten
 Netzdaten sind aus OpenStreetMap-Daten abgeleitet
 (\textcopyright{} OpenStreetMap contributors, ODbL). Projektseite:
@@ -162,6 +164,39 @@ die Abendspitze springen will, ruft daher
 \api{POST /control/seek?step=1145} auf --- die Oberfläche erledigt
 dasselbe über den \ui{Zeitpunkt}-Regler.
 \end{beispiel}
+
+\section{Validierte Physik}
+\label{sec:validierung}
+
+Ein Lehrwerkzeug ist nur so glaubwürdig wie sein Lastfluss. Die
+Physik des EchtzeitNetzSimulators ist deshalb gegen zwei unabhängige,
+etablierte Referenzprogramme validiert: \textbf{OpenDSS} (EPRI) und
+\textbf{MATPOWER~8.1}. Verglichen wurden sowohl die klassischen
+IEEE-Referenzfälle (14/30/118 Knoten, auf identischer Datenbasis:
+maximale Spannungsabweichung $\le 2{,}6\cdot10^{-10}$~pu) als auch
+--- entscheidender --- \emph{genau die Netze und Tagesprofile dieses
+Handbuchs}: Alle drei Lehrnetze (30, 62 und 475 Knoten) wurden über
+vollständige 1440-Schritt-Tage von beiden Programmen unabhängig
+nachgerechnet. Die maximale Abweichung liegt bei
+$\approx 5\cdot10^{-7}$~pu --- \textbf{0{,}2~Millivolt} auf der
+0,4-kV-Ebene, an jedem Knoten, in jeder Minute des Tages.
+
+\begin{beispiel}[Was das konkret bedeutet]
+Die Spannungs"-überhöhung aus Referenzszenario~1 --- die
+75-kWp-Anlage hebt den Bauernhof mittags auf $\approx 252$~V, haarscharf
+unter die EN-50160-Grenze von 253~V --- ist keine Eigenheit dieses
+Simulators: OpenDSS berechnet im Tagesmodus dieselbe Glocke
+(437~V verkettet) auf $\pm 0{,}2$~mV deckungsgleich nach. Wer eine
+Aussage dieses Handbuchs anzweifelt, kann sie unabhängig nachprüfen.
+\end{beispiel}
+
+Der vollständige Bericht mit Fehlertabellen, Tagesprofil-Vergleichen
+und den exakten Programmversionen liegt im Repository unter
+\texttt{docs/benchmarks/}; Methode und Reproduktionsanleitung (ein
+Befehl: \texttt{python benchmarks/run\_all.py}) in
+\texttt{docs/BENCHMARKS.md}. Die Eingaben sind als eingefrorene
+Fixtures versioniert, sodass Dritte die Zahlen bitgenau
+nachvollziehen können.
 
 \section{Weiterführende Dokumentation}
 \label{sec:weiterdoku}
@@ -282,6 +317,23 @@ Kernkonzept der Plattform, deshalb ist die aktive Sicht immer
 ablesbar und mit einem Klick wechselbar. Start/Pause lebt in der
 Transportleiste am unteren Rand; läuft eine Aufzeichnung oder ein
 Export, erscheinen rechts in der Leiste klickbare Status-Chips.
+
+\begin{beispiel}[Ein Engpass, drei Sichten]
+Wie weit die Sichten auseinanderliegen können, zeigt
+Referenzszenario~3 (Kapitel~\ref{ch:scenarios}): Sechs E-Autos am
+Stranganfang laden mittags mit 22~kW den Überschuss der PV-Anlagen
+am Strangende, ein Segment mitten im Strang trägt dabei
+$\approx$110\,\% (248~A). Im \ui{Lastfluss} ist genau dieses Kabel
+tiefrot --- die Wahrheit. Ein Klick auf \ui{Gemessen} (platziert ist
+nur die Stationsmessung): alles unauffällig, denn am Abgang der
+Station fließen nur $\approx$102~A (45\,\%) --- mehr sieht auch die
+NH-Sicherung dort nie. Noch ein Klick auf \ui{Schätzung}: Ohne
+weitere Messgeräte schätzt der Netzbetreiber das überlastete Segment
+auf harmlose $\approx$4\,\%; erst mit SMGWs an PV-Anlagen und
+Wallboxen trifft die Schätzung die $\approx$110\,\%. Derselbe
+Simulationsschritt, drei Welten --- deshalb ist der Sicht-Umschalter
+dauerhaft sichtbar.
+\end{beispiel}
 
 \begin{figure}[htbp]
   \centering
@@ -539,6 +591,20 @@ Die Darstellung wird im Menü \ui{Ansicht} gewählt:
     gemessene Solarkurve auf die PV-Anlagen.
 \end{itemize}
 
+\begin{beispiel}[Zeitraffer zum Suchen, Echtzeit zum Besprechen]
+Eine typische Vorführung kombiniert die Regler: Zuerst die
+\ui{Schrittdauer} auf 0{,}1~s stellen --- der komplette Tag vergeht
+in 2{,}4~Minuten, und im Zeitraffer zeichnet sich auf der Karte ab,
+\emph{wann} es kritisch wird. Sobald sich der Hauptstrang abends
+orange färbt, \ui{Pause} drücken, mit dem \ui{Zeitpunkt}-Regler ein
+paar Minuten vor die Spitze zurückspringen und die Schrittdauer auf
+1--2~s stellen. Jetzt baut sich die Spitze in mitlesbarem Tempo auf
+--- pro Schritt eine Simulationsminute, die Kennzahlen der Übersicht
+bleiben lesbar. Bei 1~s Takt dauert der ganze Tag 24~Minuten; der
+Zeitraffer ist also das Suchwerkzeug, die Echtzeit der
+Besprechungsmodus --- auf die Abendspitze warten muss niemand.
+\end{beispiel}
+
 \subsection{Die Übersicht lesen}
 
 Das Seitenpanel fasst den Netzzustand jedes Schrittes zusammen.
@@ -625,6 +691,21 @@ Aktionsmenü desselben Knotens eine \ui{E-Auto-Ladung hinzufügen}
 und die Kurve im angehefteten Diagramm neu bewerten.
 \end{beispiel}
 
+\begin{beispiel}[Warum der erste Tagesverlauf einen Moment braucht]
+Beim ersten angehefteten Diagramm rechnet netzsim den kompletten Tag
+vor: 1440 vollständige Lastflüsse. Auf dem 62-Knoten-Netz dieses
+Kapitels dauert der erste Klick dadurch rund 10~s --- die
+Wiederverwendung der Netzmatrizen drückt die Kosten dabei schon auf
+$\approx$5{,}6~ms statt $\approx$11~ms je Schritt. Danach liegen die
+Tageskurven \emph{aller} Elemente im Zwischenspeicher: Weitere
+Diagramme desselben Tages erscheinen sofort. Nur die Sicht
+\ui{Schätzung} kostet einmalig extra, denn dort läuft zusätzlich der
+WLS-Sweep der Zustandsschätzung --- je nach Messraster etwa
+15--25~s. Wer eine Vorführung vorbereitet, heftet die benötigten
+Tagesverläufe deshalb am besten vor Beginn einmal an: Die Wartezeit
+ist Physik, kein Hänger.
+\end{beispiel}
+
 % ===================================================================
 \chapter{Beobachtbarkeit und Zustandsschätzung}
 \label{ch:observability}
@@ -658,6 +739,24 @@ das Menü \ui{Messungen}):
 Leitungen tragen bewusst \emph{keine} Messung --- Leitungsströme
 bleiben unbekannt, solange die Wahrheit ausgeblendet ist. Gerade das
 höchstbelastete Kabel ist also unsichtbar, wenn dort niemand misst.
+
+\begin{beispiel}[Zwei Überlasten --- nur eine ist messbar]
+Referenzszenario~2: 12 von 24 Haushalten laden zwischen 17:00 und
+18:30 Uhr gestaffelt 11-kW-E-Autos. Ab etwa 18:45 Uhr führt der
+Strangkopf $\approx$108\,\% bzw.\ 243~A --- genau den Summenstrom,
+den auch die NH-Sicherung dort sieht. Hier genügt schon die
+Trafo-Messung der Station, um die Überlast zu finden.
+Referenzszenario~3 dreht den Fall um: Acht 27-kWp-PV-Anlagen am
+Strangende speisen mittags sechs 22-kW-Ladungen nahe der Station
+--- die Leistung fließt \emph{innerhalb} des Strangs. Das mittlere
+Segment L12 trägt $\approx$110\,\% (248~A), am Stations-Abgang
+kommen aber nur 102~A an (45\,\%). Sicherung und Stationsmessung
+melden Normalbetrieb, während das Kabel in der Strangmitte
+überlastet ist. Die Lehre: Eine Summenmessung erfasst nur, was
+durch sie hindurchfließt --- Ausgleichsflüsse zwischen Erzeugern
+und Verbrauchern im selben Strang bleiben ohne Messung vor Ort
+unsichtbar.
+\end{beispiel}
 
 Schnell-Aktionen im Menü \ui{Messungen}: \ui{Alle Knoten},
 \ui{Stationen} (nur Stations-Trafos), \ui{Alle Trafos}, \ui{Alle
@@ -788,6 +887,22 @@ Betreiber tatsächlich hat:
     mit bewusst großer Unsicherheit gewichtet.
 \end{itemize}
 
+\begin{beispiel}[Was keine Standardannahme wissen kann]
+Referenzszenario~1: Am Ende eines 500-m-Strangs im ländlichen Netz
+speist eine 75-kWp-PV-Anlage. Mittags liegt die Spannung dort in
+Wahrheit bei etwa 252~V --- knapp unter der EN-50160-Grenze von
+253~V. Die Pseudo-Messungen kennen aber nur
+Standard-\emph{Last}annahmen; von der Anlage wissen sie nichts.
+Ohne Messung vor Ort schätzt der Netzbetreiber deshalb nur etwa
+245~V und hält den Strang für unauffällig --- die drohende
+Grenzverletzung existiert in seiner Sicht schlicht nicht. Ein
+einziges SMGW an der Anlage ändert alles: Die Schätzung trifft die
+Wahrheit auf unter 1~V. Die Lehre: Pseudo-Messungen tragen die
+Schätzung dort, wo sich viele Kunden statistisch mitteln; wo eine
+einzelne große Anlage das Bild dominiert, ersetzt nichts die echte
+Messung an genau diesem Punkt.
+\end{beispiel}
+
 Die Übersicht zeigt neben den geschätzten Kennzahlen den
 \ui{Schätzfehler max $|\Delta U|$} gegen die Wahrheit.
 Abbildung~\ref{fig:schaetzung} zeigt die Schätz-Ansicht mit nur fünf
@@ -802,6 +917,22 @@ an den Viertelstundengrenzen --- dazwischen hält sie den letzten
 Stand. Auf großen Netzen wird zusätzlich automatisch gedrosselt
 (die Schätzung rechnet dann z.\,B. nur jeden dritten Schritt),
 damit die Simulation flüssig bleibt.
+
+\begin{beispiel}[Was eine Schätzung kostet]
+Die WLS-Schätzung ist der teuerste Rechenschritt der Plattform. Auf
+dem 62-Knoten-Vorstadtnetz kostet ein Durchlauf bei Vollmessung
+etwa 0,4~s --- das passt bequem in den Standard-Tick von 1~s je
+Simulationsschritt, die Schätzung kann also jedem Schritt folgen,
+den das Messraster erlaubt. Wechselt man auf den 475-Bus-Bezirk,
+steigt der Aufwand auf etwa 1--1,6~s je Durchlauf --- länger als
+ein ganzer Tick. Hier greift die automatische Drosselung: Zwischen
+zwei Schätzungen zeigt die Ansicht den jeweils letzten Stand, die
+Simulation selbst tickt ungebremst weiter. Wer die Schätz-Ansicht
+auf dem Bezirk beobachtet, sieht die Werte deshalb in größeren
+Sprüngen nachziehen --- das ist kein Fehler, sondern sichtbare
+Rechenzeit. Die Lehre: Beobachtbarkeit hat neben den Gerätekosten
+auch Rechenkosten, und beide wachsen mit der Netzgröße.
+\end{beispiel}
 
 \begin{figure}[htbp]
   \centering
@@ -1167,6 +1298,21 @@ python scripts/ext_feed.py --bus 3
 python scripts/ext_feed.py --bus 3 --source pi --scale 25
 \end{lstlisting}
 
+\begin{beispiel}[Was von der realen Anlage im Netz ankommt]
+Die reale Anlage hinter \texttt{--source pi} ist klein: In dem
+Moment, in dem der Feed startet, liefert sie gerade 39~W. Mit
+\texttt{--scale 25} tritt sie im simulierten Netz als
+15-kW-Dachanlage auf: Das Skript multipliziert jeden Messwert und
+schiebt ihn vorzeichenbehaftet als Einspeisung --- die Sektion des
+Knotens zeigt als angewandten Wert $-0{,}975$\,kW, und das
+Telegrammalter springt mit jedem Sollwert auf null zurück. Die
+Rechnung lohnt das Nachvollziehen: 39~W $\times$ 25 = 975~W, mit
+Einspeise-Vorzeichen also $-0{,}975$\,kW. Zieht über der realen
+Anlage eine Wolke durch, sinkt die Einspeisung im simulierten Netz
+mit --- echte Wetterdynamik an einem einzelnen Knoten, während der
+Rest des Netzes weiter seinen Profilen folgt.
+\end{beispiel}
+
 \begin{beispiel}[Der Stumm-Fall gehört zur Vorführung]
 Das Skript mit \texttt{Strg+C} zu stoppen ist Teil der Demo: Nach
 \texttt{hold\_s} Sekunden erscheint die Warnung ,,Quelle stumm``, und
@@ -1315,6 +1461,21 @@ ihrer Station, wie es auch ein Netzberechnungsprogramm täte).
     tragen auf der Karte einen roten Ring.
 \end{description}
 
+\begin{beispiel}[Was die Bezirks-Schätzung kostet]
+Eine WLS-Schätzung ist echte Rechenarbeit, und sie wächst mit dem
+Netz. Auf dem 62-Knoten-Vorstadtnetz kostet ein Durchlauf bei
+Vollmessung etwa 0{,}4~s --- beim Standard-Takt von 1~s pro Schritt
+kann die Sicht \ui{Schätzung} dort also fast jedem Schritt folgen.
+Auf dem 475-Knoten-Bezirk braucht derselbe Durchlauf 1 bis 1{,}6~s,
+also länger als ein Simulationsschritt. Die Folge ist am Bildschirm
+sichtbar: Die Bezirks-Schätzung erneuert sich nur alle paar
+Schritte, dazwischen bleibt der zuletzt berechnete Stand stehen.
+Das ist kein Fehler, sondern Absicht --- die Engine wartet nie auf
+die Schätzung. Auch ein realer Netzbetreiber rechnet seinen
+Netzzustand nicht sekündlich neu; die Leitwarte arbeitet mit dem
+jeweils jüngsten verfügbaren Schätzergebnis.
+\end{beispiel}
+
 \section{Referenzszenario 4: Feierabend im Bezirk}
 
 Das Szenario \ui{4 Feierabend im Bezirk} lädt den Bezirk mit
@@ -1422,6 +1583,21 @@ löscht. Auf dem Server liegen die Pakete unter
 \texttt{data/recordings/}. Die beiden Status-Chips (rotes \ui{REC},
 Export-Fortschritt) sind klickbar und öffnen direkt das
 \ui{Datei}-Menü.
+
+\begin{beispiel}[Zwei Wege, zwei Größenordnungen]
+Zum Gefühl für Dauer und Datenmengen zwei verifizierte Eckwerte vom
+Vorstadtnetz. Ein Tages-Export über zwei Tage rechnet 2880 Schritte
+in 62~Sekunden durch, während die laufende Simulation ungestört
+weitertickt; das fertige Paket ist ein ZIP von rund 5~MiB. Eine
+kurze Live-Aufzeichnung von 91 Schritten bleibt dagegen bei
+241~KiB --- pro Schritt schreibt sie in \texttt{buses.csv} 62
+Zeilen, eine je Knoten, dazu die Zeilen der Leitungen, Messwerte
+und Schätzblöcke. Die Paketgröße wächst also schlicht mit
+Schrittzahl und Netzgröße. Für ein Übungsblatt heißt das: lieber
+gezielt die zwei relevanten Tage exportieren als lange live
+aufzeichnen --- beide Pakete sind identisch aufgebaut, der Export
+ist nur schneller fertig.
+\end{beispiel}
 
 \begin{figure}[htbp]
   \centering
