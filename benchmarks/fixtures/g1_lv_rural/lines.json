@@ -1,0 +1,801 @@
+{
+ "lines": [
+  {
+   "name": "L0",
+   "from_bus": 1,
+   "to_bus": 2,
+   "length_km": 0.008708,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967028,
+     54.527685
+    ],
+    [
+     9.966905,
+     54.527717
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L1",
+   "from_bus": 3,
+   "to_bus": 2,
+   "length_km": 0.040295,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967148,
+     54.528041
+    ],
+    [
+     9.966905,
+     54.527717
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L2",
+   "from_bus": 2,
+   "to_bus": 4,
+   "length_km": 0.56372,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966905,
+     54.527717
+    ],
+    [
+     9.966362,
+     54.527856
+    ],
+    [
+     9.966166,
+     54.527884
+    ],
+    [
+     9.964792,
+     54.527813
+    ],
+    [
+     9.964622,
+     54.527855
+    ],
+    [
+     9.963653,
+     54.52836
+    ],
+    [
+     9.961567,
+     54.529461
+    ],
+    [
+     9.96081,
+     54.529855
+    ],
+    [
+     9.959891,
+     54.530346
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L3",
+   "from_bus": 5,
+   "to_bus": 6,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968422,
+     54.52701
+    ],
+    [
+     9.968422,
+     54.52701
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L4",
+   "from_bus": 7,
+   "to_bus": 6,
+   "length_km": 0.015912,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.96859,
+     54.526918
+    ],
+    [
+     9.968422,
+     54.52701
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L5",
+   "from_bus": 6,
+   "to_bus": 8,
+   "length_km": 0.021865,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968422,
+     54.52701
+    ],
+    [
+     9.96835,
+     54.527055
+    ],
+    [
+     9.968296,
+     54.527069
+    ],
+    [
+     9.968213,
+     54.527069
+    ],
+    [
+     9.968125,
+     54.527057
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L6",
+   "from_bus": 9,
+   "to_bus": 0,
+   "length_km": 0.024401,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967484,
+     54.527569
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L7",
+   "from_bus": 9,
+   "to_bus": 10,
+   "length_km": 0.005356,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967844,
+     54.527557
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L8",
+   "from_bus": 11,
+   "to_bus": 12,
+   "length_km": 0.026737,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967289,
+     54.527469
+    ],
+    [
+     9.967208,
+     54.52743
+    ],
+    [
+     9.967134,
+     54.527435
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L9",
+   "from_bus": 13,
+   "to_bus": 12,
+   "length_km": 0.011296,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 2,
+   "geometry": [
+    [
+     9.96715,
+     54.527527
+    ],
+    [
+     9.967134,
+     54.527435
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L10",
+   "from_bus": 12,
+   "to_bus": 0,
+   "length_km": 0.010651,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.077,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.333,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967134,
+     54.527435
+    ],
+    [
+     9.967103,
+     54.527437
+    ],
+    [
+     9.966983,
+     54.527471
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L11",
+   "from_bus": 5,
+   "to_bus": 14,
+   "length_km": 0.025015,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968125,
+     54.527057
+    ],
+    [
+     9.968264,
+     54.526846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L12",
+   "from_bus": 15,
+   "to_bus": 14,
+   "length_km": 0.011471,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968415,
+     54.52688
+    ],
+    [
+     9.968264,
+     54.526846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L13",
+   "from_bus": 14,
+   "to_bus": 16,
+   "length_km": 0.179623,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968264,
+     54.526846
+    ],
+    [
+     9.968269,
+     54.526837
+    ],
+    [
+     9.968528,
+     54.526437
+    ],
+    [
+     9.968831,
+     54.526074
+    ],
+    [
+     9.968891,
+     54.525919
+    ],
+    [
+     9.96892,
+     54.525696
+    ],
+    [
+     9.9688,
+     54.525413
+    ],
+    [
+     9.968711,
+     54.525316
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L14",
+   "from_bus": 17,
+   "to_bus": 1,
+   "length_km": 0.006272,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967028,
+     54.527685
+    ],
+    [
+     9.967117,
+     54.527663
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L15",
+   "from_bus": 9,
+   "to_bus": 18,
+   "length_km": 0.24875,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.973451,
+     54.529941
+    ],
+    [
+     9.973152,
+     54.529815
+    ],
+    [
+     9.971802,
+     54.529269
+    ],
+    [
+     9.971156,
+     54.529015
+    ],
+    [
+     9.970653,
+     54.528827
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L16",
+   "from_bus": 19,
+   "to_bus": 18,
+   "length_km": 0.054093,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969827,
+     54.529091
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L17",
+   "from_bus": 20,
+   "to_bus": 18,
+   "length_km": 0.014508,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.970062,
+     54.528727
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L18",
+   "from_bus": 21,
+   "to_bus": 18,
+   "length_km": 0.027855,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969842,
+     54.528671
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L19",
+   "from_bus": 22,
+   "to_bus": 18,
+   "length_km": 0.059874,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969542,
+     54.529012
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L20",
+   "from_bus": 18,
+   "to_bus": 23,
+   "length_km": 0.169154,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.970258,
+     54.528684
+    ],
+    [
+     9.969948,
+     54.528572
+    ],
+    [
+     9.969817,
+     54.528541
+    ],
+    [
+     9.969604,
+     54.528504
+    ],
+    [
+     9.969175,
+     54.528454
+    ],
+    [
+     9.968844,
+     54.528408
+    ],
+    [
+     9.968621,
+     54.528361
+    ],
+    [
+     9.968421,
+     54.528297
+    ],
+    [
+     9.968249,
+     54.528229
+    ],
+    [
+     9.968098,
+     54.528141
+    ],
+    [
+     9.967956,
+     54.528038
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L21",
+   "from_bus": 24,
+   "to_bus": 23,
+   "length_km": 0.057565,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967241,
+     54.528331
+    ],
+    [
+     9.967956,
+     54.528038
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L22",
+   "from_bus": 23,
+   "to_bus": 25,
+   "length_km": 0.056051,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967956,
+     54.528038
+    ],
+    [
+     9.967842,
+     54.527917
+    ],
+    [
+     9.967791,
+     54.527839
+    ],
+    [
+     9.967754,
+     54.527757
+    ],
+    [
+     9.967748,
+     54.527653
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L23",
+   "from_bus": 26,
+   "to_bus": 27,
+   "length_km": 0.069078,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966403,
+     54.526673
+    ],
+    [
+     9.966628,
+     54.526973
+    ],
+    [
+     9.966688,
+     54.527077
+    ],
+    [
+     9.966751,
+     54.527216
+    ],
+    [
+     9.966776,
+     54.527257
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L24",
+   "from_bus": 28,
+   "to_bus": 27,
+   "length_km": 0.023451,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967103,
+     54.527189
+    ],
+    [
+     9.966776,
+     54.527257
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L25",
+   "from_bus": 27,
+   "to_bus": 11,
+   "length_km": 0.027459,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966776,
+     54.527257
+    ],
+    [
+     9.966839,
+     54.527359
+    ],
+    [
+     9.966906,
+     54.52741
+    ],
+    [
+     9.966983,
+     54.527471
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L26",
+   "from_bus": 5,
+   "to_bus": 10,
+   "length_km": 0.058235,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968125,
+     54.527057
+    ],
+    [
+     9.967977,
+     54.527283
+    ],
+    [
+     9.967844,
+     54.527557
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "L27",
+   "from_bus": 17,
+   "to_bus": 0,
+   "length_km": 0.019401,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967117,
+     54.527663
+    ]
+   ],
+   "in_service": true
+  }
+ ],
+ "transformers": [
+  {
+   "name": "MS/NS-Station",
+   "hv_bus": 29,
+   "lv_bus": 0,
+   "std_type": "0.25 MVA 20/0.4 kV",
+   "parallel": 1
+  }
+ ]
+}

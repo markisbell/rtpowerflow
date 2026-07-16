@@ -1,0 +1,750 @@
+{
+ "name": "Suburban LV grid \u00c2\u00b7 265991",
+ "f_hz": 50.0,
+ "buses": [
+  {
+   "name": "LV_station",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435136,
+    53.195374
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435462,
+    53.195452
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435417,
+    53.195519
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435894,
+    53.195701
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435621,
+    53.195778
+   ],
+   "kind": null
+  },
+  {
+   "name": "j1003054438",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.436127,
+    53.196497
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435064,
+    53.195488
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43485,
+    53.19544
+   ],
+   "kind": null
+  },
+  {
+   "name": "load1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435341,
+    53.19573
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244012007",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43522,
+    53.195678
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5253830854",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.437795,
+    53.196444
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.437562,
+    53.19655
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load17",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.437445,
+    53.196454
+   ],
+   "kind": null
+  },
+  {
+   "name": "j12138800143",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.437286,
+    53.196752
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244012001",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432601,
+    53.194722
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "cab4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433645,
+    53.194964
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load11",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433353,
+    53.19542
+   ],
+   "kind": null
+  },
+  {
+   "name": "load6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433348,
+    53.195267
+   ],
+   "kind": null
+  },
+  {
+   "name": "load12",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433196,
+    53.195439
+   ],
+   "kind": null
+  },
+  {
+   "name": "load9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433387,
+    53.195087
+   ],
+   "kind": null
+  },
+  {
+   "name": "load10",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433268,
+    53.19506
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43299,
+    53.194812
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432906,
+    53.194944
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244012010",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43517,
+    53.195319
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "cab6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432289,
+    53.19521
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load18",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432717,
+    53.195764
+   ],
+   "kind": null
+  },
+  {
+   "name": "load19",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432562,
+    53.195502
+   ],
+   "kind": null
+  },
+  {
+   "name": "load20",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432363,
+    53.195687
+   ],
+   "kind": null
+  },
+  {
+   "name": "load21",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432241,
+    53.195432
+   ],
+   "kind": null
+  },
+  {
+   "name": "load23",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432858,
+    53.195749
+   ],
+   "kind": null
+  },
+  {
+   "name": "load24",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432511,
+    53.195721
+   ],
+   "kind": null
+  },
+  {
+   "name": "load29",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432151,
+    53.19541
+   ],
+   "kind": null
+  },
+  {
+   "name": "load30",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432945,
+    53.195558
+   ],
+   "kind": null
+  },
+  {
+   "name": "load31",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433186,
+    53.195626
+   ],
+   "kind": null
+  },
+  {
+   "name": "load32",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.433063,
+    53.195585
+   ],
+   "kind": null
+  },
+  {
+   "name": "load22",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432568,
+    53.195248
+   ],
+   "kind": null
+  },
+  {
+   "name": "load25",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432196,
+    53.19504
+   ],
+   "kind": null
+  },
+  {
+   "name": "load7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43278,
+    53.195116
+   ],
+   "kind": null
+  },
+  {
+   "name": "load26",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432272,
+    53.194969
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432482,
+    53.194908
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load13",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432291,
+    53.194863
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244012002",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432289,
+    53.19521
+   ],
+   "kind": null
+  },
+  {
+   "name": "j1834313728",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435865,
+    53.195567
+   ],
+   "kind": null
+  },
+  {
+   "name": "j1834313730",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43617,
+    53.196379
+   ],
+   "kind": null
+  },
+  {
+   "name": "j385545617",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432468,
+    53.196493
+   ],
+   "kind": null
+  },
+  {
+   "name": "j385545618",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.434089,
+    53.196873
+   ],
+   "kind": null
+  },
+  {
+   "name": "j7218608794",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.431532,
+    53.196274
+   ],
+   "kind": null
+  },
+  {
+   "name": "j385545619",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.434755,
+    53.197053
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244011999",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432192,
+    53.194626
+   ],
+   "kind": null
+  },
+  {
+   "name": "j5244012000",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.431803,
+    53.195245
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43189,
+    53.195107
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load27",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432049,
+    53.195143
+   ],
+   "kind": null
+  },
+  {
+   "name": "load28",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.432094,
+    53.195068
+   ],
+   "kind": null
+  },
+  {
+   "name": "j82615254",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435657,
+    53.197221
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.436042,
+    53.196658
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435747,
+    53.196587
+   ],
+   "kind": null
+  },
+  {
+   "name": "load4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435694,
+    53.196639
+   ],
+   "kind": null
+  },
+  {
+   "name": "load15",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435555,
+    53.1968
+   ],
+   "kind": null
+  },
+  {
+   "name": "cab10",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.43526,
+    53.197128
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "load16",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435298,
+    53.197069
+   ],
+   "kind": null
+  },
+  {
+   "name": "load14",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    10.435479,
+    53.19697
+   ],
+   "kind": null
+  },
+  {
+   "name": "MS-Netz",
+   "vn_kv": 20.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.435136,
+    53.195374
+   ],
+   "kind": null
+  }
+ ]
+}

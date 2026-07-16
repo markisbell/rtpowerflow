@@ -1,6 +1,21 @@
 # Benchmark plan: validating netzsim against OpenDSS and MATPOWER
 
-> **Status: Phase 0 ✅ BUILT (2026-07-16) — phases 1–4 planned.** The
+> **Status: Phase 0 ✅ + Phase 1 ✅ BUILT (2026-07-16) — the T-series is
+> GREEN.** Fixtures frozen (`benchmarks/fixtures/` g1/g2/g3 + MANIFEST,
+> effective profiles of the published teaching scenarios, seeds baked in),
+> the netzsim reference runner produces full-day arrays
+> (`netzsim_runner.py`; G1 vm 0.9845–1.0931 pu = the scenario-1 voltage
+> rise, G2 0.9065–1.0472 pu = the EV evening), and **pandapower vs real
+> MATPOWER 8.1 on byte-identical IEEE cases passes all gates**
+> (`run_matpower.py`): case9 4.4e-16, case14 5.5e-12, case_ieee30
+> 2.6e-10, case118 2.6e-12 pu max |ΔVm| — orders of magnitude inside the
+> 1e-6 gate. Two Phase-1 findings, both patched identically into the ONE
+> struct both solvers consume (no physics change): classic IEEE CDF cases
+> carry **BASE_KV=0** (MATPOWER's solver never uses it; pandapower's
+> from_mpc divides by it → set 100 kV), and **RATE_A=0** (= unlimited)
+> trips an indexing bug in pandapower's from_ppc → set MATPOWER's
+> conventional 9900-MVA placeholder. Next: §9 step 4, `to_dss.py` +
+> OpenDSS snapshot/daily (G-series). The
 > environment stands and `benchmarks/check_env.py` is green on all six
 > checks (Python 3.12.10 in `.venv-bench`, pandapower 3.4.0,
 > OpenDSSDirect.py 0.9.4 [AltDSS engine, OpenDSS SVN 3723 base],
