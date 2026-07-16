@@ -9,7 +9,27 @@
 > MATPOWER 8.1 on byte-identical IEEE cases passes all gates**
 > (`run_matpower.py`): case9 4.4e-16, case14 5.5e-12, case_ieee30
 > 2.6e-10, case118 2.6e-12 pu max |ΔVm| — orders of magnitude inside the
-> 1e-6 gate. Two Phase-1 findings, both patched identically into the ONE
+> 1e-6 gate.
+> **Phase 2 ✅ (G-series vs OpenDSS): G1 and G2 PASS over the full
+> 1440-step day** against OpenDSS daily mode (AltDSS engine,
+> `to_dss.py` + `run_opendss.py`): with the §5.2 trafo alignment
+> (`--align-trafo` on both sides) **max |ΔV| = 5.1e-7 pu (0.2 mV), max
+> |ΔI| = 0.0005 A** on both grids — 20× inside the 1e-5 gate. The
+> full-model supplementary runs land at 2.4e-5 (G1) / 3.2e-5 pu (G2):
+> that is the measured effect of the **magnetizing-branch POSITION**
+> (pandapower's T model centers it, OpenDSS hangs it at winding 1) —
+> diagnosed via a constant LV-side offset with an exact slack. Mapping
+> notes baked into `to_dss.py`: pandapower `parallel` folds into
+> effective per-km values (netzsim's i_ka is the bundle current);
+> normally-open lines map to `enabled=no`; loads/sgens use ABSOLUTE
+> LoadShapes (`UseActual=yes`, Pmult/Qmult in kW/kvar, sgens as negative
+> loads) which sidesteps P/Q-proportionality assumptions. The official
+> EPRI engine leg (`--engine epri`) stays an open item: py-dss-interface
+> `text()` also hangs on `compile` in non-interactive shells — run it
+> from a real terminal later; the AltDSS engine is dss-extensions'
+> regularly cross-validated implementation and `check_env` proves the
+> EPRI 11.0.0.1 engine loads here. Next: G3 snapshots, MATPOWER G-leg,
+> plots + public report (§8). Two Phase-1 findings, both patched identically into the ONE
 > struct both solvers consume (no physics change): classic IEEE CDF cases
 > carry **BASE_KV=0** (MATPOWER's solver never uses it; pandapower's
 > from_mpc divides by it → set 100 kV), and **RATE_A=0** (= unlimited)
