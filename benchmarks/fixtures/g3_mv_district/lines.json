@@ -1,0 +1,8167 @@
+{
+ "lines": [
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_299229_LVStation_mvgd_3150_lvgd_427803",
+   "from_bus": 9,
+   "to_bus": 89,
+   "length_km": 0.556046,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_299229_MVCableDist_mvgd_3150_26",
+   "from_bus": 9,
+   "to_bus": 183,
+   "length_km": 0.285862,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300163_MVCableDist_mvgd_3150_11",
+   "from_bus": 8,
+   "to_bus": 168,
+   "length_km": 0.570563,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300248_LVStation_mvgd_3150_lvgd_302202",
+   "from_bus": 22,
+   "to_bus": 157,
+   "length_km": 1.767075,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300248_MVCableDist_mvgd_3150_3",
+   "from_bus": 22,
+   "to_bus": 160,
+   "length_km": 0.663113,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300266_LVStation_mvgd_3150_lvgd_428860",
+   "from_bus": 26,
+   "to_bus": 65,
+   "length_km": 2.073314,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300266_LVStation_mvgd_3150_lvgd_429337",
+   "from_bus": 26,
+   "to_bus": 27,
+   "length_km": 0.621962,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300266_MVCableDist_mvgd_3150_3",
+   "from_bus": 26,
+   "to_bus": 160,
+   "length_km": 1.187855,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300330_MVCableDist_mvgd_3150_11",
+   "from_bus": 37,
+   "to_bus": 168,
+   "length_km": 0.158035,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300332_LVStation_mvgd_3150_lvgd_300411",
+   "from_bus": 41,
+   "to_bus": 56,
+   "length_km": 1.039421,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300332_MVCableDist_mvgd_3150_56",
+   "from_bus": 41,
+   "to_bus": 213,
+   "length_km": 0.306594,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300333_MVCableDist_mvgd_3150_56",
+   "from_bus": 42,
+   "to_bus": 213,
+   "length_km": 0.249891,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300333_MVCableDist_mvgd_3150_58",
+   "from_bus": 42,
+   "to_bus": 215,
+   "length_km": 1.403477,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300334_MVCableDist_mvgd_3150_57",
+   "from_bus": 35,
+   "to_bus": 214,
+   "length_km": 0.19266,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300335_MVCableDist_mvgd_3150_12",
+   "from_bus": 36,
+   "to_bus": 169,
+   "length_km": 0.809458,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300335_MVCableDist_mvgd_3150_57",
+   "from_bus": 36,
+   "to_bus": 214,
+   "length_km": 0.276124,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300352_LVStation_mvgd_3150_lvgd_428520",
+   "from_bus": 31,
+   "to_bus": 38,
+   "length_km": 0.934429,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300352_MVCableDist_mvgd_3150_8",
+   "from_bus": 38,
+   "to_bus": 165,
+   "length_km": 0.63324,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300354_MVCableDist_mvgd_3150_30",
+   "from_bus": 40,
+   "to_bus": 187,
+   "length_km": 1.641713,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300354_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 40,
+   "length_km": 0.219359,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300355_MVCableDist_mvgd_3150_58",
+   "from_bus": 48,
+   "to_bus": 215,
+   "length_km": 0.402392,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300356_LVStation_mvgd_3150_lvgd_499525",
+   "from_bus": 49,
+   "to_bus": 50,
+   "length_km": 0.70501,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300356_MVCableDist_mvgd_3150_12",
+   "from_bus": 49,
+   "to_bus": 169,
+   "length_km": 1.174947,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300356_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 49,
+   "length_km": 0.521946,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300357_MVCableDist_mvgd_3150_14",
+   "from_bus": 34,
+   "to_bus": 171,
+   "length_km": 0.219033,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300364_MVCableDist_mvgd_3150_15",
+   "from_bus": 39,
+   "to_bus": 172,
+   "length_km": 0.654746,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300375_LVStation_mvgd_3150_lvgd_300414",
+   "from_bus": 46,
+   "to_bus": 54,
+   "length_km": 1.196396,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300375_MVCableDist_mvgd_3150_7",
+   "from_bus": 46,
+   "to_bus": 164,
+   "length_km": 0.183525,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300382_MVCableDist_mvgd_3150_21",
+   "from_bus": 45,
+   "to_bus": 178,
+   "length_km": 1.126394,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300382_MVCableDist_mvgd_3150_5",
+   "from_bus": 45,
+   "to_bus": 162,
+   "length_km": 0.285764,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300410_MVCableDist_mvgd_3150_60",
+   "from_bus": 57,
+   "to_bus": 217,
+   "length_km": 0.099846,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300411_MVCableDist_mvgd_3150_19",
+   "from_bus": 56,
+   "to_bus": 176,
+   "length_km": 1.1277,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300414_LVStation_mvgd_3150_lvgd_301260",
+   "from_bus": 54,
+   "to_bus": 127,
+   "length_km": 0.474816,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300461_MVCableDist_mvgd_3150_22",
+   "from_bus": 63,
+   "to_bus": 179,
+   "length_km": 0.760663,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300461_MVCableDist_mvgd_3150_30",
+   "from_bus": 63,
+   "to_bus": 187,
+   "length_km": 1.692974,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300493_MVCableDist_mvgd_3150_22",
+   "from_bus": 64,
+   "to_bus": 179,
+   "length_km": 0.675845,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300493_MVCableDist_mvgd_3150_27",
+   "from_bus": 64,
+   "to_bus": 184,
+   "length_km": 0.19387,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300513_MVCableDist_mvgd_3150_1",
+   "from_bus": 70,
+   "to_bus": 158,
+   "length_km": 0.76104,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300513_MVCableDist_mvgd_3150_23",
+   "from_bus": 70,
+   "to_bus": 180,
+   "length_km": 0.2712,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300514_MVCableDist_mvgd_3150_61",
+   "from_bus": 71,
+   "to_bus": 218,
+   "length_km": 0.412006,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300515_LVStation_mvgd_3150_lvgd_428412",
+   "from_bus": 72,
+   "to_bus": 76,
+   "length_km": 0.890951,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300515_MVCableDist_mvgd_3150_61",
+   "from_bus": 72,
+   "to_bus": 218,
+   "length_km": 0.096996,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300574_LVStation_mvgd_3150_lvgd_300575",
+   "from_bus": 78,
+   "to_bus": 79,
+   "length_km": 0.467863,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300575_MVCableDist_mvgd_3150_62",
+   "from_bus": 79,
+   "to_bus": 219,
+   "length_km": 0.352596,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300576_MVCableDist_mvgd_3150_4",
+   "from_bus": 80,
+   "to_bus": 161,
+   "length_km": 0.803636,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300576_MVCableDist_mvgd_3150_62",
+   "from_bus": 80,
+   "to_bus": 219,
+   "length_km": 0.312552,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300577_LVStation_mvgd_3150_lvgd_300578",
+   "from_bus": 81,
+   "to_bus": 82,
+   "length_km": 0.467863,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300577_MVCableDist_mvgd_3150_25",
+   "from_bus": 81,
+   "to_bus": 182,
+   "length_km": 0.336341,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300577_MVCableDist_mvgd_3150_63",
+   "from_bus": 81,
+   "to_bus": 220,
+   "length_km": 0.229783,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300578_LVStation_mvgd_3150_lvgd_505854",
+   "from_bus": 82,
+   "to_bus": 83,
+   "length_km": 0.71554,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300589_LVStation_mvgd_3150_lvgd_300615",
+   "from_bus": 74,
+   "to_bus": 90,
+   "length_km": 0.925676,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300589_MVCableDist_mvgd_3150_24",
+   "from_bus": 74,
+   "to_bus": 181,
+   "length_km": 0.120246,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300614_MVCableDist_mvgd_3150_65",
+   "from_bus": 86,
+   "to_bus": 222,
+   "length_km": 0.160981,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300615_MVCableDist_mvgd_3150_67",
+   "from_bus": 90,
+   "to_bus": 224,
+   "length_km": 0.149768,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300616_LVStation_mvgd_3150_lvgd_300617",
+   "from_bus": 91,
+   "to_bus": 92,
+   "length_km": 0.467861,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300616_MVCableDist_mvgd_3150_67",
+   "from_bus": 91,
+   "to_bus": 224,
+   "length_km": 0.421185,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300617_MVCableDist_mvgd_3150_39",
+   "from_bus": 92,
+   "to_bus": 196,
+   "length_km": 0.675104,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300626_MVCableDist_mvgd_3150_35",
+   "from_bus": 96,
+   "to_bus": 192,
+   "length_km": 0.796773,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300656_MVCableDist_mvgd_3150_2",
+   "from_bus": 100,
+   "to_bus": 159,
+   "length_km": 0.689339,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300656_MVCableDist_mvgd_3150_35",
+   "from_bus": 100,
+   "to_bus": 192,
+   "length_km": 0.111874,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300661_LVStation_mvgd_3150_lvgd_512213",
+   "from_bus": 16,
+   "to_bus": 20,
+   "length_km": 0.710102,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300661_MVCableDist_mvgd_3150_1",
+   "from_bus": 16,
+   "to_bus": 158,
+   "length_km": 0.609134,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300661_MVCableDist_mvgd_3150_68",
+   "from_bus": 16,
+   "to_bus": 225,
+   "length_km": 0.395558,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300662_LVStation_mvgd_3150_lvgd_300664",
+   "from_bus": 17,
+   "to_bus": 19,
+   "length_km": 1.046282,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300662_MVCableDist_mvgd_3150_32",
+   "from_bus": 17,
+   "to_bus": 189,
+   "length_km": 0.547549,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300662_MVCableDist_mvgd_3150_68",
+   "from_bus": 17,
+   "to_bus": 225,
+   "length_km": 0.099512,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300663_MVCableDist_mvgd_3150_1",
+   "from_bus": 18,
+   "to_bus": 158,
+   "length_km": 0.14408,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300663_MVCableDist_mvgd_3150_26",
+   "from_bus": 18,
+   "to_bus": 183,
+   "length_km": 0.720109,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300665_MVCableDist_mvgd_3150_69",
+   "from_bus": 116,
+   "to_bus": 226,
+   "length_km": 0.125074,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300666_MVCableDist_mvgd_3150_69",
+   "from_bus": 117,
+   "to_bus": 226,
+   "length_km": 0.649864,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300668_MVCableDist_mvgd_3150_38",
+   "from_bus": 109,
+   "to_bus": 195,
+   "length_km": 1.005165,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300668_MVCableDist_mvgd_3150_71",
+   "from_bus": 109,
+   "to_bus": 228,
+   "length_km": 0.465495,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300669_MVCableDist_mvgd_3150_34",
+   "from_bus": 108,
+   "to_bus": 191,
+   "length_km": 0.504189,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300669_MVCableDist_mvgd_3150_71",
+   "from_bus": 108,
+   "to_bus": 228,
+   "length_km": 0.282549,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300670_LVStation_mvgd_3150_lvgd_516464",
+   "from_bus": 110,
+   "to_bus": 111,
+   "length_km": 0.736358,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300670_MVCableDist_mvgd_3150_8",
+   "from_bus": 110,
+   "to_bus": 165,
+   "length_km": 0.395275,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300712_MVCableDist_mvgd_3150_48",
+   "from_bus": 112,
+   "to_bus": 205,
+   "length_km": 1.689692,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300712_MVCableDist_mvgd_3150_72",
+   "from_bus": 112,
+   "to_bus": 229,
+   "length_km": 0.166233,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300713_MVCableDist_mvgd_3150_72",
+   "from_bus": 113,
+   "to_bus": 229,
+   "length_km": 0.34582,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300785_LVStation_mvgd_3150_lvgd_429878",
+   "from_bus": 107,
+   "to_bus": 114,
+   "length_km": 0.838029,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300785_MVCableDist_mvgd_3150_44",
+   "from_bus": 107,
+   "to_bus": 201,
+   "length_km": 1.685103,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300785_MVCableDist_mvgd_3150_74",
+   "from_bus": 107,
+   "to_bus": 231,
+   "length_km": 0.840605,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300807_MVCableDist_mvgd_3150_41",
+   "from_bus": 115,
+   "to_bus": 198,
+   "length_km": 1.044715,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300944_LVStation_mvgd_3150_lvgd_300945",
+   "from_bus": 10,
+   "to_bus": 11,
+   "length_km": 0.467855,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300945_MVCableDist_mvgd_3150_73",
+   "from_bus": 11,
+   "to_bus": 230,
+   "length_km": 0.157424,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300946_MVCableDist_mvgd_3150_74",
+   "from_bus": 12,
+   "to_bus": 231,
+   "length_km": 0.545584,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_300946_MVCableDist_mvgd_3150_75",
+   "from_bus": 12,
+   "to_bus": 232,
+   "length_km": 0.332566,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301227_LVStation_mvgd_3150_lvgd_429307",
+   "from_bus": 119,
+   "to_bus": 149,
+   "length_km": 0.793865,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301227_MVCableDist_mvgd_3150_77",
+   "from_bus": 119,
+   "to_bus": 234,
+   "length_km": 0.621453,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301228_MVCableDist_mvgd_3150_41",
+   "from_bus": 120,
+   "to_bus": 198,
+   "length_km": 0.885758,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301228_MVCableDist_mvgd_3150_76",
+   "from_bus": 120,
+   "to_bus": 233,
+   "length_km": 0.243252,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301229_MVCableDist_mvgd_3150_76",
+   "from_bus": 121,
+   "to_bus": 233,
+   "length_km": 0.39978,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301246_MVCableDist_mvgd_3150_46",
+   "from_bus": 135,
+   "to_bus": 203,
+   "length_km": 0.075602,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301246_MVCableDist_mvgd_3150_79",
+   "from_bus": 135,
+   "to_bus": 236,
+   "length_km": 0.508734,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301259_LVStation_mvgd_3150_lvgd_301262",
+   "from_bus": 126,
+   "to_bus": 129,
+   "length_km": 0.467858,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301259_MVCableDist_mvgd_3150_42",
+   "from_bus": 126,
+   "to_bus": 199,
+   "length_km": 0.169409,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301260_LVStation_mvgd_3150_lvgd_301261",
+   "from_bus": 127,
+   "to_bus": 128,
+   "length_km": 0.468142,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301260_LVStation_mvgd_3150_lvgd_301263",
+   "from_bus": 127,
+   "to_bus": 130,
+   "length_km": 0.467858,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301261_MVCableDist_mvgd_3150_81",
+   "from_bus": 128,
+   "to_bus": 238,
+   "length_km": 0.179816,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301262_MVCableDist_mvgd_3150_81",
+   "from_bus": 129,
+   "to_bus": 238,
+   "length_km": 0.294808,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301264_MVCableDist_mvgd_3150_6",
+   "from_bus": 137,
+   "to_bus": 163,
+   "length_km": 1.227424,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301264_MVCableDist_mvgd_3150_82",
+   "from_bus": 137,
+   "to_bus": 239,
+   "length_km": 0.498966,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301283_MVCableDist_mvgd_3150_18",
+   "from_bus": 142,
+   "to_bus": 175,
+   "length_km": 1.247286,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301283_MVCableDist_mvgd_3150_52",
+   "from_bus": 142,
+   "to_bus": 209,
+   "length_km": 0.866612,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301284_MVCableDist_mvgd_3150_53",
+   "from_bus": 143,
+   "to_bus": 210,
+   "length_km": 1.117878,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301291_MVCableDist_mvgd_3150_51",
+   "from_bus": 133,
+   "to_bus": 208,
+   "length_km": 2.042827,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301297_LVStation_mvgd_3150_lvgd_429712",
+   "from_bus": 124,
+   "to_bus": 145,
+   "length_km": 0.6585,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301300_MVCableDist_mvgd_3150_53",
+   "from_bus": 144,
+   "to_bus": 210,
+   "length_km": 0.398218,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301391_MVCableDist_mvgd_3150_40",
+   "from_bus": 153,
+   "to_bus": 197,
+   "length_km": 0.978895,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301391_MVCableDist_mvgd_3150_50",
+   "from_bus": 153,
+   "to_bus": 207,
+   "length_km": 0.127591,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301407_MVCableDist_mvgd_3150_54",
+   "from_bus": 150,
+   "to_bus": 211,
+   "length_km": 0.098202,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301675_MVCableDist_mvgd_3150_84",
+   "from_bus": 151,
+   "to_bus": 241,
+   "length_km": 0.409072,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301861_MVCableDist_mvgd_3150_86",
+   "from_bus": 147,
+   "to_bus": 243,
+   "length_km": 0.310646,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301861_MVCableDist_mvgd_3150_87",
+   "from_bus": 147,
+   "to_bus": 244,
+   "length_km": 3.833391,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_301909_MVCableDist_mvgd_3150_55",
+   "from_bus": 155,
+   "to_bus": 212,
+   "length_km": 1.524863,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302202_LVStation_mvgd_3150_lvgd_428379",
+   "from_bus": 156,
+   "to_bus": 157,
+   "length_km": 1.176398,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302202_MVCableDist_mvgd_3150_55",
+   "from_bus": 157,
+   "to_bus": 212,
+   "length_km": 1.179227,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302222_MVCableDist_mvgd_3150_87",
+   "from_bus": 1,
+   "to_bus": 244,
+   "length_km": 0.583779,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302223_LVStation_mvgd_3150_lvgd_302224",
+   "from_bus": 2,
+   "to_bus": 3,
+   "length_km": 0.468135,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302223_MVCableDist_mvgd_3150_87",
+   "from_bus": 2,
+   "to_bus": 244,
+   "length_km": 0.495703,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302223_MVCableDist_mvgd_3150_89",
+   "from_bus": 2,
+   "to_bus": 246,
+   "length_km": 0.411592,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302225_MVCableDist_mvgd_3150_88",
+   "from_bus": 4,
+   "to_bus": 245,
+   "length_km": 0.161155,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302225_MVCableDist_mvgd_3150_89",
+   "from_bus": 4,
+   "to_bus": 246,
+   "length_km": 0.125907,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_302226_MVCableDist_mvgd_3150_88",
+   "from_bus": 5,
+   "to_bus": 245,
+   "length_km": 0.439294,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427237_MVCableDist_mvgd_3150_18",
+   "from_bus": 47,
+   "to_bus": 175,
+   "length_km": 0.177126,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427264_MVCableDist_mvgd_3150_52",
+   "from_bus": 132,
+   "to_bus": 209,
+   "length_km": 0.279246,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427378_MVCableDist_mvgd_3150_21",
+   "from_bus": 55,
+   "to_bus": 178,
+   "length_km": 0.179074,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427442_MVCableDist_mvgd_3150_49",
+   "from_bus": 131,
+   "to_bus": 206,
+   "length_km": 1.098264,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427494_LVStation_mvgd_3150_lvgd_427567",
+   "from_bus": 51,
+   "to_bus": 53,
+   "length_km": 0.50336,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427554_MVCableDist_mvgd_3150_33",
+   "from_bus": 62,
+   "to_bus": 190,
+   "length_km": 0.404063,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427557_MVCableDist_mvgd_3150_16",
+   "from_bus": 44,
+   "to_bus": 173,
+   "length_km": 0.410172,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427567_MVCableDist_mvgd_3150_17",
+   "from_bus": 51,
+   "to_bus": 174,
+   "length_km": 0.462081,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427666_MVCableDist_mvgd_3150_10",
+   "from_bus": 28,
+   "to_bus": 167,
+   "length_km": 0.162684,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427666_MVCableDist_mvgd_3150_70",
+   "from_bus": 28,
+   "to_bus": 227,
+   "length_km": 1.815944,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427673_MVCableDist_mvgd_3150_33",
+   "from_bus": 88,
+   "to_bus": 190,
+   "length_km": 0.412504,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427772_MVCableDist_mvgd_3150_10",
+   "from_bus": 104,
+   "to_bus": 167,
+   "length_km": 1.074446,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427772_MVCableDist_mvgd_3150_32",
+   "from_bus": 104,
+   "to_bus": 189,
+   "length_km": 0.20583,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427807_MVCableDist_mvgd_3150_48",
+   "from_bus": 141,
+   "to_bus": 205,
+   "length_km": 2.118316,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427880_MVCableDist_mvgd_3150_17",
+   "from_bus": 25,
+   "to_bus": 174,
+   "length_km": 1.630842,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427952_MVCableDist_mvgd_3150_26",
+   "from_bus": 75,
+   "to_bus": 183,
+   "length_km": 0.371104,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_427957_LVStation_mvgd_3150_lvgd_428045",
+   "from_bus": 59,
+   "to_bus": 73,
+   "length_km": 0.677709,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428045_MVCableDist_mvgd_3150_23",
+   "from_bus": 73,
+   "to_bus": 180,
+   "length_km": 0.546872,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428250_MVCableDist_mvgd_3150_68",
+   "from_bus": 101,
+   "to_bus": 225,
+   "length_km": 2.098737,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428251_LVStation_mvgd_3150_lvgd_428259",
+   "from_bus": 97,
+   "to_bus": 102,
+   "length_km": 0.481333,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428251_LVStation_mvgd_3150_lvgd_428383",
+   "from_bus": 85,
+   "to_bus": 97,
+   "length_km": 0.767047,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428291_MVCableDist_mvgd_3150_82",
+   "from_bus": 23,
+   "to_bus": 239,
+   "length_km": 0.478286,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428313_MVCableDist_mvgd_3150_38",
+   "from_bus": 103,
+   "to_bus": 195,
+   "length_km": 0.355323,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428322_MVCableDist_mvgd_3150_71",
+   "from_bus": 118,
+   "to_bus": 228,
+   "length_km": 2.280229,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428351_MVCableDist_mvgd_3150_38",
+   "from_bus": 106,
+   "to_bus": 195,
+   "length_km": 0.13431,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428380_MVCableDist_mvgd_3150_40",
+   "from_bus": 7,
+   "to_bus": 197,
+   "length_km": 0.455151,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428383_MVCableDist_mvgd_3150_34",
+   "from_bus": 85,
+   "to_bus": 191,
+   "length_km": 0.47812,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428412_MVCableDist_mvgd_3150_28",
+   "from_bus": 76,
+   "to_bus": 185,
+   "length_km": 0.46314,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428412_MVCableDist_mvgd_3150_29",
+   "from_bus": 76,
+   "to_bus": 186,
+   "length_km": 0.322885,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428501_MVCableDist_mvgd_3150_29",
+   "from_bus": 84,
+   "to_bus": 186,
+   "length_km": 0.348736,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428521_MVCableDist_mvgd_3150_47",
+   "from_bus": 52,
+   "to_bus": 204,
+   "length_km": 0.903039,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428582_MVCableDist_mvgd_3150_28",
+   "from_bus": 66,
+   "to_bus": 185,
+   "length_km": 1.138555,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428640_MVCableDist_mvgd_3150_28",
+   "from_bus": 77,
+   "to_bus": 185,
+   "length_km": 0.963097,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428696_MVCableDist_mvgd_3150_27",
+   "from_bus": 61,
+   "to_bus": 184,
+   "length_km": 0.502288,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428745_MVCableDist_mvgd_3150_27",
+   "from_bus": 68,
+   "to_bus": 184,
+   "length_km": 1.02797,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_428860_MVCableDist_mvgd_3150_22",
+   "from_bus": 65,
+   "to_bus": 179,
+   "length_km": 0.341421,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429009_MVCableDist_mvgd_3150_36",
+   "from_bus": 95,
+   "to_bus": 193,
+   "length_km": 0.272641,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429075_MVCableDist_mvgd_3150_3",
+   "from_bus": 21,
+   "to_bus": 160,
+   "length_km": 0.359076,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429196_MVCableDist_mvgd_3150_37",
+   "from_bus": 99,
+   "to_bus": 194,
+   "length_km": 0.397807,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429217_MVCableDist_mvgd_3150_14",
+   "from_bus": 30,
+   "to_bus": 171,
+   "length_km": 0.502487,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429217_MVCableDist_mvgd_3150_37",
+   "from_bus": 30,
+   "to_bus": 194,
+   "length_km": 0.190549,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429264_LVStation_mvgd_3150_lvgd_429337",
+   "from_bus": 27,
+   "to_bus": 60,
+   "length_km": 0.740988,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429307_LVStation_mvgd_3150_lvgd_505826",
+   "from_bus": 58,
+   "to_bus": 149,
+   "length_km": 2.24682,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429470_MVCableDist_mvgd_3150_4",
+   "from_bus": 24,
+   "to_bus": 161,
+   "length_km": 0.362358,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429494_MVCableDist_mvgd_3150_25",
+   "from_bus": 69,
+   "to_bus": 182,
+   "length_km": 0.921978,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429615_MVCableDist_mvgd_3150_31",
+   "from_bus": 15,
+   "to_bus": 188,
+   "length_km": 0.143492,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429628_LVStation_mvgd_3150_lvgd_429665",
+   "from_bus": 123,
+   "to_bus": 154,
+   "length_km": 0.636618,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429665_MVCableDist_mvgd_3150_43",
+   "from_bus": 123,
+   "to_bus": 200,
+   "length_km": 0.60171,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429665_MVCableDist_mvgd_3150_44",
+   "from_bus": 123,
+   "to_bus": 201,
+   "length_km": 0.495809,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429711_MVCableDist_mvgd_3150_60",
+   "from_bus": 140,
+   "to_bus": 217,
+   "length_km": 1.145569,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429712_MVCableDist_mvgd_3150_43",
+   "from_bus": 124,
+   "to_bus": 200,
+   "length_km": 0.55619,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429781_MVCableDist_mvgd_3150_44",
+   "from_bus": 125,
+   "to_bus": 201,
+   "length_km": 0.315626,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429913_MVCableDist_mvgd_3150_45",
+   "from_bus": 146,
+   "to_bus": 202,
+   "length_km": 0.179297,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429915_MVCableDist_mvgd_3150_9",
+   "from_bus": 32,
+   "to_bus": 166,
+   "length_km": 0.392669,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429927_MVCableDist_mvgd_3150_24",
+   "from_bus": 67,
+   "to_bus": 181,
+   "length_km": 0.886406,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429934_MVCableDist_mvgd_3150_7",
+   "from_bus": 33,
+   "to_bus": 164,
+   "length_km": 0.460284,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429934_MVCableDist_mvgd_3150_9",
+   "from_bus": 33,
+   "to_bus": 166,
+   "length_km": 0.153249,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_429954_MVCableDist_mvgd_3150_39",
+   "from_bus": 105,
+   "to_bus": 196,
+   "length_km": 0.370542,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_430024_MVCableDist_mvgd_3150_7",
+   "from_bus": 29,
+   "to_bus": 164,
+   "length_km": 0.630763,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_430075_MVCableDist_mvgd_3150_39",
+   "from_bus": 98,
+   "to_bus": 196,
+   "length_km": 0.548749,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_430077_MVCableDist_mvgd_3150_42",
+   "from_bus": 134,
+   "to_bus": 199,
+   "length_km": 0.707939,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_484879_MVCableDist_mvgd_3150_56",
+   "from_bus": 43,
+   "to_bus": 213,
+   "length_km": 0.792968,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_484897_MVCableDist_mvgd_3150_85",
+   "from_bus": 152,
+   "to_bus": 242,
+   "length_km": 0.430496,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_491137_LVStation_mvgd_3150_lvgd_491138",
+   "from_bus": 93,
+   "to_bus": 94,
+   "length_km": 0.397388,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_491138_MVCableDist_mvgd_3150_66",
+   "from_bus": 94,
+   "to_bus": 223,
+   "length_km": 0.22711,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_493261_MVCableDist_mvgd_3150_74",
+   "from_bus": 13,
+   "to_bus": 231,
+   "length_km": 0.575003,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_493262_MVCableDist_mvgd_3150_41",
+   "from_bus": 14,
+   "to_bus": 198,
+   "length_km": 0.346798,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_493262_MVCableDist_mvgd_3150_73",
+   "from_bus": 14,
+   "to_bus": 230,
+   "length_km": 0.742132,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_503735_MVCableDist_mvgd_3150_83",
+   "from_bus": 138,
+   "to_bus": 240,
+   "length_km": 0.12944,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_503736_MVCableDist_mvgd_3150_82",
+   "from_bus": 139,
+   "to_bus": 239,
+   "length_km": 0.49594,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_505826_MVCableDist_mvgd_3150_20",
+   "from_bus": 58,
+   "to_bus": 177,
+   "length_km": 0.288092,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_505862_MVCableDist_mvgd_3150_77",
+   "from_bus": 122,
+   "to_bus": 234,
+   "length_km": 0.433876,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_505869_MVCableDist_mvgd_3150_89",
+   "from_bus": 6,
+   "to_bus": 246,
+   "length_km": 0.643019,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_512233_MVCableDist_mvgd_3150_55",
+   "from_bus": 148,
+   "to_bus": 212,
+   "length_km": 0.691982,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_512233_MVCableDist_mvgd_3150_86",
+   "from_bus": 148,
+   "to_bus": 243,
+   "length_km": 0.4187,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_514420_MVCableDist_mvgd_3150_79",
+   "from_bus": 136,
+   "to_bus": 236,
+   "length_km": 0.490929,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_LVStation_mvgd_3150_lvgd_516463_MVCableDist_mvgd_3150_64",
+   "from_bus": 87,
+   "to_bus": 221,
+   "length_km": 0.485827,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_10_MVCableDist_mvgd_3150_16",
+   "from_bus": 167,
+   "to_bus": 173,
+   "length_km": 0.194013,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_11_MVCableDist_mvgd_3150_2",
+   "from_bus": 159,
+   "to_bus": 168,
+   "length_km": 1.342515,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_12_MVCableDist_mvgd_3150_20",
+   "from_bus": 169,
+   "to_bus": 177,
+   "length_km": 0.455535,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_13_MVCableDist_mvgd_3150_58",
+   "from_bus": 170,
+   "to_bus": 215,
+   "length_km": 0.373109,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_13_MVCableDist_mvgd_3150_59",
+   "from_bus": 170,
+   "to_bus": 216,
+   "length_km": 0.197345,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_13_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 170,
+   "length_km": 0.481792,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_14_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 171,
+   "length_km": 1.029277,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_15_MVCableDist_mvgd_3150_35",
+   "from_bus": 172,
+   "to_bus": 192,
+   "length_km": 0.049642,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_15_MVCableDist_mvgd_3150_36",
+   "from_bus": 172,
+   "to_bus": 193,
+   "length_km": 0.562514,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_16_MVCableDist_mvgd_3150_5",
+   "from_bus": 162,
+   "to_bus": 173,
+   "length_km": 0.310217,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_17_MVCableDist_mvgd_3150_5",
+   "from_bus": 162,
+   "to_bus": 174,
+   "length_km": 0.54066,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_18_MVCableDist_mvgd_3150_21",
+   "from_bus": 175,
+   "to_bus": 178,
+   "length_km": 0.481517,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_19_MVCableDist_mvgd_3150_47",
+   "from_bus": 176,
+   "to_bus": 204,
+   "length_km": 0.821033,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_19_MVCableDist_mvgd_3150_6",
+   "from_bus": 163,
+   "to_bus": 176,
+   "length_km": 1.183526,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_20_MVCableDist_mvgd_3150_60",
+   "from_bus": 177,
+   "to_bus": 217,
+   "length_km": 0.504999,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_23_MVCableDist_mvgd_3150_61",
+   "from_bus": 180,
+   "to_bus": 218,
+   "length_km": 0.39049,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_24_MVCableDist_mvgd_3150_25",
+   "from_bus": 181,
+   "to_bus": 182,
+   "length_km": 1.376597,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_29_MVCableDist_mvgd_3150_34",
+   "from_bus": 186,
+   "to_bus": 191,
+   "length_km": 0.206172,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_2_MVCableDist_mvgd_3150_8",
+   "from_bus": 159,
+   "to_bus": 165,
+   "length_km": 0.575861,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_30_MVCableDist_mvgd_3150_64",
+   "from_bus": 187,
+   "to_bus": 221,
+   "length_km": 0.245692,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_31_MVCableDist_mvgd_3150_66",
+   "from_bus": 188,
+   "to_bus": 223,
+   "length_km": 0.389882,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_31_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 188,
+   "length_km": 0.948262,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_32_MVCableDist_mvgd_3150_33",
+   "from_bus": 189,
+   "to_bus": 190,
+   "length_km": 1.542865,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_36_MVCableDist_mvgd_3150_37",
+   "from_bus": 193,
+   "to_bus": 194,
+   "length_km": 0.861119,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_40_MVCableDist_mvgd_3150_54",
+   "from_bus": 197,
+   "to_bus": 211,
+   "length_km": 0.749912,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_42_MVCableDist_mvgd_3150_45",
+   "from_bus": 199,
+   "to_bus": 202,
+   "length_km": 0.669735,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_43_MVCableDist_mvgd_3150_45",
+   "from_bus": 200,
+   "to_bus": 202,
+   "length_km": 0.696063,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_46_MVCableDist_mvgd_3150_48",
+   "from_bus": 203,
+   "to_bus": 205,
+   "length_km": 0.645713,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_46_MVCableDist_mvgd_3150_80",
+   "from_bus": 203,
+   "to_bus": 237,
+   "length_km": 0.160604,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_47_MVCableDist_mvgd_3150_83",
+   "from_bus": 204,
+   "to_bus": 240,
+   "length_km": 0.43381,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_49_MVCableDist_mvgd_3150_52",
+   "from_bus": 206,
+   "to_bus": 209,
+   "length_km": 0.519255,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_49_MVCableDist_mvgd_3150_79",
+   "from_bus": 206,
+   "to_bus": 236,
+   "length_km": 0.12138,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_4_MVCableDist_mvgd_3150_88",
+   "from_bus": 161,
+   "to_bus": 245,
+   "length_km": 1.05518,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_50_MVCableDist_mvgd_3150_53",
+   "from_bus": 207,
+   "to_bus": 210,
+   "length_km": 0.90822,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_50_MVCableDist_mvgd_3150_6",
+   "from_bus": 163,
+   "to_bus": 207,
+   "length_km": 0.837483,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_51_MVCableDist_mvgd_3150_54",
+   "from_bus": 208,
+   "to_bus": 211,
+   "length_km": 0.393853,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_51_MVCableDist_mvgd_3150_72",
+   "from_bus": 208,
+   "to_bus": 229,
+   "length_km": 1.353483,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_62_MVCableDist_mvgd_3150_63",
+   "from_bus": 219,
+   "to_bus": 220,
+   "length_km": 0.150227,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_64_MVCableDist_mvgd_3150_65",
+   "from_bus": 221,
+   "to_bus": 222,
+   "length_km": 0.27133,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_66_MVCableDist_mvgd_3150_67",
+   "from_bus": 223,
+   "to_bus": 224,
+   "length_km": 0.502205,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_69_MVCableDist_mvgd_3150_70",
+   "from_bus": 226,
+   "to_bus": 227,
+   "length_km": 0.09273,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_71_MVCableDist_mvgd_3150_8",
+   "from_bus": 165,
+   "to_bus": 228,
+   "length_km": 0.337377,
+   "r_ohm_per_km": 0.125,
+   "x_ohm_per_km": 0.113097,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.417,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_73_MVCableDist_mvgd_3150_75",
+   "from_bus": 230,
+   "to_bus": 232,
+   "length_km": 0.039255,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_76_MVCableDist_mvgd_3150_78",
+   "from_bus": 233,
+   "to_bus": 235,
+   "length_km": 0.300277,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_77_MVCableDist_mvgd_3150_78",
+   "from_bus": 234,
+   "to_bus": 235,
+   "length_km": 0.360022,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_84_MVCableDist_mvgd_3150_85",
+   "from_bus": 241,
+   "to_bus": 242,
+   "length_km": 0.376676,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_84_MVCableDist_mvgd_3150_86",
+   "from_bus": 241,
+   "to_bus": 243,
+   "length_km": 0.573771,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "Branch_MVCableDist_mvgd_3150_9_MVStation_mvgd_3150",
+   "from_bus": 0,
+   "to_bus": 166,
+   "length_km": 2.012028,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.119381,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.357,
+   "parallel": 1
+  },
+  {
+   "name": "lv300266:L0",
+   "from_bus": 248,
+   "to_bus": 249,
+   "length_km": 0.008708,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967028,
+     54.527685
+    ],
+    [
+     9.966905,
+     54.527717
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L1",
+   "from_bus": 250,
+   "to_bus": 249,
+   "length_km": 0.040295,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967148,
+     54.528041
+    ],
+    [
+     9.966905,
+     54.527717
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L2",
+   "from_bus": 249,
+   "to_bus": 251,
+   "length_km": 0.56372,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966905,
+     54.527717
+    ],
+    [
+     9.966362,
+     54.527856
+    ],
+    [
+     9.966166,
+     54.527884
+    ],
+    [
+     9.964792,
+     54.527813
+    ],
+    [
+     9.964622,
+     54.527855
+    ],
+    [
+     9.963653,
+     54.52836
+    ],
+    [
+     9.961567,
+     54.529461
+    ],
+    [
+     9.96081,
+     54.529855
+    ],
+    [
+     9.959891,
+     54.530346
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L3",
+   "from_bus": 252,
+   "to_bus": 253,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968422,
+     54.52701
+    ],
+    [
+     9.968422,
+     54.52701
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L4",
+   "from_bus": 254,
+   "to_bus": 253,
+   "length_km": 0.015912,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.96859,
+     54.526918
+    ],
+    [
+     9.968422,
+     54.52701
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L5",
+   "from_bus": 253,
+   "to_bus": 255,
+   "length_km": 0.021865,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968422,
+     54.52701
+    ],
+    [
+     9.96835,
+     54.527055
+    ],
+    [
+     9.968296,
+     54.527069
+    ],
+    [
+     9.968213,
+     54.527069
+    ],
+    [
+     9.968125,
+     54.527057
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L6",
+   "from_bus": 256,
+   "to_bus": 247,
+   "length_km": 0.024401,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967484,
+     54.527569
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L7",
+   "from_bus": 256,
+   "to_bus": 257,
+   "length_km": 0.005356,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967844,
+     54.527557
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L8",
+   "from_bus": 258,
+   "to_bus": 259,
+   "length_km": 0.026737,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967289,
+     54.527469
+    ],
+    [
+     9.967208,
+     54.52743
+    ],
+    [
+     9.967134,
+     54.527435
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L9",
+   "from_bus": 260,
+   "to_bus": 259,
+   "length_km": 0.011296,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 2,
+   "geometry": [
+    [
+     9.96715,
+     54.527527
+    ],
+    [
+     9.967134,
+     54.527435
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L10",
+   "from_bus": 259,
+   "to_bus": 247,
+   "length_km": 0.010651,
+   "r_ohm_per_km": 0.164,
+   "x_ohm_per_km": 0.077,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.333,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967134,
+     54.527435
+    ],
+    [
+     9.967103,
+     54.527437
+    ],
+    [
+     9.966983,
+     54.527471
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L11",
+   "from_bus": 252,
+   "to_bus": 261,
+   "length_km": 0.025015,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968125,
+     54.527057
+    ],
+    [
+     9.968264,
+     54.526846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L12",
+   "from_bus": 262,
+   "to_bus": 261,
+   "length_km": 0.011471,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968415,
+     54.52688
+    ],
+    [
+     9.968264,
+     54.526846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L13",
+   "from_bus": 261,
+   "to_bus": 263,
+   "length_km": 0.179623,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968264,
+     54.526846
+    ],
+    [
+     9.968269,
+     54.526837
+    ],
+    [
+     9.968528,
+     54.526437
+    ],
+    [
+     9.968831,
+     54.526074
+    ],
+    [
+     9.968891,
+     54.525919
+    ],
+    [
+     9.96892,
+     54.525696
+    ],
+    [
+     9.9688,
+     54.525413
+    ],
+    [
+     9.968711,
+     54.525316
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L14",
+   "from_bus": 264,
+   "to_bus": 248,
+   "length_km": 0.006272,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967028,
+     54.527685
+    ],
+    [
+     9.967117,
+     54.527663
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L15",
+   "from_bus": 256,
+   "to_bus": 265,
+   "length_km": 0.24875,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.973451,
+     54.529941
+    ],
+    [
+     9.973152,
+     54.529815
+    ],
+    [
+     9.971802,
+     54.529269
+    ],
+    [
+     9.971156,
+     54.529015
+    ],
+    [
+     9.970653,
+     54.528827
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L16",
+   "from_bus": 266,
+   "to_bus": 265,
+   "length_km": 0.054093,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969827,
+     54.529091
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L17",
+   "from_bus": 267,
+   "to_bus": 265,
+   "length_km": 0.014508,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.970062,
+     54.528727
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L18",
+   "from_bus": 268,
+   "to_bus": 265,
+   "length_km": 0.027855,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969842,
+     54.528671
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L19",
+   "from_bus": 269,
+   "to_bus": 265,
+   "length_km": 0.059874,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.969542,
+     54.529012
+    ],
+    [
+     9.970258,
+     54.528684
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L20",
+   "from_bus": 265,
+   "to_bus": 270,
+   "length_km": 0.169154,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.970258,
+     54.528684
+    ],
+    [
+     9.969948,
+     54.528572
+    ],
+    [
+     9.969817,
+     54.528541
+    ],
+    [
+     9.969604,
+     54.528504
+    ],
+    [
+     9.969175,
+     54.528454
+    ],
+    [
+     9.968844,
+     54.528408
+    ],
+    [
+     9.968621,
+     54.528361
+    ],
+    [
+     9.968421,
+     54.528297
+    ],
+    [
+     9.968249,
+     54.528229
+    ],
+    [
+     9.968098,
+     54.528141
+    ],
+    [
+     9.967956,
+     54.528038
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L21",
+   "from_bus": 271,
+   "to_bus": 270,
+   "length_km": 0.057565,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967241,
+     54.528331
+    ],
+    [
+     9.967956,
+     54.528038
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L22",
+   "from_bus": 270,
+   "to_bus": 272,
+   "length_km": 0.056051,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967956,
+     54.528038
+    ],
+    [
+     9.967842,
+     54.527917
+    ],
+    [
+     9.967791,
+     54.527839
+    ],
+    [
+     9.967754,
+     54.527757
+    ],
+    [
+     9.967748,
+     54.527653
+    ],
+    [
+     9.967761,
+     54.527556
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L23",
+   "from_bus": 273,
+   "to_bus": 274,
+   "length_km": 0.069078,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966403,
+     54.526673
+    ],
+    [
+     9.966628,
+     54.526973
+    ],
+    [
+     9.966688,
+     54.527077
+    ],
+    [
+     9.966751,
+     54.527216
+    ],
+    [
+     9.966776,
+     54.527257
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L24",
+   "from_bus": 275,
+   "to_bus": 274,
+   "length_km": 0.023451,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967103,
+     54.527189
+    ],
+    [
+     9.966776,
+     54.527257
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L25",
+   "from_bus": 274,
+   "to_bus": 258,
+   "length_km": 0.027459,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.966776,
+     54.527257
+    ],
+    [
+     9.966839,
+     54.527359
+    ],
+    [
+     9.966906,
+     54.52741
+    ],
+    [
+     9.966983,
+     54.527471
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L26",
+   "from_bus": 252,
+   "to_bus": 257,
+   "length_km": 0.058235,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.968125,
+     54.527057
+    ],
+    [
+     9.967977,
+     54.527283
+    ],
+    [
+     9.967844,
+     54.527557
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300266:L27",
+   "from_bus": 264,
+   "to_bus": 247,
+   "length_km": 0.019401,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.967392,
+     54.527592
+    ],
+    [
+     9.967117,
+     54.527663
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L0",
+   "from_bus": 277,
+   "to_bus": 278,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922928,
+     54.55687
+    ],
+    [
+     9.922928,
+     54.55687
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L1",
+   "from_bus": 279,
+   "to_bus": 278,
+   "length_km": 0.026478,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923121,
+     54.55667
+    ],
+    [
+     9.922928,
+     54.55687
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L2",
+   "from_bus": 280,
+   "to_bus": 278,
+   "length_km": 0.012002,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922782,
+     54.556818
+    ],
+    [
+     9.922928,
+     54.55687
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L3",
+   "from_bus": 278,
+   "to_bus": 281,
+   "length_km": 0.027913,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922928,
+     54.55687
+    ],
+    [
+     9.923277,
+     54.557019
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L4",
+   "from_bus": 282,
+   "to_bus": 283,
+   "length_km": 0.025895,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923187,
+     54.55711
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L5",
+   "from_bus": 284,
+   "to_bus": 283,
+   "length_km": 0.018728,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923245,
+     54.557391
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L6",
+   "from_bus": 285,
+   "to_bus": 283,
+   "length_km": 0.020259,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923201,
+     54.557447
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L7",
+   "from_bus": 286,
+   "to_bus": 283,
+   "length_km": 0.018496,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923058,
+     54.557471
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L8",
+   "from_bus": 287,
+   "to_bus": 283,
+   "length_km": 0.028177,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923221,
+     54.557526
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L9",
+   "from_bus": 288,
+   "to_bus": 283,
+   "length_km": 0.039048,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923296,
+     54.557614
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L10",
+   "from_bus": 289,
+   "to_bus": 283,
+   "length_km": 0.035425,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923185,
+     54.557608
+    ],
+    [
+     9.923002,
+     54.557317
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L11",
+   "from_bus": 283,
+   "to_bus": 290,
+   "length_km": 0.069793,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923002,
+     54.557317
+    ],
+    [
+     9.922959,
+     54.557365
+    ],
+    [
+     9.922846,
+     54.557553
+    ],
+    [
+     9.922741,
+     54.55782
+    ],
+    [
+     9.922737,
+     54.557924
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L12",
+   "from_bus": 277,
+   "to_bus": 282,
+   "length_km": 0.011591,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923277,
+     54.557019
+    ],
+    [
+     9.923187,
+     54.55711
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L13",
+   "from_bus": 291,
+   "to_bus": 292,
+   "length_km": 0.366755,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.928207,
+     54.554315
+    ],
+    [
+     9.927631,
+     54.554365
+    ],
+    [
+     9.927467,
+     54.554389
+    ],
+    [
+     9.927336,
+     54.554439
+    ],
+    [
+     9.927209,
+     54.554519
+    ],
+    [
+     9.926764,
+     54.554795
+    ],
+    [
+     9.926706,
+     54.55484
+    ],
+    [
+     9.926079,
+     54.555329
+    ],
+    [
+     9.926005,
+     54.555389
+    ],
+    [
+     9.925557,
+     54.555752
+    ],
+    [
+     9.925375,
+     54.555864
+    ],
+    [
+     9.924868,
+     54.55613
+    ],
+    [
+     9.924395,
+     54.556368
+    ],
+    [
+     9.924142,
+     54.556493
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L14",
+   "from_bus": 293,
+   "to_bus": 292,
+   "length_km": 0.026062,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923891,
+     54.556321
+    ],
+    [
+     9.924142,
+     54.556493
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L15",
+   "from_bus": 294,
+   "to_bus": 292,
+   "length_km": 0.034466,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923704,
+     54.556332
+    ],
+    [
+     9.924142,
+     54.556493
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L16",
+   "from_bus": 295,
+   "to_bus": 292,
+   "length_km": 0.018457,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924025,
+     54.556635
+    ],
+    [
+     9.924142,
+     54.556493
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L17",
+   "from_bus": 292,
+   "to_bus": 296,
+   "length_km": 0.031428,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924142,
+     54.556493
+    ],
+    [
+     9.923771,
+     54.556678
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L18",
+   "from_bus": 297,
+   "to_bus": 296,
+   "length_km": 0.026025,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923521,
+     54.556506
+    ],
+    [
+     9.923771,
+     54.556678
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L19",
+   "from_bus": 298,
+   "to_bus": 296,
+   "length_km": 0.020219,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923724,
+     54.556848
+    ],
+    [
+     9.923771,
+     54.556678
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L20",
+   "from_bus": 299,
+   "to_bus": 296,
+   "length_km": 0.036842,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.92376,
+     54.557
+    ],
+    [
+     9.923771,
+     54.556678
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L21",
+   "from_bus": 296,
+   "to_bus": 300,
+   "length_km": 0.031615,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923771,
+     54.556678
+    ],
+    [
+     9.923585,
+     54.556771
+    ],
+    [
+     9.923423,
+     54.556878
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L22",
+   "from_bus": 301,
+   "to_bus": 300,
+   "length_km": 0.012925,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923561,
+     54.556949
+    ],
+    [
+     9.923423,
+     54.556878
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L23",
+   "from_bus": 300,
+   "to_bus": 277,
+   "length_km": 0.018255,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923423,
+     54.556878
+    ],
+    [
+     9.923406,
+     54.556889
+    ],
+    [
+     9.923277,
+     54.557019
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L24",
+   "from_bus": 276,
+   "to_bus": 302,
+   "length_km": 0.004231,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.92256,
+     54.556811
+    ],
+    [
+     9.922533,
+     54.556846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L25",
+   "from_bus": 303,
+   "to_bus": 302,
+   "length_km": 0.01364,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922355,
+     54.556798
+    ],
+    [
+     9.922533,
+     54.556846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L26",
+   "from_bus": 304,
+   "to_bus": 302,
+   "length_km": 0.039878,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.921956,
+     54.556744
+    ],
+    [
+     9.922533,
+     54.556846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L27",
+   "from_bus": 305,
+   "to_bus": 302,
+   "length_km": 0.030818,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922241,
+     54.557053
+    ],
+    [
+     9.922533,
+     54.556846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L28",
+   "from_bus": 306,
+   "to_bus": 302,
+   "length_km": 0.040225,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922498,
+     54.557198
+    ],
+    [
+     9.922533,
+     54.556846
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L29",
+   "from_bus": 302,
+   "to_bus": 282,
+   "length_km": 0.061261,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.922533,
+     54.556846
+    ],
+    [
+     9.922488,
+     54.556904
+    ],
+    [
+     9.922515,
+     54.556979
+    ],
+    [
+     9.923187,
+     54.55711
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L30",
+   "from_bus": 290,
+   "to_bus": 307,
+   "length_km": 0.36408,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.93044,
+     54.558866
+    ],
+    [
+     9.930076,
+     54.558778
+    ],
+    [
+     9.929687,
+     54.55871
+    ],
+    [
+     9.925343,
+     54.557935
+    ],
+    [
+     9.925135,
+     54.557905
+    ],
+    [
+     9.925052,
+     54.557901
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L31",
+   "from_bus": 308,
+   "to_bus": 307,
+   "length_km": 0.019298,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.925027,
+     54.558065
+    ],
+    [
+     9.925052,
+     54.557901
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L32",
+   "from_bus": 309,
+   "to_bus": 307,
+   "length_km": 0.020472,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.925027,
+     54.557727
+    ],
+    [
+     9.925052,
+     54.557901
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L33",
+   "from_bus": 310,
+   "to_bus": 307,
+   "length_km": 0.026447,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924766,
+     54.558059
+    ],
+    [
+     9.925052,
+     54.557901
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L34",
+   "from_bus": 307,
+   "to_bus": 311,
+   "length_km": 0.035586,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.925052,
+     54.557901
+    ],
+    [
+     9.924953,
+     54.557896
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L35",
+   "from_bus": 312,
+   "to_bus": 311,
+   "length_km": 0.018895,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924494,
+     54.557742
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L36",
+   "from_bus": 313,
+   "to_bus": 311,
+   "length_km": 0.018812,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924472,
+     54.558062
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L37",
+   "from_bus": 314,
+   "to_bus": 311,
+   "length_km": 0.044766,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924215,
+     54.557546
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L38",
+   "from_bus": 315,
+   "to_bus": 311,
+   "length_km": 0.029702,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924189,
+     54.558087
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L39",
+   "from_bus": 316,
+   "to_bus": 311,
+   "length_km": 0.028365,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924152,
+     54.557763
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L40",
+   "from_bus": 317,
+   "to_bus": 311,
+   "length_km": 0.034911,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924033,
+     54.557764
+    ],
+    [
+     9.924501,
+     54.557903
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L41",
+   "from_bus": 311,
+   "to_bus": 318,
+   "length_km": 0.036669,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.924501,
+     54.557903
+    ],
+    [
+     9.924227,
+     54.557907
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L42",
+   "from_bus": 319,
+   "to_bus": 318,
+   "length_km": 0.013855,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.92393,
+     54.557794
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L43",
+   "from_bus": 320,
+   "to_bus": 318,
+   "length_km": 0.010696,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923851,
+     54.557837
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L44",
+   "from_bus": 321,
+   "to_bus": 318,
+   "length_km": 0.021574,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.92375,
+     54.557758
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L45",
+   "from_bus": 322,
+   "to_bus": 318,
+   "length_km": 0.027495,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923626,
+     54.557751
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L46",
+   "from_bus": 323,
+   "to_bus": 318,
+   "length_km": 0.034304,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923502,
+     54.557745
+    ],
+    [
+     9.923933,
+     54.55791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300668:L47",
+   "from_bus": 318,
+   "to_bus": 324,
+   "length_km": 0.077264,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.923933,
+     54.55791
+    ],
+    [
+     9.923195,
+     54.557916
+    ],
+    [
+     9.922737,
+     54.557924
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L0",
+   "from_bus": 326,
+   "to_bus": 327,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986562,
+     54.534348
+    ],
+    [
+     9.986562,
+     54.534348
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L1",
+   "from_bus": 328,
+   "to_bus": 327,
+   "length_km": 0.036292,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987108,
+     54.534355
+    ],
+    [
+     9.986562,
+     54.534348
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L2",
+   "from_bus": 329,
+   "to_bus": 327,
+   "length_km": 0.023429,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986851,
+     54.53446
+    ],
+    [
+     9.986562,
+     54.534348
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L3",
+   "from_bus": 327,
+   "to_bus": 330,
+   "length_km": 0.027003,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986562,
+     54.534348
+    ],
+    [
+     9.986511,
+     54.534106
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L4",
+   "from_bus": 331,
+   "to_bus": 332,
+   "length_km": 0.018977,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984795,
+     54.534094
+    ],
+    [
+     9.984527,
+     54.534164
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L5",
+   "from_bus": 333,
+   "to_bus": 332,
+   "length_km": 0.020252,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984406,
+     54.534005
+    ],
+    [
+     9.984527,
+     54.534164
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L6",
+   "from_bus": 334,
+   "to_bus": 332,
+   "length_km": 0.080814,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983932,
+     54.533534
+    ],
+    [
+     9.984527,
+     54.534164
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L7",
+   "from_bus": 335,
+   "to_bus": 332,
+   "length_km": 0.072321,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983876,
+     54.533645
+    ],
+    [
+     9.984527,
+     54.534164
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L8",
+   "from_bus": 336,
+   "to_bus": 332,
+   "length_km": 0.07844,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983726,
+     54.533645
+    ],
+    [
+     9.984527,
+     54.534164
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L9",
+   "from_bus": 332,
+   "to_bus": 337,
+   "length_km": 0.044922,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984527,
+     54.534164
+    ],
+    [
+     9.98432,
+     54.534218
+    ],
+    [
+     9.983892,
+     54.534329
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L10",
+   "from_bus": 338,
+   "to_bus": 337,
+   "length_km": 0.072509,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983443,
+     54.533741
+    ],
+    [
+     9.983892,
+     54.534329
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L11",
+   "from_bus": 339,
+   "to_bus": 337,
+   "length_km": 0.083723,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983207,
+     54.5337
+    ],
+    [
+     9.983892,
+     54.534329
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L12",
+   "from_bus": 337,
+   "to_bus": 340,
+   "length_km": 0.106229,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983892,
+     54.534329
+    ],
+    [
+     9.98239,
+     54.53472
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L13",
+   "from_bus": 341,
+   "to_bus": 342,
+   "length_km": 0.004685,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985076,
+     54.532743
+    ],
+    [
+     9.985003,
+     54.532746
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L14",
+   "from_bus": 343,
+   "to_bus": 342,
+   "length_km": 0.02191,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985023,
+     54.532933
+    ],
+    [
+     9.985003,
+     54.532746
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L15",
+   "from_bus": 344,
+   "to_bus": 342,
+   "length_km": 0.028977,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984797,
+     54.532967
+    ],
+    [
+     9.985003,
+     54.532746
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L16",
+   "from_bus": 345,
+   "to_bus": 342,
+   "length_km": 0.021166,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984725,
+     54.532663
+    ],
+    [
+     9.985003,
+     54.532746
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L17",
+   "from_bus": 342,
+   "to_bus": 346,
+   "length_km": 0.033996,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985003,
+     54.532746
+    ],
+    [
+     9.984478,
+     54.532764
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L18",
+   "from_bus": 347,
+   "to_bus": 346,
+   "length_km": 0.016712,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984493,
+     54.532905
+    ],
+    [
+     9.984478,
+     54.532764
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L19",
+   "from_bus": 348,
+   "to_bus": 346,
+   "length_km": 0.016047,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.9844,
+     54.532637
+    ],
+    [
+     9.984478,
+     54.532764
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L20",
+   "from_bus": 349,
+   "to_bus": 346,
+   "length_km": 0.023588,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984185,
+     54.532876
+    ],
+    [
+     9.984478,
+     54.532764
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L21",
+   "from_bus": 350,
+   "to_bus": 346,
+   "length_km": 0.040346,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984036,
+     54.53252
+    ],
+    [
+     9.984478,
+     54.532764
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L22",
+   "from_bus": 346,
+   "to_bus": 351,
+   "length_km": 0.032631,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984478,
+     54.532764
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L23",
+   "from_bus": 352,
+   "to_bus": 351,
+   "length_km": 0.0323,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984003,
+     54.533063
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L24",
+   "from_bus": 353,
+   "to_bus": 351,
+   "length_km": 0.061816,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984021,
+     54.533329
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L25",
+   "from_bus": 354,
+   "to_bus": 351,
+   "length_km": 0.018601,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98394,
+     54.532625
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L26",
+   "from_bus": 355,
+   "to_bus": 351,
+   "length_km": 0.047307,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984,
+     54.533199
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L27",
+   "from_bus": 356,
+   "to_bus": 351,
+   "length_km": 0.030004,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983766,
+     54.532551
+    ],
+    [
+     9.983974,
+     54.532783
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L28",
+   "from_bus": 351,
+   "to_bus": 357,
+   "length_km": 0.015126,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983974,
+     54.532783
+    ],
+    [
+     9.98374,
+     54.532791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L29",
+   "from_bus": 358,
+   "to_bus": 359,
+   "length_km": 0.014026,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.981837,
+     54.532851
+    ],
+    [
+     9.981649,
+     54.532862
+    ],
+    [
+     9.981621,
+     54.532863
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L30",
+   "from_bus": 360,
+   "to_bus": 359,
+   "length_km": 0.063626,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.981719,
+     54.533423
+    ],
+    [
+     9.981621,
+     54.532863
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L31",
+   "from_bus": 361,
+   "to_bus": 359,
+   "length_km": 0.012921,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.981575,
+     54.532759
+    ],
+    [
+     9.981621,
+     54.532863
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L32",
+   "from_bus": 359,
+   "to_bus": 362,
+   "length_km": 0.07424,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.981621,
+     54.532863
+    ],
+    [
+     9.981235,
+     54.532886
+    ],
+    [
+     9.980721,
+     54.532937
+    ],
+    [
+     9.98061,
+     54.532957
+    ],
+    [
+     9.980503,
+     54.532993
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L33",
+   "from_bus": 325,
+   "to_bus": 363,
+   "length_km": 0.026996,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985076,
+     54.532743
+    ],
+    [
+     9.985423,
+     54.53273
+    ],
+    [
+     9.985491,
+     54.532722
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L34",
+   "from_bus": 364,
+   "to_bus": 363,
+   "length_km": 0.025462,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985414,
+     54.532507
+    ],
+    [
+     9.985491,
+     54.532722
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L35",
+   "from_bus": 363,
+   "to_bus": 357,
+   "length_km": 0.010782,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985491,
+     54.532722
+    ],
+    [
+     9.985655,
+     54.532702
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L36",
+   "from_bus": 365,
+   "to_bus": 366,
+   "length_km": 0.002702,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987152,
+     54.532189
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L37",
+   "from_bus": 367,
+   "to_bus": 366,
+   "length_km": 0.014377,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987008,
+     54.532099
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L38",
+   "from_bus": 368,
+   "to_bus": 366,
+   "length_km": 0.029426,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987273,
+     54.53244
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L39",
+   "from_bus": 369,
+   "to_bus": 366,
+   "length_km": 0.017374,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987087,
+     54.532348
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L40",
+   "from_bus": 370,
+   "to_bus": 366,
+   "length_km": 0.033017,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986953,
+     54.532473
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L41",
+   "from_bus": 371,
+   "to_bus": 366,
+   "length_km": 0.033189,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986621,
+     54.532166
+    ],
+    [
+     9.987116,
+     54.532201
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L42",
+   "from_bus": 366,
+   "to_bus": 372,
+   "length_km": 0.043857,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987116,
+     54.532201
+    ],
+    [
+     9.986699,
+     54.532353
+    ],
+    [
+     9.986539,
+     54.53241
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L43",
+   "from_bus": 373,
+   "to_bus": 372,
+   "length_km": 0.031053,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986783,
+     54.532641
+    ],
+    [
+     9.986539,
+     54.53241
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L44",
+   "from_bus": 374,
+   "to_bus": 372,
+   "length_km": 0.0158,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986546,
+     54.532543
+    ],
+    [
+     9.986539,
+     54.53241
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L45",
+   "from_bus": 375,
+   "to_bus": 372,
+   "length_km": 0.026572,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98615,
+     54.532365
+    ],
+    [
+     9.986539,
+     54.53241
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L46",
+   "from_bus": 376,
+   "to_bus": 372,
+   "length_km": 0.04877,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985867,
+     54.53223
+    ],
+    [
+     9.986539,
+     54.53241
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L47",
+   "from_bus": 372,
+   "to_bus": 377,
+   "length_km": 0.035341,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986539,
+     54.53241
+    ],
+    [
+     9.986074,
+     54.532579
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L48",
+   "from_bus": 378,
+   "to_bus": 377,
+   "length_km": 0.028001,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986293,
+     54.532785
+    ],
+    [
+     9.986074,
+     54.532579
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L49",
+   "from_bus": 379,
+   "to_bus": 377,
+   "length_km": 0.026659,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986127,
+     54.532807
+    ],
+    [
+     9.986074,
+     54.532579
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L50",
+   "from_bus": 380,
+   "to_bus": 377,
+   "length_km": 0.033202,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985617,
+     54.532462
+    ],
+    [
+     9.986074,
+     54.532579
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L51",
+   "from_bus": 377,
+   "to_bus": 325,
+   "length_km": 0.030423,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986074,
+     54.532579
+    ],
+    [
+     9.985875,
+     54.53265
+    ],
+    [
+     9.985655,
+     54.532702
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L52",
+   "from_bus": 381,
+   "to_bus": 382,
+   "length_km": 0.088853,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986327,
+     54.530512
+    ],
+    [
+     9.986617,
+     54.530537
+    ],
+    [
+     9.987534,
+     54.530873
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L53",
+   "from_bus": 383,
+   "to_bus": 382,
+   "length_km": 0.015046,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987649,
+     54.530766
+    ],
+    [
+     9.987534,
+     54.530873
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L54",
+   "from_bus": 384,
+   "to_bus": 382,
+   "length_km": 0.013177,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987478,
+     54.530978
+    ],
+    [
+     9.987534,
+     54.530873
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L55",
+   "from_bus": 385,
+   "to_bus": 382,
+   "length_km": 0.022912,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987583,
+     54.531068
+    ],
+    [
+     9.987534,
+     54.530873
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L56",
+   "from_bus": 386,
+   "to_bus": 382,
+   "length_km": 0.029854,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98798,
+     54.530889
+    ],
+    [
+     9.987534,
+     54.530873
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L57",
+   "from_bus": 382,
+   "to_bus": 387,
+   "length_km": 0.04476,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987534,
+     54.530873
+    ],
+    [
+     9.987825,
+     54.53098
+    ],
+    [
+     9.987966,
+     54.531044
+    ],
+    [
+     9.988082,
+     54.531117
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L58",
+   "from_bus": 388,
+   "to_bus": 387,
+   "length_km": 0.018866,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988285,
+     54.531008
+    ],
+    [
+     9.988082,
+     54.531117
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L59",
+   "from_bus": 389,
+   "to_bus": 387,
+   "length_km": 0.023935,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987934,
+     54.531305
+    ],
+    [
+     9.988082,
+     54.531117
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L60",
+   "from_bus": 390,
+   "to_bus": 387,
+   "length_km": 0.026371,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988454,
+     54.531192
+    ],
+    [
+     9.988082,
+     54.531117
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L61",
+   "from_bus": 387,
+   "to_bus": 391,
+   "length_km": 0.040009,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988082,
+     54.531117
+    ],
+    [
+     9.988097,
+     54.531127
+    ],
+    [
+     9.988475,
+     54.531397
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L62",
+   "from_bus": 392,
+   "to_bus": 391,
+   "length_km": 0.014198,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988633,
+     54.531322
+    ],
+    [
+     9.988475,
+     54.531397
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L63",
+   "from_bus": 391,
+   "to_bus": 393,
+   "length_km": 0.017255,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988475,
+     54.531397
+    ],
+    [
+     9.988507,
+     54.531421
+    ],
+    [
+     9.988613,
+     54.53153
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L64",
+   "from_bus": 365,
+   "to_bus": 394,
+   "length_km": 0.01132,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987152,
+     54.532189
+    ],
+    [
+     9.987296,
+     54.53213
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L65",
+   "from_bus": 395,
+   "to_bus": 394,
+   "length_km": 0.021282,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987117,
+     54.53198
+    ],
+    [
+     9.987296,
+     54.53213
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L66",
+   "from_bus": 396,
+   "to_bus": 394,
+   "length_km": 0.010449,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98727,
+     54.532046
+    ],
+    [
+     9.987296,
+     54.53213
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L67",
+   "from_bus": 397,
+   "to_bus": 394,
+   "length_km": 0.035062,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987371,
+     54.531827
+    ],
+    [
+     9.987296,
+     54.53213
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L68",
+   "from_bus": 394,
+   "to_bus": 398,
+   "length_km": 0.052698,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987296,
+     54.53213
+    ],
+    [
+     9.98764,
+     54.53199
+    ],
+    [
+     9.987965,
+     54.531858
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L69",
+   "from_bus": 399,
+   "to_bus": 400,
+   "length_km": 0.0101,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986015,
+     54.533722
+    ],
+    [
+     9.986153,
+     54.53368
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L70",
+   "from_bus": 401,
+   "to_bus": 402,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988389,
+     54.532255
+    ],
+    [
+     9.988389,
+     54.532255
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L71",
+   "from_bus": 403,
+   "to_bus": 402,
+   "length_km": 0.073432,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987812,
+     54.532813
+    ],
+    [
+     9.988389,
+     54.532255
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L72",
+   "from_bus": 404,
+   "to_bus": 402,
+   "length_km": 0.015744,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98817,
+     54.532293
+    ],
+    [
+     9.988389,
+     54.532255
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L73",
+   "from_bus": 405,
+   "to_bus": 402,
+   "length_km": 0.027127,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988035,
+     54.532141
+    ],
+    [
+     9.988389,
+     54.532255
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L74",
+   "from_bus": 406,
+   "to_bus": 402,
+   "length_km": 0.02754,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988317,
+     54.53202
+    ],
+    [
+     9.988389,
+     54.532255
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L75",
+   "from_bus": 402,
+   "to_bus": 407,
+   "length_km": 0.034793,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988389,
+     54.532255
+    ],
+    [
+     9.988174,
+     54.532019
+    ],
+    [
+     9.988125,
+     54.531981
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L76",
+   "from_bus": 408,
+   "to_bus": 407,
+   "length_km": 0.013735,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988282,
+     54.531912
+    ],
+    [
+     9.988125,
+     54.531981
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L77",
+   "from_bus": 407,
+   "to_bus": 398,
+   "length_km": 0.017093,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988125,
+     54.531981
+    ],
+    [
+     9.987965,
+     54.531858
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L78",
+   "from_bus": 357,
+   "to_bus": 409,
+   "length_km": 0.001,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985074,
+     54.532705
+    ],
+    [
+     9.985074,
+     54.532705
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L79",
+   "from_bus": 410,
+   "to_bus": 409,
+   "length_km": 0.021225,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985016,
+     54.532526
+    ],
+    [
+     9.985074,
+     54.532705
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L80",
+   "from_bus": 411,
+   "to_bus": 409,
+   "length_km": 0.045698,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984875,
+     54.53232
+    ],
+    [
+     9.985074,
+     54.532705
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L81",
+   "from_bus": 409,
+   "to_bus": 412,
+   "length_km": 0.004245,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985074,
+     54.532705
+    ],
+    [
+     9.985076,
+     54.532743
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L82",
+   "from_bus": 399,
+   "to_bus": 413,
+   "length_km": 0.004637,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986036,
+     54.533762
+    ],
+    [
+     9.986015,
+     54.533722
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L83",
+   "from_bus": 398,
+   "to_bus": 414,
+   "length_km": 0.015364,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988613,
+     54.53153
+    ],
+    [
+     9.988433,
+     54.531621
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L84",
+   "from_bus": 415,
+   "to_bus": 414,
+   "length_km": 0.015841,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988583,
+     54.531722
+    ],
+    [
+     9.988433,
+     54.531621
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L85",
+   "from_bus": 416,
+   "to_bus": 414,
+   "length_km": 0.021838,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988119,
+     54.531578
+    ],
+    [
+     9.988433,
+     54.531621
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L86",
+   "from_bus": 417,
+   "to_bus": 414,
+   "length_km": 0.019187,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988358,
+     54.531779
+    ],
+    [
+     9.988433,
+     54.531621
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L87",
+   "from_bus": 414,
+   "to_bus": 381,
+   "length_km": 0.039966,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.988433,
+     54.531621
+    ],
+    [
+     9.987965,
+     54.531858
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L88",
+   "from_bus": 400,
+   "to_bus": 418,
+   "length_km": 0.016228,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986153,
+     54.53368
+    ],
+    [
+     9.986361,
+     54.533762
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L89",
+   "from_bus": 419,
+   "to_bus": 418,
+   "length_km": 0.01459,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986479,
+     54.533661
+    ],
+    [
+     9.986361,
+     54.533762
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L90",
+   "from_bus": 420,
+   "to_bus": 418,
+   "length_km": 0.015502,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986585,
+     54.533764
+    ],
+    [
+     9.986361,
+     54.533762
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L91",
+   "from_bus": 421,
+   "to_bus": 418,
+   "length_km": 0.025233,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986723,
+     54.533705
+    ],
+    [
+     9.986361,
+     54.533762
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L92",
+   "from_bus": 418,
+   "to_bus": 422,
+   "length_km": 0.043672,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986361,
+     54.533762
+    ],
+    [
+     9.986575,
+     54.533848
+    ],
+    [
+     9.986792,
+     54.533891
+    ],
+    [
+     9.986978,
+     54.533879
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L93",
+   "from_bus": 399,
+   "to_bus": 423,
+   "length_km": 0.002864,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984795,
+     54.534094
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L94",
+   "from_bus": 424,
+   "to_bus": 423,
+   "length_km": 0.021237,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98469,
+     54.53392
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L95",
+   "from_bus": 425,
+   "to_bus": 423,
+   "length_km": 0.018302,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985093,
+     54.534122
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L96",
+   "from_bus": 426,
+   "to_bus": 423,
+   "length_km": 0.027666,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98495,
+     54.533851
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L97",
+   "from_bus": 427,
+   "to_bus": 423,
+   "length_km": 0.05545,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984806,
+     54.533592
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L98",
+   "from_bus": 428,
+   "to_bus": 423,
+   "length_km": 0.039007,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985061,
+     54.533766
+    ],
+    [
+     9.984835,
+     54.534082
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L99",
+   "from_bus": 423,
+   "to_bus": 429,
+   "length_km": 0.043046,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984835,
+     54.534082
+    ],
+    [
+     9.985425,
+     54.533902
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L100",
+   "from_bus": 430,
+   "to_bus": 429,
+   "length_km": 0.012049,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985347,
+     54.533813
+    ],
+    [
+     9.985425,
+     54.533902
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L101",
+   "from_bus": 431,
+   "to_bus": 429,
+   "length_km": 0.019372,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985559,
+     54.533756
+    ],
+    [
+     9.985425,
+     54.533902
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L102",
+   "from_bus": 432,
+   "to_bus": 429,
+   "length_km": 0.031768,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985711,
+     54.53368
+    ],
+    [
+     9.985425,
+     54.533902
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L103",
+   "from_bus": 429,
+   "to_bus": 340,
+   "length_km": 0.042937,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985425,
+     54.533902
+    ],
+    [
+     9.986015,
+     54.533722
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L104",
+   "from_bus": 341,
+   "to_bus": 433,
+   "length_km": 0.035254,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.981837,
+     54.532851
+    ],
+    [
+     9.982383,
+     54.532838
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L105",
+   "from_bus": 434,
+   "to_bus": 433,
+   "length_km": 0.088602,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982441,
+     54.533625
+    ],
+    [
+     9.982383,
+     54.532838
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L106",
+   "from_bus": 435,
+   "to_bus": 433,
+   "length_km": 0.037756,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982633,
+     54.532541
+    ],
+    [
+     9.982383,
+     54.532838
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L107",
+   "from_bus": 436,
+   "to_bus": 433,
+   "length_km": 0.066023,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982863,
+     54.533352
+    ],
+    [
+     9.982383,
+     54.532838
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L108",
+   "from_bus": 433,
+   "to_bus": 437,
+   "length_km": 0.037126,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982383,
+     54.532838
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L109",
+   "from_bus": 438,
+   "to_bus": 437,
+   "length_km": 0.081015,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98301,
+     54.533542
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L110",
+   "from_bus": 439,
+   "to_bus": 437,
+   "length_km": 0.012746,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982965,
+     54.532718
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L111",
+   "from_bus": 440,
+   "to_bus": 437,
+   "length_km": 0.017107,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983129,
+     54.532928
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L112",
+   "from_bus": 441,
+   "to_bus": 437,
+   "length_km": 0.054479,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983254,
+     54.533272
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L113",
+   "from_bus": 442,
+   "to_bus": 437,
+   "length_km": 0.028311,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983333,
+     54.532711
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L114",
+   "from_bus": 443,
+   "to_bus": 437,
+   "length_km": 0.048643,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983386,
+     54.533172
+    ],
+    [
+     9.982957,
+     54.532823
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L115",
+   "from_bus": 437,
+   "to_bus": 444,
+   "length_km": 0.032736,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.982957,
+     54.532823
+    ],
+    [
+     9.983371,
+     54.532813
+    ],
+    [
+     9.983463,
+     54.532807
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L116",
+   "from_bus": 445,
+   "to_bus": 444,
+   "length_km": 0.013299,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983482,
+     54.532917
+    ],
+    [
+     9.983463,
+     54.532807
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L117",
+   "from_bus": 446,
+   "to_bus": 444,
+   "length_km": 0.05446,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983598,
+     54.533282
+    ],
+    [
+     9.983463,
+     54.532807
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L118",
+   "from_bus": 447,
+   "to_bus": 444,
+   "length_km": 0.081137,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983656,
+     54.533519
+    ],
+    [
+     9.983463,
+     54.532807
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L119",
+   "from_bus": 448,
+   "to_bus": 444,
+   "length_km": 0.053286,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98352,
+     54.532338
+    ],
+    [
+     9.983463,
+     54.532807
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L120",
+   "from_bus": 444,
+   "to_bus": 358,
+   "length_km": 0.017984,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983463,
+     54.532807
+    ],
+    [
+     9.98374,
+     54.532791
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L121",
+   "from_bus": 326,
+   "to_bus": 449,
+   "length_km": 0.031015,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986511,
+     54.534106
+    ],
+    [
+     9.986454,
+     54.53403
+    ],
+    [
+     9.986338,
+     54.533977
+    ],
+    [
+     9.986153,
+     54.533949
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L122",
+   "from_bus": 450,
+   "to_bus": 449,
+   "length_km": 0.01172,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986113,
+     54.534043
+    ],
+    [
+     9.986153,
+     54.533949
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L123",
+   "from_bus": 449,
+   "to_bus": 413,
+   "length_km": 0.022661,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986153,
+     54.533949
+    ],
+    [
+     9.986133,
+     54.533946
+    ],
+    [
+     9.986036,
+     54.533762
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L124",
+   "from_bus": 325,
+   "to_bus": 451,
+   "length_km": 0.007919,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986153,
+     54.53368
+    ],
+    [
+     9.98605,
+     54.533641
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L125",
+   "from_bus": 452,
+   "to_bus": 451,
+   "length_km": 0.011641,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986138,
+     54.53356
+    ],
+    [
+     9.98605,
+     54.533641
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L126",
+   "from_bus": 453,
+   "to_bus": 451,
+   "length_km": 0.038515,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985481,
+     54.533571
+    ],
+    [
+     9.98605,
+     54.533641
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L127",
+   "from_bus": 451,
+   "to_bus": 454,
+   "length_km": 0.032567,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98605,
+     54.533641
+    ],
+    [
+     9.985891,
+     54.533582
+    ],
+    [
+     9.985811,
+     54.533528
+    ],
+    [
+     9.985779,
+     54.533474
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L128",
+   "from_bus": 455,
+   "to_bus": 454,
+   "length_km": 0.017492,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985511,
+     54.533443
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L129",
+   "from_bus": 456,
+   "to_bus": 454,
+   "length_km": 0.052125,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.984977,
+     54.533477
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L130",
+   "from_bus": 457,
+   "to_bus": 454,
+   "length_km": 0.017924,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985967,
+     54.533323
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L131",
+   "from_bus": 458,
+   "to_bus": 454,
+   "length_km": 0.030414,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985444,
+     54.53323
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L132",
+   "from_bus": 459,
+   "to_bus": 454,
+   "length_km": 0.04712,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986303,
+     54.533147
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L133",
+   "from_bus": 460,
+   "to_bus": 454,
+   "length_km": 0.032446,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985868,
+     54.533143
+    ],
+    [
+     9.985763,
+     54.533419
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L134",
+   "from_bus": 454,
+   "to_bus": 461,
+   "length_km": 0.039091,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985763,
+     54.533419
+    ],
+    [
+     9.985717,
+     54.533256
+    ],
+    [
+     9.985674,
+     54.533069
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L135",
+   "from_bus": 462,
+   "to_bus": 461,
+   "length_km": 0.036965,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985121,
+     54.533113
+    ],
+    [
+     9.985674,
+     54.533069
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L136",
+   "from_bus": 463,
+   "to_bus": 461,
+   "length_km": 0.024005,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985433,
+     54.532916
+    ],
+    [
+     9.985674,
+     54.533069
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L137",
+   "from_bus": 461,
+   "to_bus": 400,
+   "length_km": 0.040665,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.985674,
+     54.533069
+    ],
+    [
+     9.985656,
+     54.532994
+    ],
+    [
+     9.985655,
+     54.532702
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L138",
+   "from_bus": 464,
+   "to_bus": 465,
+   "length_km": 0.019112,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.986978,
+     54.533879
+    ],
+    [
+     9.98724,
+     54.533798
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L139",
+   "from_bus": 466,
+   "to_bus": 465,
+   "length_km": 0.017275,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987122,
+     54.533669
+    ],
+    [
+     9.98724,
+     54.533798
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L140",
+   "from_bus": 467,
+   "to_bus": 465,
+   "length_km": 0.042422,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987187,
+     54.533427
+    ],
+    [
+     9.98724,
+     54.533798
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L141",
+   "from_bus": 468,
+   "to_bus": 465,
+   "length_km": 0.067671,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987199,
+     54.533199
+    ],
+    [
+     9.98724,
+     54.533798
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L142",
+   "from_bus": 465,
+   "to_bus": 422,
+   "length_km": 0.065315,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.98724,
+     54.533798
+    ],
+    [
+     9.987252,
+     54.533794
+    ],
+    [
+     9.987602,
+     54.533686
+    ],
+    [
+     9.987809,
+     54.53369
+    ],
+    [
+     9.987951,
+     54.53372
+    ],
+    [
+     9.988104,
+     54.53383
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L143",
+   "from_bus": 398,
+   "to_bus": 469,
+   "length_km": 0.231691,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.983906,
+     54.530695
+    ],
+    [
+     9.984759,
+     54.530935
+    ],
+    [
+     9.984884,
+     54.530954
+    ],
+    [
+     9.985244,
+     54.530953
+    ],
+    [
+     9.98541,
+     54.53097
+    ],
+    [
+     9.986273,
+     54.531249
+    ],
+    [
+     9.98661,
+     54.531305
+    ],
+    [
+     9.986996,
+     54.531336
+    ],
+    [
+     9.987241,
+     54.53138
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L144",
+   "from_bus": 470,
+   "to_bus": 469,
+   "length_km": 0.016553,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987311,
+     54.531246
+    ],
+    [
+     9.987241,
+     54.53138
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L145",
+   "from_bus": 469,
+   "to_bus": 471,
+   "length_km": 0.030863,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987241,
+     54.53138
+    ],
+    [
+     9.987277,
+     54.531386
+    ],
+    [
+     9.987476,
+     54.531467
+    ],
+    [
+     9.987608,
+     54.531553
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L146",
+   "from_bus": 472,
+   "to_bus": 471,
+   "length_km": 0.027481,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987303,
+     54.531712
+    ],
+    [
+     9.987608,
+     54.531553
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L147",
+   "from_bus": 473,
+   "to_bus": 471,
+   "length_km": 0.01431,
+   "r_ohm_per_km": 1.2,
+   "x_ohm_per_km": 0.082,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.107,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987805,
+     54.531517
+    ],
+    [
+     9.987608,
+     54.531553
+    ]
+   ],
+   "in_service": true
+  },
+  {
+   "name": "lv300575:L148",
+   "from_bus": 471,
+   "to_bus": 474,
+   "length_km": 0.040996,
+   "r_ohm_per_km": 0.32,
+   "x_ohm_per_km": 0.08,
+   "c_nf_per_km": 0.0,
+   "max_i_ka": 0.225,
+   "parallel": 1,
+   "geometry": [
+    [
+     9.987608,
+     54.531553
+    ],
+    [
+     9.987747,
+     54.531644
+    ],
+    [
+     9.987965,
+     54.531858
+    ]
+   ],
+   "in_service": true
+  }
+ ],
+ "transformers": [
+  {
+   "name": "Transformer_lv_grid_300266_1",
+   "hv_bus": 26,
+   "lv_bus": 247,
+   "sn_mva": 0.16,
+   "vn_hv_kv": 10.0,
+   "vn_lv_kv": 0.4,
+   "vk_percent": 4.0,
+   "vkr_percent": 1.4688,
+   "pfe_kw": 0.0,
+   "i0_percent": 0.0
+  },
+  {
+   "name": "Transformer_lv_grid_300668_1",
+   "hv_bus": 109,
+   "lv_bus": 276,
+   "sn_mva": 0.1,
+   "vn_hv_kv": 10.0,
+   "vn_lv_kv": 0.4,
+   "vk_percent": 4.0,
+   "vkr_percent": 1.75,
+   "pfe_kw": 0.0,
+   "i0_percent": 0.0
+  },
+  {
+   "name": "Transformer_lv_grid_300575_1",
+   "hv_bus": 79,
+   "lv_bus": 325,
+   "sn_mva": 0.16,
+   "vn_hv_kv": 10.0,
+   "vn_lv_kv": 0.4,
+   "vk_percent": 4.0,
+   "vkr_percent": 1.4688,
+   "pfe_kw": 0.0,
+   "i0_percent": 0.0
+  }
+ ]
+}

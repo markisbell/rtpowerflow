@@ -22,3 +22,4 @@ data/user_grids/
 
 # Session recordings (CSV export of live runs — local user data)
 data/recordings/
+benchmarks/out/

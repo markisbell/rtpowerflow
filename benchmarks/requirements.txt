@@ -2,6 +2,10 @@
 # Pins verified 2026-07-16; the dev venv (3.14) is NOT suitable: the
 # dss-extensions wheels are only tested up to CPython 3.12.
 pandapower==3.4.0          # the version under test (same as the dev venv)
+# netzsim itself (fixture generator + reference runner import it from src/)
+fastapi>=0.110
+pydantic>=2.6
+pydantic-settings>=2.2
 numpy>=1.26,<2.4           # pandapower 3.4.0's own range
 scipy>=1.11,<1.17          # pandapower 3.4.0 pins scipy<1.17
 matplotlib>=3.8            # result plots

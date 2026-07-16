@@ -1,0 +1,5459 @@
+{
+ "name": "Rural MV grid \u00c2\u00b7 district 3150",
+ "f_hz": 50.0,
+ "buses": [
+  {
+   "name": "Busbar_mvgd_3150_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.983576,
+    54.562475
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302222_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.968994,
+    54.517485
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302223_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.974551,
+    54.517487
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302224_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.974549,
+    54.520722
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302225_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.980109,
+    54.517488
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302226_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.985666,
+    54.517488
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_505869_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.98259,
+    54.512759
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428380_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.918925,
+    54.599903
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300163_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.932684,
+    54.569512
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_299229_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.889764,
+    54.547856
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300944_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.97801,
+    54.618476
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300945_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.983581,
+    54.618477
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300946_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.989152,
+    54.618478
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_493261_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.99857,
+    54.618814
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_493262_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.98001,
+    54.613729
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429615_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.988064,
+    54.556382
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300661_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.89387,
+    54.555118
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300662_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.893862,
+    54.558353
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300663_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.89944,
+    54.551888
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300664_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.90498,
+    54.561597
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_512213_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.885726,
+    54.553826
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429075_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.957725,
+    54.521218
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300248_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.948729,
+    54.52103
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428291_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.914301,
+    54.580167
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429470_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.981069,
+    54.526294
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427880_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.890954,
+    54.579556
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300266_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.967515,
+    54.527676
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429337_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.973693,
+    54.530035
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427666_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.879011,
+    54.567035
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_430024_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.014713,
+    54.565646
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429217_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.96564,
+    54.560631
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428520_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.926975,
+    54.565832
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429915_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.007362,
+    54.565571
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429934_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.007253,
+    54.567789
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300357_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.972024,
+    54.559751
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300334_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.970013,
+    54.571463
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300335_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.970011,
+    54.574698
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300330_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.935377,
+    54.566427
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300352_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.931952,
+    54.560058
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300364_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.9463,
+    54.562463
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300354_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.98379,
+    54.560964
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300332_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.954802,
+    54.570286
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300333_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.960366,
+    54.570288
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_484879_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.956967,
+    54.563806
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427557_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.872674,
+    54.56506
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300382_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.870685,
+    54.569848
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300375_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.013498,
+    54.570363
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427237_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.855238,
+    54.576546
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300355_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.972079,
+    54.562838
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300356_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.983205,
+    54.566075
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_499525_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.991575,
+    54.566358
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427567_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.873691,
+    54.573507
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428521_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.927548,
+    54.575878
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427494_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.868914,
+    54.575604
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300414_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.011152,
+    54.578517
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427378_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.862299,
+    54.576006
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300411_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.951751,
+    54.577247
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300410_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.984949,
+    54.577104
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_505826_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.976874,
+    54.578761
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427957_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.896325,
+    54.542033
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429264_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.971369,
+    54.534974
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428696_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.937619,
+    54.540283
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427554_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.872571,
+    54.55057
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300461_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.95785,
+    54.543542
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300493_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.945225,
+    54.54189
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428860_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.949709,
+    54.537579
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428582_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.930478,
+    54.537257
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429927_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.006951,
+    54.541798
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428745_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.940793,
+    54.547972
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429494_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.981134,
+    54.537191
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300513_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.905802,
+    54.548823
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300514_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.911378,
+    54.542358
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300515_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.911371,
+    54.545593
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428045_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.901979,
+    54.545368
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300589_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.997699,
+    54.544661
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427952_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.894949,
+    54.54723
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428412_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.921654,
+    54.547065
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428640_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.934347,
+    54.547316
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300574_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.980487,
+    54.532666
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300575_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.986047,
+    54.532667
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300576_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.991607,
+    54.529432
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300577_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.991606,
+    54.532667
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300578_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.997165,
+    54.532668
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_505854_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.001538,
+    54.528427
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428501_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.926876,
+    54.548315
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428383_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.918519,
+    54.551644
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300614_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.977264,
+    54.550144
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_516463_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.969098,
+    54.548875
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427673_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.879432,
+    54.550661
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427803_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.885276,
+    54.550677
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300615_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.994287,
+    54.550743
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300616_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.999849,
+    54.550743
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300617_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.00541,
+    54.550743
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_491137_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.986325,
+    54.552584
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_491138_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.989263,
+    54.554735
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429009_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.954276,
+    54.55706
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300626_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.950234,
+    54.552832
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428251_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.91202,
+    54.555363
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_430075_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.016996,
+    54.555276
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429196_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.964572,
+    54.557647
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300656_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.945593,
+    54.557276
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428250_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.911639,
+    54.56754
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428259_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.911877,
+    54.558688
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428313_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.914965,
+    54.564994
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427772_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.885948,
+    54.560549
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429954_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.009519,
+    54.556705
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428351_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.916108,
+    54.562454
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300785_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.001222,
+    54.611944
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300669_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.927386,
+    54.553303
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300668_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.921817,
+    54.556535
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300670_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.932948,
+    54.553306
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_516464_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.941518,
+    54.554344
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300712_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.887884,
+    54.60146
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300713_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.887875,
+    54.604695
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429878_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.006065,
+    54.617008
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300807_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.971764,
+    54.614384
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300665_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.899497,
+    54.57421
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_300666_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.905069,
+    54.57098
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428322_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.916182,
+    54.569713
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301227_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.978629,
+    54.598211
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301228_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.978624,
+    54.607916
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301229_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.984193,
+    54.607917
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_505862_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.9857,
+    54.601461
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429665_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.994436,
+    54.597398
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429712_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.99484,
+    54.591739
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429781_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.99964,
+    54.600111
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301259_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.010426,
+    54.586682
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301260_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.01599,
+    54.580211
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301261_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.015991,
+    54.583446
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301262_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.015993,
+    54.586681
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301263_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.021556,
+    54.58021
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427442_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.86617,
+    54.583279
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427264_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.855432,
+    54.585727
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301291_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.89745,
+    54.585886
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_430077_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.016964,
+    54.591267
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301246_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.864788,
+    54.591735
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_514420_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.856551,
+    54.59272
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301264_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.923911,
+    54.583968
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_503735_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.933546,
+    54.582863
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_503736_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.922322,
+    54.579194
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429711_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.994372,
+    54.583054
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_427807_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.886167,
+    54.583047
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301283_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.845805,
+    54.583279
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301284_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.909992,
+    54.585159
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301300_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.923902,
+    54.588763
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301297_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.996309,
+    54.587269
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429913_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.006881,
+    54.591946
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301861_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.935761,
+    54.498934
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_512233_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.928003,
+    54.50115
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429307_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.972429,
+    54.594071
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301407_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.90845,
+    54.597909
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301675_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.936451,
+    54.495494
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_484897_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.92666,
+    54.491783
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301391_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.928433,
+    54.595115
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_429628_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.988426,
+    54.594719
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_301909_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.914795,
+    54.505796
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_428379_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.918795,
+    54.51406
+   ]
+  },
+  {
+   "name": "BusBar_mvgd_3150_lvgd_302202_MV",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.932681,
+    54.513159
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_1",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.899956,
+    54.552837
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_2",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.937483,
+    54.55659
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_3",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.955527,
+    54.523345
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_4",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.985077,
+    54.52538
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_5",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.873312,
+    54.568596
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_6",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.934616,
+    54.589738
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_7",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.011706,
+    54.569639
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_8",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.930796,
+    54.555734
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_9",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.00549,
+    54.568057
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_10",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.87769,
+    54.566214
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_11",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.934055,
+    54.565651
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_12",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.979543,
+    54.573911
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_13",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.978363,
+    54.563856
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_14",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.971523,
+    54.561236
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_15",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.947006,
+    54.557957
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_16",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.876005,
+    54.567131
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_17",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.877704,
+    54.571325
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_18",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.856701,
+    54.577427
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_19",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.943478,
+    54.583382
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_20",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.978455,
+    54.576995
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_21",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.86082,
+    54.575115
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_22",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.952108,
+    54.539482
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_23",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.907599,
+    54.547267
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_24",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.997066,
+    54.543916
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_25",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.991415,
+    54.534989
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_26",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.892198,
+    54.549235
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_27",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.943446,
+    54.541038
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_28",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.924206,
+    54.544229
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_29",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.922991,
+    54.549156
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_30",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.970772,
+    54.55251
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_31",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.989514,
+    54.556904
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_32",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.888382,
+    54.560397
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_33",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.875852,
+    54.552609
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_34",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.923845,
+    54.550492
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_35",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.946433,
+    54.557875
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_36",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.953499,
+    54.55889
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_37",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.96344,
+    54.560316
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_38",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.91741,
+    54.562991
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_39",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.01072,
+    54.554241
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_40",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.917206,
+    54.59692
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_41",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.984026,
+    54.613172
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_42",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.01102,
+    54.5878
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_43",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.999509,
+    54.594463
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_44",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.996022,
+    54.600698
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_45",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.005376,
+    54.591067
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_46",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.86509,
+    54.592227
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_47",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.935891,
+    54.579809
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_48",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.87129,
+    54.594863
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_49",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.858455,
+    54.589405
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_50",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.928343,
+    54.594235
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_51",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.904298,
+    54.599431
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_52",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.85347,
+    54.587284
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_53",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.91995,
+    54.590281
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_54",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.908743,
+    54.598566
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_55",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.932852,
+    54.50501
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_56",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.957986,
+    54.569254
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_57",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.970156,
+    54.572792
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_58",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.974584,
+    54.565207
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_59",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.979336,
+    54.565097
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_60",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.98434,
+    54.577696
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_61",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.910493,
+    54.545158
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_62",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.988718,
+    54.53079
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_63",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.989369,
+    54.531757
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_64",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.972948,
+    54.551378
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_65",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.975351,
+    54.550127
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_66",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.991955,
+    54.554614
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_67",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.995099,
+    54.551664
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_68",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.893121,
+    54.557817
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_69",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.898665,
+    54.573494
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_70",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.898048,
+    54.572963
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_71",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.926879,
+    54.555233
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_72",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.889021,
+    54.6024
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_73",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.985164,
+    54.617895
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_74",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.993903,
+    54.615906
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_75",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.985229,
+    54.618163
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_76",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.980129,
+    54.60648
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_77",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.980754,
+    54.602324
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_78",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.981986,
+    54.604707
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_79",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.859675,
+    54.589854
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_80",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.863962,
+    54.593123
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_81",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    10.016443,
+    54.584661
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_82",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.919004,
+    54.582028
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_83",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.932643,
+    54.582138
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_84",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.931622,
+    54.495792
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_85",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.93115,
+    54.493204
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_86",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.93234,
+    54.499735
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_87",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.972982,
+    54.514185
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_88",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.980767,
+    54.518533
+   ]
+  },
+  {
+   "name": "BranchTee_mvgd_3150_89",
+   "vn_kv": 10.0,
+   "type": "b",
+   "zone": "MV",
+   "in_service": true,
+   "geo": [
+    9.97928,
+    54.516763
+   ]
+  },
+  {
+   "name": "lv300266:LV_station",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967392,
+    54.527592
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j7591953384",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967028,
+    54.527685
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.966905,
+    54.527717
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967148,
+    54.528041
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j2928461727",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.959891,
+    54.530346
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j3392182712",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968125,
+    54.527057
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:cab1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968422,
+    54.52701
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.96859,
+    54.526918
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j3392182717",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968422,
+    54.52701
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j2204256409",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967761,
+    54.527556
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:j2781314726",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967844,
+    54.527557
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j7218511234",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.966983,
+    54.527471
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967134,
+    54.527435
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.96715,
+    54.527527
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968264,
+    54.526846
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968415,
+    54.52688
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j3073199530",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.968711,
+    54.525316
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j7218511232",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967117,
+    54.527663
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.970258,
+    54.528684
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.969827,
+    54.529091
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:load8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.970062,
+    54.528727
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:load9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.969842,
+    54.528671
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:load3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.969542,
+    54.529012
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967956,
+    54.528038
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967241,
+    54.528331
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j3392183938",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.973451,
+    54.529941
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:j7218511240",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.966403,
+    54.526673
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300266:cab6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.966776,
+    54.527257
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300266:load5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.967103,
+    54.527189
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:LV_station",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.92256,
+    54.556811
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j3054433617",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923277,
+    54.557019
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:cab0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922928,
+    54.55687
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load31",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923121,
+    54.55667
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load32",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922782,
+    54.556818
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j3054433618",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922928,
+    54.55687
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j281467745",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923187,
+    54.55711
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:cab1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923002,
+    54.557317
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load12",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923245,
+    54.557391
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923201,
+    54.557447
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923058,
+    54.557471
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923221,
+    54.557526
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load11",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923296,
+    54.557614
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load10",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923185,
+    54.557608
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j281467738",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922737,
+    54.557924
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j3054467104",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.928207,
+    54.554315
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924142,
+    54.556493
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load30",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923891,
+    54.556321
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load17",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923704,
+    54.556332
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load18",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924025,
+    54.556635
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923771,
+    54.556678
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load16",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923521,
+    54.556506
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load27",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923724,
+    54.556848
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load19",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.92376,
+    54.557
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923423,
+    54.556878
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load26",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923561,
+    54.556949
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922533,
+    54.556846
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922355,
+    54.556798
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.921956,
+    54.556744
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922241,
+    54.557053
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.922498,
+    54.557198
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.925052,
+    54.557901
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load24",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.925027,
+    54.558065
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load20",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.925027,
+    54.557727
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load23",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924766,
+    54.558059
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924501,
+    54.557903
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load21",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924494,
+    54.557742
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load22",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924472,
+    54.558062
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load25",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924215,
+    54.557546
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924189,
+    54.558087
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load29",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924152,
+    54.557763
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load28",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.924033,
+    54.557764
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:cab8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923933,
+    54.55791
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300668:load5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.92393,
+    54.557794
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923851,
+    54.557837
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load15",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.92375,
+    54.557758
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load14",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923626,
+    54.557751
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:load13",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.923502,
+    54.557745
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300668:j3054432974",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.93044,
+    54.558866
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:LV_station",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985655,
+    54.532702
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j2997446552",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986511,
+    54.534106
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986562,
+    54.534348
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load73",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987108,
+    54.534355
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load76",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986851,
+    54.53446
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j2997446565",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986562,
+    54.534348
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j865430772",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98239,
+    54.53472
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984527,
+    54.534164
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load83",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984406,
+    54.534005
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load37",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983932,
+    54.533534
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load32",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983876,
+    54.533645
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load34",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983726,
+    54.533645
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983892,
+    54.534329
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load44",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983443,
+    54.533741
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load35",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983207,
+    54.5337
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j2997446551",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984795,
+    54.534094
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j1623506811",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98374,
+    54.532791
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985003,
+    54.532746
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985023,
+    54.532933
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load12",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984797,
+    54.532967
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load14",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984725,
+    54.532663
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984478,
+    54.532764
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load10",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984493,
+    54.532905
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load46",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.9844,
+    54.532637
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load45",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984185,
+    54.532876
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load51",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984036,
+    54.53252
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983974,
+    54.532783
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load52",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984003,
+    54.533063
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load50",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984021,
+    54.533329
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load53",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98394,
+    54.532625
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load47",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984,
+    54.533199
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load49",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983766,
+    54.532551
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j13202121070",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985076,
+    54.532743
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:j1623506835",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.981837,
+    54.532851
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.981621,
+    54.532863
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load93",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.981719,
+    54.533423
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load96",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.981575,
+    54.532759
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j865430403",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.980503,
+    54.532993
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985491,
+    54.532722
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load3",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985414,
+    54.532507
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j1623516066",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987152,
+    54.532189
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987116,
+    54.532201
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load17",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987008,
+    54.532099
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load26",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987273,
+    54.53244
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load18",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987087,
+    54.532348
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load23",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986953,
+    54.532473
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load16",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986621,
+    54.532166
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab9",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986539,
+    54.53241
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load22",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986783,
+    54.532641
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load19",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986546,
+    54.532543
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load7",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98615,
+    54.532365
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load2",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985867,
+    54.53223
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab10",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986074,
+    54.532579
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load5",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986293,
+    54.532785
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load8",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986127,
+    54.532807
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load4",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985617,
+    54.532462
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j844556573",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988613,
+    54.53153
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab11",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987534,
+    54.530873
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load64",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987649,
+    54.530766
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load68",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987478,
+    54.530978
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load63",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987583,
+    54.531068
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load90",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98798,
+    54.530889
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab12",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988082,
+    54.531117
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load89",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988285,
+    54.531008
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load66",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987934,
+    54.531305
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load87",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988454,
+    54.531192
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab13",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988475,
+    54.531397
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load88",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988633,
+    54.531322
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j844556599",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986327,
+    54.530512
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab14",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987296,
+    54.53213
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load20",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987117,
+    54.53198
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load21",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98727,
+    54.532046
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load24",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987371,
+    54.531827
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j844556572",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987965,
+    54.531858
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:j2997446536",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986015,
+    54.533722
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:j1623506830",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986153,
+    54.53368
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:j2997446451",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988389,
+    54.532255
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab15",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988389,
+    54.532255
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load84",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987812,
+    54.532813
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load85",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98817,
+    54.532293
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load60",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988035,
+    54.532141
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load86",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988317,
+    54.53202
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab16",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988125,
+    54.531981
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load67",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988282,
+    54.531912
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab17",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985074,
+    54.532705
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load13",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985016,
+    54.532526
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load15",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984875,
+    54.53232
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j13202121071",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985074,
+    54.532705
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j2997446538",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986036,
+    54.533762
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab18",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988433,
+    54.531621
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load92",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988583,
+    54.531722
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load65",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988119,
+    54.531578
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load91",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988358,
+    54.531779
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab19",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986361,
+    54.533762
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load29",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986479,
+    54.533661
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load74",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986585,
+    54.533764
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load72",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986723,
+    54.533705
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j352860903",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986978,
+    54.533879
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab20",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984835,
+    54.534082
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load82",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98469,
+    54.53392
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load81",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985093,
+    54.534122
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load79",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98495,
+    54.533851
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load80",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984806,
+    54.533592
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load78",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985061,
+    54.533766
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab21",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985425,
+    54.533902
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load75",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985347,
+    54.533813
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load58",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985559,
+    54.533756
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load57",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985711,
+    54.53368
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab22",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982383,
+    54.532838
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load94",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982441,
+    54.533625
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load95",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982633,
+    54.532541
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load39",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982863,
+    54.533352
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab23",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982957,
+    54.532823
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load30",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98301,
+    54.533542
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load42",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.982965,
+    54.532718
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load36",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983129,
+    54.532928
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load38",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983254,
+    54.533272
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load40",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983333,
+    54.532711
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load43",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983386,
+    54.533172
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab24",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983463,
+    54.532807
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load41",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983482,
+    54.532917
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load33",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983598,
+    54.533282
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load31",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983656,
+    54.533519
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load48",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98352,
+    54.532338
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab25",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986153,
+    54.533949
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load55",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986113,
+    54.534043
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab26",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98605,
+    54.533641
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load27",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986138,
+    54.53356
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load59",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985481,
+    54.533571
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab27",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985763,
+    54.533419
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load56",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985511,
+    54.533443
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load77",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.984977,
+    54.533477
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load54",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985967,
+    54.533323
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load6",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985444,
+    54.53323
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load28",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.986303,
+    54.533147
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load1",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985868,
+    54.533143
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab28",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985674,
+    54.533069
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load11",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985121,
+    54.533113
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load0",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.985433,
+    54.532916
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j352860896",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.988104,
+    54.53383
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab29",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.98724,
+    54.533798
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load71",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987122,
+    54.533669
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load70",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987187,
+    54.533427
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load69",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987199,
+    54.533199
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab30",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987241,
+    54.53138
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load62",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987311,
+    54.531246
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:cab31",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987608,
+    54.531553
+   ],
+   "kind": "cabinet"
+  },
+  {
+   "name": "lv300575:load25",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987303,
+    54.531712
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:load61",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.987805,
+    54.531517
+   ],
+   "kind": null
+  },
+  {
+   "name": "lv300575:j844556590",
+   "vn_kv": 0.4,
+   "type": "b",
+   "zone": "LV",
+   "in_service": true,
+   "geo": [
+    9.983906,
+    54.530695
+   ],
+   "kind": null
+  }
+ ]
+}

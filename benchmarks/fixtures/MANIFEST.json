@@ -1,0 +1,120 @@
+{
+  "created": "2026-07-16T11:09:11",
+  "generator": "benchmarks/make_fixtures.py",
+  "fixtures": [
+    {
+      "id": "g1_lv_rural",
+      "label": "scenario 1: rural LV feeder, 75-kWp farm PV at bus 24",
+      "grid_id": "lv_rural_3150_300266",
+      "scenario": "1-bauernhof-pv-75-kw-spannungs-berh-hung.json",
+      "loadgen": {
+        "archetypes": [
+          "CHR01",
+          "CHR03",
+          "CHR05",
+          "CHR07",
+          "CHR16",
+          "CHR30",
+          "CHR22",
+          "CHR52"
+        ],
+        "mode": "round_robin",
+        "seed": 0,
+        "scale": 1.0,
+        "power_factor": 0.95,
+        "jitter_minutes": 0,
+        "ev_penetration": 0.0,
+        "ev_charger_kw": 11.0,
+        "ev_daily_kwh": 8.0,
+        "pv_penetration": 0.0,
+        "pv_kwp": 10.0
+      },
+      "der_ops_count": 1,
+      "n_bus": 30,
+      "n_load": 10,
+      "n_sgen": 1,
+      "steps": 1440,
+      "noon_vm_pu_min": 1.0,
+      "sha256_16": {
+        "generation.json": "e85d7c24de1ed82c",
+        "grid_structure.json": "7948b305cfe72f83",
+        "lines.json": "6990439df2037979",
+        "load.json": "1919cc85526ed9bb",
+        "substation.json": "c0f7ac332e71bbc6"
+      }
+    },
+    {
+      "id": "g2_lv_suburban",
+      "label": "scenario 2: suburban LV feeder, 12 staggered 11-kW EVs",
+      "grid_id": "lv_suburban_1864_265991",
+      "scenario": "2-feierabend-laden-strang-berlast-nh-sicherung-l-st-aus.json",
+      "loadgen": {
+        "archetypes": [
+          "CHR01",
+          "CHR03",
+          "CHR05",
+          "CHR07",
+          "CHR16",
+          "CHR30",
+          "CHR22",
+          "CHR52"
+        ],
+        "mode": "round_robin",
+        "seed": 0,
+        "scale": 1.0,
+        "power_factor": 0.95,
+        "jitter_minutes": 0,
+        "ev_penetration": 0.0,
+        "ev_charger_kw": 11.0,
+        "ev_daily_kwh": 8.0,
+        "pv_penetration": 0.5,
+        "pv_kwp": 10.0
+      },
+      "der_ops_count": 12,
+      "n_bus": 62,
+      "n_load": 45,
+      "n_sgen": 15,
+      "steps": 1440,
+      "noon_vm_pu_min": 1.0,
+      "sha256_16": {
+        "generation.json": "55e484cbc49a65dd",
+        "grid_structure.json": "91fd2e3f04e6c767",
+        "lines.json": "0227b197f4985f38",
+        "load.json": "20cf97ae4604e120",
+        "substation.json": "88ff20648a211158"
+      }
+    },
+    {
+      "id": "g3_mv_district",
+      "label": "scenario 4: MV district, 42 aggregate 200-kW wallbox blocks",
+      "grid_id": "mv_rural_3150",
+      "scenario": "4-feierabend-im-bezirk-engpass-unsichtbar-f-r-jede-zelle.json",
+      "loadgen": {
+        "archetypes": null,
+        "mode": "round_robin",
+        "seed": 0,
+        "scale": 1.0,
+        "power_factor": 0.95,
+        "jitter_minutes": 0,
+        "ev_penetration": 0.0,
+        "ev_charger_kw": 11.0,
+        "ev_daily_kwh": 8.0,
+        "pv_penetration": 0.0,
+        "pv_kwp": 10.0
+      },
+      "der_ops_count": 42,
+      "n_bus": 475,
+      "n_load": 336,
+      "n_sgen": 1,
+      "steps": 1440,
+      "noon_vm_pu_min": 0.975252,
+      "sha256_16": {
+        "generation.json": "f7ce1e0321f9cf29",
+        "grid_structure.json": "010622b02e70c4b3",
+        "lines.json": "1962e80a9b2571e1",
+        "load.json": "1b01d20f59477658",
+        "substation.json": "cf555548d235b3aa"
+      }
+    }
+  ]
+}
