@@ -1,0 +1,18 @@
+{
+  "fixture": "g3_mv_district",
+  "engine": "altdss",
+  "steps": 1440,
+  "trafo_model": "aligned (magnetizing zeroed, plan \u00a75.2)",
+  "max_dv_pu": 5.073070269645541e-07,
+  "mean_dv_pu": 2.494300335019812e-07,
+  "max_dv_volt": 0.005021493967433344,
+  "max_di_a": 0.0005075191531588863,
+  "mean_di_a": 0.00023961599673027762,
+  "worst_bus": 323,
+  "worst_step": 1109,
+  "wall_s": 3.1,
+  "gate_dv_pu": 1e-05,
+  "fail_dv_pu": 0.0001,
+  "gate_di_a": 0.1,
+  "pass": true
+}

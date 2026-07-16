@@ -1,7 +1,26 @@
 # Benchmark plan: validating netzsim against OpenDSS and MATPOWER
 
-> **Status: Phase 0 ✅ + Phase 1 ✅ BUILT (2026-07-16) — the T-series is
-> GREEN.** Fixtures frozen (`benchmarks/fixtures/` g1/g2/g3 + MANIFEST,
+> **Status: ALL PHASES ✅ BUILT (2026-07-16) — the full validation matrix
+> is GREEN and published under [`docs/benchmarks/`](benchmarks/README.md).**
+> T-series 4/4 vs MATPOWER 8.1 (≤ 2.6e-10 pu on byte-identical IEEE
+> cases); G-series: **all three teaching grids (30/62/475 buses) over
+> full 1440-step days vs BOTH OpenDSS daily mode and MATPOWER — max
+> |ΔV| ≈ 5.1e-7 pu (0.2 mV), max |ΔI| = 0.0005 A, every gate passed**
+> (the ±0.2-mV floor is the 1-W fixture rounding). Full-model
+> supplements quantify the trafo magnetizing-branch position difference
+> (2.4–3.2e-5 pu). One extra Phase-3 finding: the Dyn vector-group
+> SHIFT (150°) must be zeroed on the MATPOWER leg — a flat Newton start
+> 150° from the solution walks into a wrong basin (1 MW phantom losses
+> at zero load). Deliverables: `run_all.py` (one command),
+> `make_report.py` → `docs/benchmarks/README.md` + `manifest.json` +
+> 6 figures, README Validation section + badge,
+> `tests/test_benchmark_fixtures.py` in the dev suite (fixture physics
+> pinned to the MANIFEST noon anchor). Open item: the official EPRI
+> engine leg (py-dss-interface `text()` hang in non-interactive
+> shells) — run from a real terminal later. Historical phase notes
+> below.
+>
+> *(Phase-1 record)* Fixtures frozen (`benchmarks/fixtures/` g1/g2/g3 + MANIFEST,
 > effective profiles of the published teaching scenarios, seeds baked in),
 > the netzsim reference runner produces full-day arrays
 > (`netzsim_runner.py`; G1 vm 0.9845–1.0931 pu = the scenario-1 voltage

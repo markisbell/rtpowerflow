@@ -1,0 +1,13 @@
+{
+  "fixture": "g3_mv_district",
+  "engine": "matpower-8.1-octave",
+  "steps": 1440,
+  "trafo_model": "aligned (magnetizing zeroed, plan \u00a75.2)",
+  "max_dv_pu": 5.153657597345429e-07,
+  "mean_dv_pu": 2.494278021575245e-07,
+  "worst_bus": 317,
+  "worst_step": 356,
+  "wall_s": 168.8,
+  "gate_dv_pu": 1e-05,
+  "pass": true
+}
