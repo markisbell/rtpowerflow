@@ -100,10 +100,19 @@ One `docker-compose.yml` orchestrates the whole stack:
 
 ### Windows: double-click launcher (recommended here)
 
-`start_netzsim.bat` starts the backend (:8000) and the Vite UI (:5173) in their
-own console windows, runs `npm install` if needed, guards against double-starts,
-and opens the browser. Close the two server windows to stop. (The sibling
-[`gridedit`](../gridedit) has `start_gridedit.bat` the same way.)
+`start_netzsim.bat` starts the backend (default :8000) and the Vite UI (default
+:5173) in their own console windows, runs `npm install` if needed, guards
+against double-starts, and opens the browser. To stop, run `stop_netzsim.bat`
+(port-independent: finds this project's servers by window title and command
+line, leaves a parallel stack alone) or close the two server windows. (The
+sibling [`gridedit`](../gridedit) has `start_gridedit.bat` the same way.)
+
+Ports are **not hard-wired**: if a default port is taken by a *foreign* app
+(anything whose `/health` doesn't answer `"app": "netzsim"` — e.g. a parallel
+[rtheatflow](https://github.com/markisbell/rtheatflow) stack), the launcher
+automatically moves to the next free port and wires the UI proxy to match. Pin
+ports explicitly with `NETZSIM_PORT` / `NETZSIM_UI_PORT` (environment or
+`.env`); an already-running netzsim is recognized and reused.
 
 ### Local (Python ≥ 3.10)
 
@@ -123,6 +132,8 @@ cd ui && npm install && npm run dev                 # http://localhost:5173
 ```
 > The dev proxy targets `http://127.0.0.1:8000` (not `localhost`): on Windows
 > `localhost` resolves to IPv6 `::1` first, which uvicorn (IPv4-only) refuses.
+> Running the backend elsewhere? `NETZSIM_PORT=8010 npm run dev` moves the
+> proxy target, `NETZSIM_UI_PORT=5180` the dev server itself.
 
 ### Docker (full stack)
 
@@ -130,6 +141,10 @@ cd ui && npm install && npm run dev                 # http://localhost:5173
 docker compose up --build
 # ui :8080 · netzsim :8000 · influxdb :8086 (admin/netzsim-admin) · grafana :3000 (admin/admin)
 ```
+
+Host-side ports are overridable via `.env` (`NETZSIM_HOST_PORT`, `UI_HOST_PORT`,
+`INFLUX_HOST_PORT`, `GRAFANA_HOST_PORT`) so a second stack with the same
+defaults can run in parallel; the container-internal wiring never changes.
 
 See [`visualization/README.md`](visualization/README.md) for the Grafana stack.
 

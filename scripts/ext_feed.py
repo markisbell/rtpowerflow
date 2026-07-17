@@ -29,11 +29,17 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+# Follow a relocated backend: the launcher moves netzsim to the next free
+# port when a foreign app (e.g. rtheatflow) holds :8000 — honor the same
+# NETZSIM_PORT the launcher exports, --netzsim still overrides.
+DEFAULT_BASE = f"http://localhost:{os.environ.get('NETZSIM_PORT', '8000')}"
 
 
 def _http(method: str, url: str, body: dict | None = None, timeout: float = 5.0) -> dict:
@@ -42,6 +48,17 @@ def _http(method: str, url: str, body: dict | None = None, timeout: float = 5.0)
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode())
+
+
+def check_identity(base: str) -> None:
+    """Refuse to feed a foreign service squatting on netzsim's port."""
+    health = _http("GET", f"{base}/health")
+    app = health.get("app", "netzsim")  # older netzsim: no field -> accept
+    if app != "netzsim":
+        raise SystemExit(
+            f"{base} answers /health as '{app}', not netzsim - is another "
+            "service on this port? Point --netzsim (or NETZSIM_PORT) at the "
+            "right instance.")
 
 
 def ensure_node(base: str, args: argparse.Namespace) -> int:
@@ -76,8 +93,9 @@ def read_pi_watts(args: argparse.Namespace) -> float:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    ap.add_argument("--netzsim", default="http://localhost:8000",
-                    help="netzsim base URL (default %(default)s)")
+    ap.add_argument("--netzsim", default=DEFAULT_BASE,
+                    help="netzsim base URL (default %(default)s, "
+                         "port via NETZSIM_PORT)")
     ap.add_argument("--bus", type=int, required=True,
                     help="bus to feed (node is created there if missing)")
     ap.add_argument("--source", choices=("sine", "pi"), default="sine",
@@ -105,6 +123,7 @@ def main() -> int:
     base = args.netzsim.rstrip("/")
 
     try:
+        check_identity(base)
         eid = ensure_node(base, args)
     except urllib.error.URLError as exc:
         print(f"cannot reach netzsim at {base}: {exc}", file=sys.stderr)

@@ -60,7 +60,8 @@ EchtzeitNetzSimulator/
 │   ├── generation.json
 │   └── substation.json
 ├── scripts/
-│   └── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
+│   ├── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
+│   └── pick_ports.ps1            # dev-launcher port picker (reuse only if /health says netzsim)
 │                                 # (grid GENERATION lives in the separate ../gridgen repo)
 ├── src/netzsim/              # the simulation package (pure CONSUMER — no generation)
 │   ├── config.py             # pydantic-settings (env NETZSIM_*)
@@ -214,7 +215,7 @@ default to zeros if omitted.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Built-in live HTML monitor (uses the WebSocket) |
-| GET | `/health` | Liveness |
+| GET | `/health` | Liveness + identity (`app: "netzsim"`, `version` — lets launchers tell netzsim from port-sharing siblings like rtheatflow) |
 | GET | `/manual` | The German user manual PDF (docs/Benutzerhandbuch.pdf, Hilfe menu) |
 | GET | `/status` | Engine state: running, step, day, steps_per_day, interval |
 | GET | `/network` | Static topology (buses+`x,y` layout, lines, trafos, ext_grids, counts) |
@@ -297,6 +298,23 @@ restarting per grid apply / scenario load).
 > the loadgen assigners); only the data_dir path derives steps from the input
 > files (`InputData.steps_per_day`). Keep the env value and the file `steps`
 > consistent (both 1440 everywhere in the committed data).
+
+**Ports & parallel operation (2026-07-17)**: nothing is hard-wired to
+:8000/:5173 — sibling apps (e.g. rtheatflow) share the same defaults.
+`/health` carries the identity (`app: "netzsim"`, `version`);
+`start_netzsim.bat` uses `scripts/pick_ports.ps1` to REUSE a listener only if
+it answers as netzsim, otherwise it probes upward (+20) for a free port and
+passes `NETZSIM_PORT`/`NETZSIM_UI_PORT` into both server windows. The UI port
+check goes through the Vite proxy (`/api/health`), so a stale dev server whose
+backend died is skipped, not reused. `ui/vite.config.ts` derives the proxy
+target from `NETZSIM_BACKEND` ?? `NETZSIM_PORT` and the dev-server port from
+`NETZSIM_UI_PORT`. docker-compose host mappings are `${VAR:-default}`:
+`NETZSIM_HOST_PORT` (8000), `UI_HOST_PORT` (8080), `INFLUX_HOST_PORT` (8086),
+`GRAFANA_HOST_PORT` (3000) — container-internal wiring (nginx→netzsim:8000,
+collector, grafana→influxdb) never changes. `stop_netzsim.bat` stops this
+project's servers port-independently (window title + process command line)
+and leaves a parallel stack alone. `scripts/ext_feed.py` follows
+`NETZSIM_PORT` and refuses to feed a service whose `/health` isn't netzsim.
 
 collector (env in `docker-compose.yml`): `NETZSIM_URL`, `INFLUX_URL`,
 `INFLUX_TOKEN`, `INFLUX_ORG`, `INFLUX_BUCKET`, `POLL_INTERVAL_SECONDS` (0.5 —

@@ -2003,10 +2003,16 @@ Profil-Arrays müssen exakt \texttt{steps} Werte haben (1440).
 
 \begin{description}
   \item[Die Oberfläche zeigt \glqq kein Netz\grqq{} / Fehler beim Laden]
-    Läuft das Backend? \api{GET /health} muss \texttt{\{"status":
-    "ok"\}} liefern. Im Entwicklungsmodus zusätzlich prüfen, dass
-    das Backend unter \texttt{127.0.0.1:8000} antwortet (nicht nur
-    unter \texttt{localhost}).
+    Läuft das Backend? \api{GET /health} muss antworten, und zwar mit
+    \texttt{"app": "netzsim"} in der Antwort --- genau daran erkennt
+    man, dass wirklich der Netzsimulator auf dem Port sitzt und nicht
+    eine andere Anwendung mit denselben Standard-Ports. Achtung: Der
+    Starter weicht automatisch auf den nächsten freien Port aus
+    (8001, 8002, …), wenn Port 8000 fremdbelegt ist --- der wirklich
+    verwendete Port steht im Titel des Backend-Fensters und in der
+    Abschlusszeile des Starters. Im Entwicklungsmodus zusätzlich
+    prüfen, dass das Backend unter \texttt{127.0.0.1} antwortet
+    (nicht nur unter \texttt{localhost}).
   \item[\api{/state} liefert 404] Normal direkt nach dem Start ---
     der erste Schritt ist noch nicht gelöst. Nach spätestens einer
     Schrittdauer verschwindet der Fehler von selbst.
@@ -2034,8 +2040,12 @@ Profil-Arrays müssen exakt \texttt{steps} Werte haben (1440).
     JSON ohne Byte-Order-Mark sein --- beim Speichern aus gridedit
     ist beides garantiert, bei Hand-Edits unter Windows auf die
     Editor-Einstellung achten.
-  \item[Port 8000 ist belegt] Einen Altprozess beenden oder
-    \texttt{NETZSIM\_PORT} umsetzen; die Prozess-ID zum Port
+  \item[Port 8000 ist belegt] Der Starter löst das inzwischen
+    selbst: Ein bereits laufender Netzsimulator wird erkannt und
+    weiterverwendet, eine fremde Anwendung auf dem Port führt zum
+    automatischen Ausweichen auf den nächsten freien Port. Manuell
+    festlegen lässt sich der Port weiterhin über
+    \texttt{NETZSIM\_PORT}; die Prozess-ID zu einem belegten Port
     liefert unter Windows \texttt{Get-Net\allowbreak TCPConnection}.
 \end{description}
 

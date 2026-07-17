@@ -61,7 +61,10 @@ The German user manual (docs/Benutzerhandbuch.pdf), for the Hilfe menu.
 
 ### `GET /health`
 
-Liveness probe.
+Liveness + identity probe. `app` identifies netzsim when several
+services share a port range (e.g. netzsim next to rtheatflow) — the dev
+launcher only treats a listener as "already running" if it answers
+with app=netzsim, otherwise it moves to the next free port.
 
 ### `GET /status`
 

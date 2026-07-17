@@ -1,9 +1,13 @@
+# Host-side ports are overridable via .env (container ports stay fixed) so a
+# second stack with the same defaults (e.g. rtheatflow) can run in parallel:
+#   NETZSIM_HOST_PORT=8010  UI_HOST_PORT=8090  INFLUX_HOST_PORT=8096  GRAFANA_HOST_PORT=3010
+# Cross-service URLs below use the compose-internal network and never change.
 services:
   # --- Realtime power-flow simulation (app 1) ---------------------------- #
   netzsim:
     build: .
     ports:
-      - "8000:8000"
+      - "${NETZSIM_HOST_PORT:-8000}:8000"
     environment:
       NETZSIM_DATA_DIR: /app/data
       # inside the container the API must be reachable from the other services
@@ -27,7 +31,7 @@ services:
   ui:
     build: ./ui
     ports:
-      - "8080:80"
+      - "${UI_HOST_PORT:-8080}:80"
     depends_on:
       - netzsim
     restart: unless-stopped
@@ -36,7 +40,7 @@ services:
   influxdb:
     image: influxdb:2.7
     ports:
-      - "8086:8086"
+      - "${INFLUX_HOST_PORT:-8086}:8086"
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: admin
@@ -75,7 +79,7 @@ services:
   grafana:
     image: grafana/grafana:11.1.0
     ports:
-      - "3000:3000"
+      - "${GRAFANA_HOST_PORT:-3000}:3000"
     depends_on:
       influxdb:
         condition: service_healthy

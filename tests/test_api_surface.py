@@ -180,7 +180,10 @@ def test_openapi_schema_builds(client):
 
 
 def test_core_endpoints(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    h = client.get("/health").json()
+    # identity fields let launchers tell netzsim apart from other services
+    # squatting on the same port (e.g. rtheatflow)
+    assert h["status"] == "ok" and h["app"] == "netzsim" and h["version"]
     st = client.get("/status").json()
     assert st["running"] is False and st["steps_per_day"] == 1440
     topo = client.get("/network").json()
