@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
 
+from .. import __version__
 from ..config import settings
 from .runtime import runtime
 
@@ -45,8 +46,11 @@ def manual():
 
 @router.get("/health")
 def health():
-    """Liveness probe."""
-    return {"status": "ok"}
+    """Liveness + identity probe. `app` identifies netzsim when several
+    services share a port range (e.g. netzsim next to rtheatflow) — the dev
+    launcher only treats a listener as "already running" if it answers
+    with app=netzsim, otherwise it moves to the next free port."""
+    return {"status": "ok", "app": "netzsim", "version": __version__}
 
 
 @router.get("/status")

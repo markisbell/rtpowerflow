@@ -204,7 +204,11 @@ with a DE/EN toggle (`i18n.ts`, key parity enforced at build time).
 
 ## 7. Running it
 
-`start_netzsim.bat` (Windows double-click: backend :8000 + Vite :5173) ·
-local venv (`PYTHONPATH=src python -m netzsim.main`) · full stack via
-`docker compose up --build`. See the [README](../README.md) for details and
-the dev-proxy gotcha (use `127.0.0.1`, not `localhost`, on Windows).
+`start_netzsim.bat` (Windows double-click: backend default :8000 + Vite
+default :5173, auto-probing upward via `scripts/pick_ports.ps1` when a
+foreign app holds a port — `/health` answers `app: "netzsim"` as identity;
+pin with `NETZSIM_PORT` / `NETZSIM_UI_PORT`) · local venv
+(`PYTHONPATH=src python -m netzsim.main`) · full stack via
+`docker compose up --build` (host ports overridable per `.env`). See the
+[README](../README.md) for details and the dev-proxy gotcha (use
+`127.0.0.1`, not `localhost`, on Windows).

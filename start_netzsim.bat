@@ -48,7 +48,7 @@ rem zweier Launcher), antwortet dort jemand ohne "netzsim" -> Abbruch
 rem statt die UI still an das falsche Backend zu verdrahten.
 echo Warte auf das Backend ...
 for /l %%i in (1,1,60) do (
-    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 ('http://127.0.0.1:%API_PORT%/health'); if ($r.Content -match 'netzsim') { exit 0 } else { exit 2 } } catch { exit 1 }" >nul 2>&1
+    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 ('http://127.0.0.1:%API_PORT%/health'); if ($r.Content -match 'netzsim') { exit 0 } else { exit 2 } } catch { exit 1 }" >nul 2>&1
     if errorlevel 2 goto port_stolen
     if not errorlevel 1 goto backend_up
     ping -n 2 127.0.0.1 >nul
@@ -98,7 +98,7 @@ rem melden); ein blosser Lausch-Check koennte eine fremde UI treffen,
 rem die den Port in der Startluecke uebernommen hat. Beide Loopbacks
 rem probieren - Vite bindet unter Windows ::1.
 for /l %%i in (1,1,30) do (
-    powershell -NoProfile -Command "foreach ($h in '127.0.0.1','[::1]') { try { if ((Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 ('http://' + $h + ':%UI_PORT%/api/health')).Content -match 'netzsim') { exit 0 } } catch { } }; exit 1" >nul 2>&1
+    powershell -NoProfile -Command "foreach ($h in '127.0.0.1','[::1]') { try { if ((Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 ('http://' + $h + ':%UI_PORT%/api/health')).Content -match 'netzsim') { exit 0 } } catch { } }; exit 1" >nul 2>&1
     if not errorlevel 1 goto browser
     ping -n 2 127.0.0.1 >nul
 )
