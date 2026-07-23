@@ -254,6 +254,16 @@ button.ghost {
 .map-canvas { position: absolute; inset: 0; }
 .map-canvas .leaflet-container { background: #e9eaec; font-family: inherit; }
 
+/* live-value popup (click a node/line/trafo) — dark-panel look, matching the
+   rtheatflow sibling so both tools feel the same */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--panel); color: var(--text);
+  box-shadow: 0 6px 24px #000a;
+}
+.leaflet-popup-content { font-size: 0.8rem; line-height: 1.45; margin: 10px 12px; }
+.leaflet-popup-content b { font-size: 0.84rem; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+
 /* ding0-style overlays on the map */
 .map-basemap {
   position: absolute; top: 10px; right: 10px; z-index: 650;

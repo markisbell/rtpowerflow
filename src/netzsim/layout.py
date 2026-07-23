@@ -84,11 +84,10 @@ def _edge_lengths(net) -> dict[frozenset, float]:
     return lengths
 
 
-def _geographic_positions(net) -> dict[int, tuple[float, float]]:
-    g = _graph(net)
+def _geographic_positions(g: nx.Graph, lengths: dict[frozenset, float],
+                          roots: list[int], nodes: list[int]) -> dict[int, tuple[float, float]]:
     if g.number_of_nodes() == 0:
         return {}
-    lengths = _edge_lengths(net)
     pos: dict[int, tuple[float, float]] = {}
     visited: set[int] = set()
     component_origin = [0.0, 0.0]
@@ -117,10 +116,10 @@ def _geographic_positions(net) -> dict[int, tuple[float, float]]:
                 stack.append((c, angle, min(max(cspan, 0.35) * 0.85, math.pi)))
                 a += cspan
 
-    for r in (int(b) for b in net.ext_grid["bus"].tolist()):
+    for r in roots:
         if r not in visited:
             grow(r)
-    for n in (int(b) for b in net.bus.index):  # any leftover components
+    for n in nodes:                            # any leftover components
         if n not in visited:
             component_origin[1] -= 1.0
             grow(n)
@@ -134,8 +133,8 @@ FEEDER_GAP = 2.0   # extra rows between the main feeders (children of the busbar
 BRANCH_GAP = 0.75  # extra rows between adjacent branch bundles deeper in a feeder
 
 
-def _tree_positions(net) -> dict[int, tuple[float, float]]:
-    g = _graph(net)
+def _tree_positions(g: nx.Graph, roots: list[int],
+                    nodes: list[int]) -> dict[int, tuple[float, float]]:
     pos: dict[int, tuple[float, float]] = {}
     visited: set[int] = set()
     y_cursor = [0.0]
@@ -179,10 +178,10 @@ def _tree_positions(net) -> dict[int, tuple[float, float]]:
         for u in order:
             pos[u] = (float(depth[u]), ypos[u])
 
-    for root in (int(b) for b in net.ext_grid["bus"].tolist()):
+    for root in roots:
         if root not in visited:
             grow(root)
-    for node in (int(b) for b in net.bus.index):
+    for node in nodes:
         if node not in visited:
             grow(node)
     return pos
@@ -190,6 +189,34 @@ def _tree_positions(net) -> dict[int, tuple[float, float]]:
 
 def compute_layouts(net) -> tuple[dict[int, list[float]], dict[int, list[float]]]:
     """Return ``(geographic, tree)`` coordinate maps, each ``bus_index -> [x, y]``."""
-    geographic = _normalize(_geographic_positions(net))
-    tree = _normalize(_tree_positions(net))
+    g = _graph(net)
+    lengths = _edge_lengths(net)
+    roots = [int(b) for b in net.ext_grid["bus"].tolist()]
+    nodes = [int(b) for b in net.bus.index]
+    geographic = _normalize(_geographic_positions(g, lengths, roots, nodes))
+    tree = _normalize(_tree_positions(g, roots, nodes))
+    return geographic, tree
+
+
+def compute_layouts_from_lists(n_bus: int, lines: list[dict], trafos: list[dict],
+                               slack_buses: list[int],
+                               ) -> tuple[dict[int, list[float]], dict[int, list[float]]]:
+    """Net-free variant working straight on the GridInputs dicts — used by the
+    ``/grids/{id}`` preview so grids WITHOUT geo data (the IEEE/CIGRE/Kerber
+    reference feeders) still get a drawable single-line diagram."""
+    g = nx.Graph()
+    g.add_nodes_from(range(n_bus))
+    lengths: dict[frozenset, float] = {}
+    for ln in lines:
+        a, b = int(ln["from_bus"]), int(ln["to_bus"])
+        g.add_edge(a, b)
+        lengths[frozenset((a, b))] = max(float(ln["length_km"]), 1.0e-4)
+    for t in trafos:
+        a, b = int(t["hv_bus"]), int(t["lv_bus"])
+        g.add_edge(a, b)
+        lengths[frozenset((a, b))] = 1.0e-3
+    roots = [int(b) for b in slack_buses]
+    nodes = list(range(n_bus))
+    geographic = _normalize(_geographic_positions(g, lengths, roots, nodes))
+    tree = _normalize(_tree_positions(g, roots, nodes))
     return geographic, tree

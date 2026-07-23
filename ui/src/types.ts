@@ -4,9 +4,12 @@ export interface GridListItem {
   id: string;
   name: string;
   category: string;
+  // "library" | "ding0" | "user" | "reference" (IEEE/CIGRE/Kerber feeders)
+  source: string;
   thumbnail: string | null;
   voltage?: "MV" | "LV" | null;
-  character?: "rural" | "suburban" | "urban" | "user" | null;
+  character?: "rural" | "suburban" | "urban" | "user"
+    | "ieee" | "cigre" | "kerber" | null;
   nodes?: number | null;
   n_bus?: number;
   n_line?: number;
@@ -26,8 +29,12 @@ export interface GridPreview {
   n_trafo: number;
   n_load: number;
   buses: { id: number; name: string; vn_kv: number; zone?: string;
-           geo?: [number, number] | null; kind?: string | null }[];
+           geo?: [number, number] | null; kind?: string | null;
+           // synthetic layouts for grids without geo (reference feeders):
+           // x/y = length-aware radial, tx/ty = tidy tree, all in [0,1]
+           x?: number; y?: number; tx?: number; ty?: number }[];
   lines: { name: string | null; from_bus: number; to_bus: number; length_km: number;
+           in_service?: boolean;
            geometry?: [number, number][] | null }[];
   trafos: { name: string | null; hv_bus: number; lv_bus: number; sn_mva: number }[];
   load_buses?: number[];
