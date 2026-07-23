@@ -34,6 +34,7 @@ GitHub-side).
 | `test_user_grids.py` | User-drawn gridformat exports: `user_grids/` catalog scan and the importer honoring the file's chosen transformer rating. |
 | `test_lv_ref.py` | Vertical phase 5: a drawn MV station referencing a drawn LV export gets the real street grid **spliced** through its own station transformer; a missing reference degrades to a lumped load + warning. |
 | `test_echeck.py` | Electrical E-Check over the committed dataset: every committed LV grid solves at evening peak within EN-50160-style limits — a data-quality gate, not a code test. |
+| `test_reference_import.py` | The IEEE/CIGRE/Kerber reference feeders from pandapower.networks: every catalog entry converts, solves, and matches its pinned bus count — and at the 19:00 peak step netzsim must reproduce pandapower's solve of the ORIGINAL published case to <2e-6 pu (the conversion adds only the time dimension). |
 | `test_runtime_swap.py` | The `/grids` catalog + `engine.reconfigure`: swapping the grid at runtime builds a fresh Simulator without killing the engine loop. |
 | `test_loadgen.py` | LPG library reader + assignment: archetype/variant distribution, seeded determinism, MFH household summing. |
 

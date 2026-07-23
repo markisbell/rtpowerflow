@@ -5,6 +5,7 @@ import type {
   ActiveGrid, Archetype, AssignResponse, GridListItem, GridPreview, LoadgenPolicy,
 } from "../types";
 import { fmt } from "../scales";
+import Section from "../components/Section";
 import Sparkline from "../components/Sparkline";
 import StructureDiagram from "../components/StructureDiagram";
 import { gridDisplayName } from "../gridname";
@@ -54,14 +55,33 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
     });
   }, []);
 
+  // the picker's three collapsible groups (like the live side-panel sections)
+  const originRank = (g: GridListItem) =>
+    ({ ieee: 0, cigre: 1, kerber: 2 } as Record<string, number>)[g.character ?? ""] ?? 3;
+  const refs = useMemo(
+    () => (grids ?? []).filter((g) => g.source === "reference")
+      .sort((a, b) => originRank(a) - originRank(b) || (a.nodes ?? 0) - (b.nodes ?? 0)),
+    [grids]);
   const library = useMemo(
-    () => (grids ?? []).filter((g) => g.character !== "user")
+    () => (grids ?? []).filter((g) => g.source !== "reference" && g.character !== "user")
       .sort((a, b) => (a.nodes ?? 0) - (b.nodes ?? 0)),
     [grids]);
   const own = useMemo(
     () => (grids ?? []).filter((g) => g.character === "user")
       .sort((a, b) => a.name.localeCompare(b.name)),
     [grids]);
+
+  const [openSec, setOpenSec] = useState({ refs: false, lib: true, own: false });
+  const toggleSec = (k: "refs" | "lib" | "own") =>
+    setOpenSec((s) => ({ ...s, [k]: !s[k] }));
+  // the group holding the currently selected grid opens itself
+  useEffect(() => {
+    if (!selected || !grids) return;
+    const g = grids.find((x) => x.id === selected);
+    if (!g) return;
+    const k = g.source === "reference" ? "refs" : g.character === "user" ? "own" : "lib";
+    setOpenSec((s) => (s[k] ? s : { ...s, [k]: true }));
+  }, [selected, grids]);
 
   const policy = useMemo<LoadgenPolicy>(() => ({
     archetypes: chosen.size ? [...chosen] : null,
@@ -164,17 +184,29 @@ export default function NetzStudio({ selected, onSelect, onApplied }: Props) {
                }} />
         {note && <p className="note" style={{ fontSize: "0.75rem" }}>{note}</p>}
 
-        <div className="ns-hdr">{t("netz.library")}</div>
-        {library.map((g) => (
-          <GridRow key={g.id} g={g} selected={g.id === selected} onClick={() => onSelect(g.id)} />
-        ))}
-        {library.length === 0 && <div className="muted ns-empty">—</div>}
+        <Section title={t("netz.refnets")} badges={[`${refs.length}`]}
+                 open={openSec.refs} onToggle={() => toggleSec("refs")}>
+          {refs.map((g) => (
+            <GridRow key={g.id} g={g} selected={g.id === selected} onClick={() => onSelect(g.id)} />
+          ))}
+          {refs.length === 0 && <div className="muted ns-empty">—</div>}
+        </Section>
 
-        <div className="ns-hdr">{t("netz.own")}</div>
-        {own.map((g) => (
-          <GridRow key={g.id} g={g} selected={g.id === selected} onClick={() => onSelect(g.id)} />
-        ))}
-        {own.length === 0 && <div className="muted ns-empty">{t("netz.noOwn")}</div>}
+        <Section title={t("netz.library")} badges={[`${library.length}`]}
+                 open={openSec.lib} onToggle={() => toggleSec("lib")}>
+          {library.map((g) => (
+            <GridRow key={g.id} g={g} selected={g.id === selected} onClick={() => onSelect(g.id)} />
+          ))}
+          {library.length === 0 && <div className="muted ns-empty">—</div>}
+        </Section>
+
+        <Section title={t("netz.own")} badges={[`${own.length}`]}
+                 open={openSec.own} onToggle={() => toggleSec("own")}>
+          {own.map((g) => (
+            <GridRow key={g.id} g={g} selected={g.id === selected} onClick={() => onSelect(g.id)} />
+          ))}
+          {own.length === 0 && <div className="muted ns-empty">{t("netz.noOwn")}</div>}
+        </Section>
       </aside>
 
       {/* ---- 2 · loads & generation ------------------------------------- */}

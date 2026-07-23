@@ -38,7 +38,10 @@ def district(catalog):
 def test_mv_entries_subsume_their_osm_lv_grids(catalog):
     import json
     raw = {g["id"]: g for g in json.loads(MANIFEST.read_text())["grids"]}
-    mv = [e for e in catalog._entries.values() if e.voltage == "MV"]
+    # manifest districts only — MV REFERENCE feeders (ieee_33bw, cigre_mv)
+    # legitimately have no LV subgrids to splice
+    mv = [e for e in catalog._entries.values()
+          if e.voltage == "MV" and e.source == "library"]
     assert mv, "manifest has no MV districts"
     for e in mv:
         assert e.lv_subgrids, f"{e.id}: no LV subgrids paired"

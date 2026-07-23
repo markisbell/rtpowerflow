@@ -99,8 +99,11 @@ def test_grid_library_catalog_lists_and_converts_scopes():
     assert any("n_bus" in it for it in cat.list())
 
 
-def test_absent_source_is_empty_not_an_error():
+def test_absent_source_still_offers_reference_feeders():
+    # no dataset at all -> the pandapower reference feeders (IEEE/CIGRE/
+    # Kerber) remain: they ship with the code, not with the data snapshot
     cat = GridCatalog(ding0_dir=str(ROOT / "does-not-exist"))
-    assert cat.available is False
-    assert cat.list() == []
+    assert cat.available is True
+    assert all(it["source"] == "reference" for it in cat.list())
+    assert cat.has("ieee_33bw") is True
     assert cat.has("anything") is False

@@ -297,9 +297,8 @@ Menüleiste am oberen Rand bündelt alle Funktionen
 
 \begin{description}[nosep]
   \item[\ui{Datei}] alles, was lädt, speichert oder exportiert:
-    \ui{Netz \& Lasten…} (Netz wählen/importieren, Lasten
-    konfigurieren, starten), Szenarien speichern und laden
-    (Kapitel~\ref{ch:scenarios}) sowie der \ui{Daten-Export}
+    Szenarien speichern und laden (Kapitel~\ref{ch:scenarios})
+    sowie Aufzeichnung und \ui{Daten-Export}
     (Kapitel~\ref{ch:export}). Einträge mit \glqq…\grqq{} öffnen
     einen kleinen Dialog, Einträge mit
     \glqq$\triangleright$\grqq{} ein Untermenü.
@@ -310,7 +309,10 @@ Menüleiste am oberen Rand bündelt alle Funktionen
   \item[\ui{Hilfe}] öffnet dieses Benutzerhandbuch als PDF.
 \end{description}
 
-Rechts neben den Menüs sitzt dauerhaft sichtbar der
+Rechts neben den Menüs sitzen zwei dauerhaft sichtbare
+Umschalter: der \textbf{Arbeitsbereich} \ui{Live~/ Netz \& Lasten}
+(zwischen laufender Simulation und der Netz-Konfiguration wechseln
+--- wie im Schwesterwerkzeug \emph{rtheatflow}) und der
 \textbf{Sicht-Umschalter} \ui{Lastfluss~/ Gemessen~/ Schätzung}
 (Kapitel~\ref{ch:observability}) --- die drei Sichten sind das
 Kernkonzept der Plattform, deshalb ist die aktive Sicht immer
@@ -357,11 +359,34 @@ zu Schritt wiederfinden lassen.
 
 \section{Schritt 1: Netz wählen oder importieren}
 
-\ui{Datei} $\rightarrow$ \ui{Netz \& Lasten…} öffnet die kombinierte
-Ansicht (auch der Klick auf den Netz-Chip rechts oben führt
-hierher). Die linke Spalte listet alle verfügbaren Netze:
+Der Arbeitsbereich-Umschalter \ui{Netz \& Lasten} in der Menüleiste
+öffnet die kombinierte Ansicht (auch der Klick auf den Netz-Chip
+rechts oben führt hierher). Die linke Spalte gruppiert alle
+verfügbaren Netze in
+drei aufklappbare Abschnitte --- dieselbe Optik wie die Sektionen
+der Live-Seitenleiste, per Klick auf die Kopfzeile auf- und
+zugeklappt, die Zahl rechts nennt die Netze im Abschnitt:
 
 \begin{description}
+  \item[\ui{Referenznetze (IEEE · CIGRE · Kerber)}] die klassischen
+    Referenznetze der Verteilnetz-Literatur, direkt aus pandapower
+    übernommen und ohne weitere Daten immer verfügbar: die beiden
+    IEEE-Feeder für Mittel- und Niederspannung (\emph{IEEE 33-Bus
+    Test Feeder}, 12,66~kV, und \emph{IEEE European LV Test Feeder},
+    416~V mit 906 Knoten), die CIGRE-Benchmarknetze für MS und NS
+    sowie drei Kerber-Netze (Land, Dorf, Vorstadt --- die deutschen
+    NS-Referenztopologien). Impedanzen, Trafos und offene
+    Trennstellen sind \emph{exakt} übernommen; nur die Zeitdimension
+    ist ergänzt: Jede Last folgt einer Tagesform, deren Abendspitze
+    (19:00 Uhr) genau dem Nennwert des publizierten Falls
+    entspricht. NS-Anschlüsse gelten als Haushalte, sodass
+    Lastgenerator, E-Autos und PV in Schritt~2 auch auf den
+    Referenznetzen funktionieren. Ohne Geodaten zeigen diese Netze
+    die synthetischen Ansichten (Geographisch/Schaltbild) statt der
+    Karte; auch die Struktur-Vorschau in Schritt~3 zeichnet dann ein
+    \emph{Prinzipschaltbild}: die Stränge als aufgeräumter Baum von
+    der Einspeisung nach rechts, Transformatoren als klassisches
+    Zwei-Ringe-Symbol, offene Trennstellen gestrichelt.
   \item[\ui{Bibliothek}] mitgelieferte synthetische deutsche
     Verteilnetze (ding0) auf realer Geographie: Die Topologien
     sind künstlich, aber nach den Regeln realer Netzplanung
@@ -387,6 +412,19 @@ hierher). Die linke Spalte listet alle verfügbaren Netze:
     beim Import probeweise konvertiert --- was sich nicht laden
     lässt, wird mit einer Fehlermeldung abgewiesen.
 \end{description}
+
+\begin{beispiel}[Der IEEE-33-Bus-Feeder als Kontrollpunkt]
+Der IEEE-33-Bus-Feeder ist \emph{der} Standardfall der
+Verteilnetz-Literatur --- unzählige Veröffentlichungen nennen für
+seine Spitzenlast (3,715~MW) eine minimale Knotenspannung von
+0{,}913~pu. Genau das lässt sich hier nachstellen: Netz wählen,
+starten, mit dem Zeitregler auf 19:00 Uhr springen (die Tagesform
+erreicht dort die publizierten Nennlasten) --- die Übersicht zeigt
+min~U $=$ 0{,}913~pu. Die Testsuite pinnt diese Übereinstimmung
+maschinell: Am Spitzenschritt reproduziert der Simulator die
+pandapower-Lösung des Original-Referenzfalls auf unter
+$2\cdot10^{-6}$~pu, für alle mitgelieferten Referenznetze.
+\end{beispiel}
 
 Nach der Auswahl erscheinen in der Mittelspalte die Kenndaten
 (Knoten, Leitungen, Lasten, Trafo-Nennleistung) und rechts oben die
@@ -645,8 +683,31 @@ entspannt sich sichtbar von außen nach innen.
 
 \subsection{Interaktion mit Netzelementen}
 
-Ein Klick auf einen Knoten, eine Leitung oder einen Transformator
-öffnet ein Aktionsmenü:
+Auf der \emph{Karte} öffnet ein Klick auf einen Knoten, eine Leitung
+oder einen Transformator ein kleines \textbf{Live-Werte-Popup} direkt
+am Element --- es tickt mit jedem Simulationsschritt weiter und
+schließt per \texttt{×}, \texttt{ESC} oder Klick auf die freie Karte:
+
+\begin{itemize}[nosep]
+  \item \emph{Knoten}: Spannung in Volt und Prozent, Wirk- und
+    Blindleistung; am Netzanschluss zusätzlich der Austausch mit der
+    überlagerten Ebene.
+  \item \emph{Leitung}: Auslastung, Strom, transportierte Leistung
+    und Verluste; offene Trennstellen sind gekennzeichnet.
+  \item \emph{Transformator}: Auslastung, OS-seitige Leistung und
+    Strom.
+\end{itemize}
+
+Das Popup respektiert die gewählte \ui{Sicht}: In \ui{Gemessen}
+zeigt es an Elementen ohne Messgerät ehrlich \glqq keine Messung ---
+unbekannt\grqq{} (ein gemessener Knoten zeigt seine Zählerwerte mit
+Zähler-Kennung, ein TAF-7-Zähler erst nach dem ersten vollen
+15-min-Fenster), in der \ui{Schätzung} die geschätzten Größen.
+Dieselbe Bedienung wie im Schwesterwerkzeug \emph{rtheatflow}.
+
+Das \textbf{Aktionsmenü} öffnet per \emph{Rechtsklick} (in den
+synthetischen Ansichten Geographisch/Schaltbild auch weiterhin per
+Klick):
 
 \begin{itemize}[nosep]
   \item \ui{Tagesverlauf} heftet ein Diagramm des Elements als
@@ -1219,7 +1280,7 @@ Typische Anwendungen:
 
 \section{Anbinden und beobachten}
 
-Ein Klick auf einen Knoten öffnet das Element-Menü;
+Ein Rechtsklick auf einen Knoten öffnet das Element-Menü;
 \ui{Externe Quelle anbinden} legt den externen Knoten dort an. Auf
 Karte und Schema markiert ihn ein Antennen-Symbol, und seine
 Seitenleisten-Sektion bleibt --- wie bei einer Batterie --- dauerhaft

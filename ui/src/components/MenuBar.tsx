@@ -50,8 +50,7 @@ export default function MenuBar({ tab, onTab, active, live, onLive, onMeasChange
     <nav className="mbar">
       {open && <div className="mbar-overlay" onClick={close} />}
       <Menu id="datei" label={t("mbar.datei")} open={open} onToggle={toggle}>
-        <DateiMenu isOpen={open === "datei"} tab={tab}
-                   onTab={(x) => { onTab(x); close(); }}
+        <DateiMenu isOpen={open === "datei"}
                    onScenarioLoaded={() => { onScenarioLoaded(); close(); }}
                    onDialog={(d) => { setDialog(d); close(); }}
                    onChanged={poll} />
@@ -72,6 +71,17 @@ export default function MenuBar({ tab, onTab, active, live, onLive, onMeasChange
           {t("mbar.source")}
         </a>
       </Menu>
+
+      {/* the two workspaces as an always-visible segment (like rtheatflow's
+          Live/Studio tabs) — switching must not require menu digging */}
+      <div className="mbar-seg" role="group" aria-label={t("mbar.tabsHdr")}>
+        <button className={tab === "live" ? "on" : ""} onClick={() => onTab("live")}>
+          {t("mbar.tabLive")}
+        </button>
+        <button className={tab === "config" ? "on" : ""} onClick={() => onTab("config")}>
+          {t("mbar.tabStudio")}
+        </button>
+      </div>
 
       {/* the Sicht is a MODE that changes everything on screen — permanently
           visible as a segmented control, never hidden in a dropdown */}
@@ -152,9 +162,8 @@ function fmtBytes(b: number): string {
   return b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
 }
 
-function DateiMenu({ isOpen, tab, onTab, onScenarioLoaded, onDialog, onChanged }: {
-  isOpen: boolean; tab: string;
-  onTab: (t: "config" | "live") => void;
+function DateiMenu({ isOpen, onScenarioLoaded, onDialog, onChanged }: {
+  isOpen: boolean;
   onScenarioLoaded: () => void;
   onDialog: (d: "scenario" | "export") => void;
   onChanged: () => void;
@@ -206,13 +215,6 @@ function DateiMenu({ isOpen, tab, onTab, onScenarioLoaded, onDialog, onChanged }
 
   return (
     <>
-      <button className={"mi" + (tab === "config" ? " on" : "")} onClick={() => onTab("config")}>
-        {t("mbar.netzStudio")}
-      </button>
-      <button className={"mi" + (tab === "live" ? " on" : "")} onClick={() => onTab("live")}>
-        {t("mbar.toLive")}
-      </button>
-      <div className="mi-sep" />
       <button className="mi" onClick={() => onDialog("scenario")}>💾 {t("scen.saveDots")}</button>
       <SubMenu label={t("scen.loadSub")}>
         {scens === null && <div className="mi info muted">…</div>}

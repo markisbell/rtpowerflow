@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { StepResult, Topology } from "../types";
-import { currentWidth, lineLoadingColor, voltageReds, LOADING_GRADIENT, REDS_GRADIENT, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
+import { currentWidth, fmt, lineLoadingColor, voltageReds, LOADING_GRADIENT, REDS_GRADIENT, UNOBSERVED, UNOBSERVED_LINE } from "../scales";
 
 interface Props {
   topo: Topology;
@@ -30,6 +30,30 @@ const isAdditive = (e: L.LeafletMouseEvent) =>
 
 const clickAt = (e: L.LeafletMouseEvent) =>
   e.originalEvent ? { x: e.originalEvent.clientX, y: e.originalEvent.clientY } : undefined;
+
+// live-value popup helpers (the popup content is a plain HTML string — same
+// pattern as the rtheatflow sibling: only topology names get escaped)
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const row = (k: string, v: string) =>
+  `<span style="color:var(--muted)">${k}</span>&thinsp;${v}`;
+const muted = (s: string) => `<span style="color:var(--muted)">${s}</span>`;
+// unit-scaled quantities: LV values read best in kW/kvar/kVA, district MV in MW
+const pRow = (mw: number | null | undefined) =>
+  mw == null ? "–" : Math.abs(mw) < 1 ? `${fmt(mw * 1000, 1)} kW` : `${fmt(mw, 2)} MW`;
+const qRow = (mvar: number | null | undefined) =>
+  mvar == null ? "–" : Math.abs(mvar) < 1 ? `${fmt(mvar * 1000, 1)} kvar` : `${fmt(mvar, 2)} Mvar`;
+const iRow = (ka: number | null | undefined) =>
+  ka == null ? "–" : `${fmt(ka * 1000, 0)} A`;
+// losses are often single watts on LV cables — show W below 1 kW so a lightly
+// loaded line reads "36 W" instead of a misleading "0 kW"
+const lossRow = (mw: number | null | undefined) =>
+  mw == null ? "–" : Math.abs(mw) < 0.001 ? `${fmt(mw * 1e6, 0)} W` : pRow(mw);
+const uRow = (vmPu: number | null | undefined, vnKv: number) =>
+  vmPu == null ? "–"
+    : vnKv < 1
+      ? `${fmt(vmPu * vnKv * 1000, 1)} V (${fmt(vmPu * 100, 1)} %)`
+      : `${fmt(vmPu * vnKv, 2)} kV (${fmt(vmPu * 100, 1)} %)`;
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
 
@@ -70,6 +94,80 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
   const [light, setLight] = useState(true);
   const batKey = batteryBuses.join(",");
   const meterKey = `${meterBuses.join(",")}|${meterTrafos.join(",")}`;
+
+  // ---- live-value popups (click a node/line/trafo) ------------------------ //
+  // The frame arrives view-spliced from LivePowerFlow (estimate mode replaces
+  // the truth arrays), so the popup honors the operator's perspective exactly
+  // like the marker coloring: meter reading first, else the frame value when
+  // the view may reveal it, else honestly "unknown". Content closures read
+  // liveRef so an OPEN popup keeps ticking with every WS frame.
+  const liveRef = useRef({ latest, revealTruth, meterBuses, meterTrafos });
+  liveRef.current = { latest, revealTruth, meterBuses, meterTrafos };
+
+  const busPopup = (bus: Topology["buses"][number]): string => {
+    const { latest: f, revealTruth: reveal, meterBuses: mb } = liveRef.current;
+    const slack = topo.ext_grids.find((e) => e.bus === bus.id);
+    let head = `<b>${esc(bus.name)}</b><br>` + muted(
+      `Uₙ ${bus.vn_kv < 1 ? `${fmt(bus.vn_kv * 1000, 0)} V` : `${fmt(bus.vn_kv, 0)} kV`}`
+      + (slack ? ` · ${t("pop.slack")}` : ""));
+    if (!f) return `${head}<br>${muted(t("pop.noData"))}`;
+    if (slack && reveal) {
+      const eg = (f.ext_grids ?? []).find((x) => x.index === slack.id);
+      if (eg) head += `<br>${row(t("pop.exchange"), `${pRow(eg.p_mw)} · ${qRow(eg.q_mvar)}`)}`;
+    }
+    const reading = (f.measurements?.nodes ?? []).find((n) => n.bus === bus.id);
+    if (mb.includes(bus.id)) {
+      if (!reading) return `${head}<br>📟 ${muted(t("pop.coldStart"))}`;
+      return `${head}<br>📟 ${row(t("pop.u"), uRow(reading.vm_pu, bus.vn_kv))}`
+        + `<br>${row("P", pRow(reading.p_mw))} · ${row("Q", qRow(reading.q_mvar))}`
+        + `<br>${row("I", iRow(reading.i_ka))}`;
+    }
+    const b = (f.buses ?? []).find((x) => x.index === bus.id);
+    if (reveal && b) {
+      return `${head}<br>${row(t("pop.u"), uRow(b.vm_pu, bus.vn_kv))}`
+        + `<br>${row("P", pRow(b.p_mw))} · ${row("Q", qRow(b.q_mvar))}`;
+    }
+    return `${head}<br>${muted(t("pop.unobserved"))}`;
+  };
+
+  const linePopup = (ln: Topology["lines"][number]): string => {
+    const { latest: f, revealTruth: reveal } = liveRef.current;
+    const len = ln.length_km < 1
+      ? `${fmt(ln.length_km * 1000, 0)} m` : `${fmt(ln.length_km, 2)} km`;
+    const head = `<b>${esc(ln.name ?? `${t("pop.line")} ${ln.id}`)}</b><br>`
+      + muted(`${t("pop.length")} ${len}`
+        + (ln.in_service === false ? ` · ${t("pop.openTie")}` : ""));
+    if (!f) return `${head}<br>${muted(t("pop.noData"))}`;
+    const l = (f.lines ?? []).find((x) => x.index === ln.id);
+    if (reveal && l) {
+      return `${head}<br>${row(t("pop.loading"), `${fmt(l.loading_percent, 1)} %`)} · `
+        + row("I", iRow(l.i_ka))
+        + `<br>${row("P", pRow(l.p_from_mw))} · ${row(t("pop.losses"), lossRow(l.pl_mw))}`;
+    }
+    return `${head}<br>${muted(t("pop.lineUnobserved"))}`;
+  };
+
+  const trafoPopup = (tr: Topology["trafos"][number]): string => {
+    const { latest: f, revealTruth: reveal, meterTrafos: mt } = liveRef.current;
+    const head = `<b>${esc(tr.name ?? `${t("pop.trafo")} ${tr.id}`)}</b><br>`
+      + muted(`${t("pop.rating")} ${fmt(tr.sn_mva * 1000, 0)} kVA`);
+    if (!f) return `${head}<br>${muted(t("pop.noData"))}`;
+    const rows = (x: { loading_percent: number | null; p_hv_mw: number | null;
+                       q_hv_mvar: number | null; i_hv_ka: number | null;
+                       pl_mw?: number | null }, tag: string) =>
+      `${head}<br>${tag}${row(t("pop.loading"), `${fmt(x.loading_percent, 1)} %`)} · `
+      + row("I", iRow(x.i_hv_ka))
+      + `<br>${row("P", pRow(x.p_hv_mw))} · ${row("Q", qRow(x.q_hv_mvar))}`
+      + `<br>${row(t("pop.losses"), lossRow(x.pl_mw))}`;
+    if (mt.includes(tr.id)) {
+      const reading = (f.measurements?.trafos ?? []).find((x) => x.trafo === tr.id);
+      if (!reading) return `${head}<br>📟 ${muted(t("pop.coldStart"))}`;
+      return rows(reading, "📟 ");
+    }
+    const x = (f.trafos ?? []).find((y) => y.index === tr.id);
+    if (reveal && x) return rows(x, "");
+    return `${head}<br>${muted(t("pop.unobserved"))}`;
+  };
 
   // voltage layers: an interconnected district is too crowded to show at once,
   // so it opens on the MV layer and the LV subgrids toggle in on demand. The
@@ -115,7 +213,15 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         : { color: lineLoadingColor(null), weight: 2, opacity: 0.95 }).addTo(map);
       pl.bindTooltip(open ? t("tip.line", { name: ln.name ?? ln.id }) + t("tip.normallyOpen")
                           : t("tip.lineMap", { name: ln.name ?? ln.id }));
-      pl.on("click", (e) => onSelectLineRef.current?.(ln.id, isAdditive(e), clickAt(e)));
+      // click = live-value popup (rtheatflow grammar) · ctrl = pin · right = menu
+      pl.bindPopup(() => linePopup(ln), { autoPan: false });
+      pl.on("click", (e) => {
+        if (isAdditive(e)) { pl.closePopup(); onSelectLineRef.current?.(ln.id, true, clickAt(e)); }
+      });
+      pl.on("contextmenu", (e) => {
+        e.originalEvent?.preventDefault();
+        onSelectLineRef.current?.(ln.id, false, clickAt(e));
+      });
       lineRef.current.set(ln.id, pl);
     }
 
@@ -137,7 +243,14 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       cm.bindTooltip((isExt ? t("tip.mvStation", { name: bus.name, kv: bus.vn_kv })
                      : isCab ? t("tip.cabinet", { name: bus.name, kv: bus.vn_kv })
                      : t("tip.busMap", { name: bus.name, kv: bus.vn_kv })));
-      cm.on("click", (e) => onSelectRef.current?.(bus.id, isAdditive(e), clickAt(e)));
+      cm.bindPopup(() => busPopup(bus), { autoPan: false });
+      cm.on("click", (e) => {
+        if (isAdditive(e)) { cm.closePopup(); onSelectRef.current?.(bus.id, true, clickAt(e)); }
+      });
+      cm.on("contextmenu", (e) => {
+        e.originalEvent?.preventDefault();
+        onSelectRef.current?.(bus.id, false, clickAt(e));
+      });
       busRef.current.set(bus.id, cm);
     }
 
@@ -153,7 +266,14 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         fillOpacity: 0.95,
       }).addTo(map);
       cm.bindTooltip(t("tip.trafoMap", { name: tr.name ?? tr.id, kva: (tr.sn_mva * 1000).toFixed(0) }));
-      cm.on("click", (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e), clickAt(e)));
+      cm.bindPopup(() => trafoPopup(tr), { autoPan: false });
+      cm.on("click", (e) => {
+        if (isAdditive(e)) { cm.closePopup(); onSelectTrafoRef.current?.(tr.id, true, clickAt(e)); }
+      });
+      cm.on("contextmenu", (e) => {
+        e.originalEvent?.preventDefault();
+        onSelectTrafoRef.current?.(tr.id, false, clickAt(e));
+      });
       trafoRef.current.set(tr.id, cm);
     }
 
@@ -279,6 +399,23 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
       if (meteredTrafo.has(id)) cm.setStyle({ fillColor: lineLoadingColor(measTr.get(id)), color: "#0b0d11" });
       else cm.setStyle({ fillColor: STATION_COLOR, color: "#7a5400" });
     }
+    // an OPEN live-value popup ticks along with every frame (max one is open)
+    for (const [id, cm] of busRef.current) {
+      if (!cm.isPopupOpen()) continue;
+      const b = topo.buses.find((x) => x.id === id);
+      if (b) cm.setPopupContent(busPopup(b));
+    }
+    for (const [id, pl] of lineRef.current) {
+      if (!pl.isPopupOpen()) continue;
+      const ln = topo.lines.find((x) => x.id === id);
+      if (ln) pl.setPopupContent(linePopup(ln));
+    }
+    for (const [id, cm] of trafoRef.current) {
+      if (!cm.isPopupOpen()) continue;
+      const tr = topo.trafos.find((x) => x.id === id);
+      if (tr) cm.setPopupContent(trafoPopup(tr));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latest, topo, meterKey, revealTruth]);
 
   // battery markers (green ring) at battery buses; redraw when the set changes
@@ -294,8 +431,16 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
         radius: 6, color: "#0b0d11", weight: 1.5, fillColor: "#3fb950", fillOpacity: 1,
       }).addTo(map);
       m.bindTooltip(t("tip.battery", { bus: b.id }));
-      // the marker covers the bus — forward clicks so the node stays usable
-      m.on("click", (e) => onSelectRef.current?.(b.id, isAdditive(e), clickAt(e)));
+      // the marker covers the bus — forward interactions so the node stays
+      // usable (plain click opens the bus's live-value popup)
+      m.on("click", (e) => {
+        if (isAdditive(e)) onSelectRef.current?.(b.id, true, clickAt(e));
+        else busRef.current.get(b.id)?.openPopup();
+      });
+      m.on("contextmenu", (e) => {
+        e.originalEvent?.preventDefault();
+        onSelectRef.current?.(b.id, false, clickAt(e));
+      });
       batteryRef.current.push(m);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -309,23 +454,29 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     meterRef.current = [];
     const busPos = new Map<number, [number, number]>();
     for (const b of topo.buses) if (b.geo) busPos.set(b.id, [b.geo[1], b.geo[0]]);
-    const ring = (at: [number, number], tip: string, onClick: (e: L.LeafletMouseEvent) => void) => {
+    const ring = (at: [number, number], tip: string, openPopup: () => void,
+                  forward: (additive: boolean, at?: { x: number; y: number }) => void) => {
       const m = L.circleMarker(at, {
         radius: 7, color: "#4c8dff", weight: 2, fill: false, opacity: 0.95,
       }).addTo(map);
       m.bindTooltip(tip);
-      // the ring covers its element — forward clicks so it stays usable
-      m.on("click", onClick);
+      // the ring covers its element — forward interactions so it stays usable
+      m.on("click", (e) => { if (isAdditive(e)) forward(true, clickAt(e)); else openPopup(); });
+      m.on("contextmenu", (e) => { e.originalEvent?.preventDefault(); forward(false, clickAt(e)); });
       meterRef.current.push(m);
     };
     for (const bus of meterBuses) {
       const p = busPos.get(bus);
-      if (p) ring(p, t("tip.metered"), (e) => onSelectRef.current?.(bus, isAdditive(e), clickAt(e)));
+      if (p) ring(p, t("tip.metered"),
+                  () => busRef.current.get(bus)?.openPopup(),
+                  (add, at) => onSelectRef.current?.(bus, add, at));
     }
     for (const tr of topo.trafos) {
       if (!meterTrafos.includes(tr.id)) continue;
       const at = busPos.get(tr.lv_bus) ?? busPos.get(tr.hv_bus);
-      if (at) ring(at, t("tip.metered"), (e) => onSelectTrafoRef.current?.(tr.id, isAdditive(e), clickAt(e)));
+      if (at) ring(at, t("tip.metered"),
+                   () => trafoRef.current.get(tr.id)?.openPopup(),
+                   (add, at2) => onSelectTrafoRef.current?.(tr.id, add, at2));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topo, meterKey, i18n.language]);

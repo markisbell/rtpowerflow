@@ -99,7 +99,8 @@ EchtzeitNetzSimulator/
 │   │   ├── recordings.py     #   /recording* /recordings* /export*
 │   │   └── scenarios.py      #   /scenarios* (save/load recipes)
 │   ├── grid_inputs.py        # GridInputs (the 5-doc model) + _daily — what importers produce
-│   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user)
+│   ├── grid_catalog.py       # list/convert grids for /grids (manifest + ding0/OSM + user + reference)
+│   ├── reference_import.py   # IEEE/CIGRE/Kerber reference feeders (pandapower.networks) -> inputs
 │   ├── ding0_import.py       # pre-generated ding0 (eDisGo CSV) -> inputs, w/ real lat/lon
 │   ├── osm_lv_import.py      # street-routed LV grid JSON (gridformat) -> inputs
 │   ├── gridedit_mv_import.py # gridedit MS-layer export (format "gridedit-mv") -> inputs
@@ -124,8 +125,11 @@ EchtzeitNetzSimulator/
 │   ├── src/views/            # NetzStudio (merged grid+loads workflow), LivePowerFlow
 │   │                         #   — opened via the desktop-style MENU BAR (MenuBar.tsx,
 │   │                         #   Variante B since 2026-07-07: Datei · Ansicht ·
-│   │                         #   Messungen · Hilfe + ALWAYS-VISIBLE Sicht segment
-│   │                         #   [Lastfluss|Gemessen|Schätzung]; "…"-items open small
+│   │                         #   Messungen · Hilfe + TWO always-visible segments since
+│   │                         #   2026-07-17 (= rtheatflow's bar): workspace tabs
+│   │                         #   [Live|Netz & Lasten] and the Sicht segment
+│   │                         #   [Lastfluss|Gemessen|Schätzung] — Datei carries NO
+│   │                         #   navigation items anymore; "…"-items open small
 │   │                         #   dialogs — Szenario speichern, Tage exportieren,
 │   │                         #   Schätz-Richtlinie; Start/Pause only in the transport
 │   │                         #   bar; ⏺/⬇ chips + the grid chip are clickable); app
@@ -607,7 +611,18 @@ eyeballed in the browser.
   basemap by default (Light/Dark toggle), lines on a **green→amber→red** ramp by
   loading (no blue — an idle line reads as healthy, not cold), buses on a
   **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
-  colorbars — all animating from live results. Colormaps live in `scales.ts`
+  colorbars — all animating from live results. **Map click grammar since
+  2026-07-17 (= rtheatflow's)**: plain click opens a LIVE-VALUE Leaflet popup
+  at the element (bus: U/P/Q + slack exchange; line: loading/I/P/losses;
+  trafo: loading/I/P/Q), right-click opens the ElementMenu, ctrl-click pins
+  the section (and closes the popup). The popup honors the view exactly like
+  the marker coloring (meter reading with 📟 > frame value if revealTruth >
+  "keine Messung — unbekannt"; TAF-7 device before its first window → wait
+  hint) and TICKS live: content closures read `liveRef`, the per-frame
+  restyle effect calls `setPopupContent` on the open popup
+  (`isPopupOpen()`). The SVG views keep click=menu and additionally accept
+  right-click. Popup CSS = the 8-line dark-panel override in styles.css.
+  Colormaps live in `scales.ts`
   (`lineLoadingColor`, `voltageReds`, `LOADING_GRADIENT`, `REDS_GRADIENT`). The default 5-bus
   sample (no geo) falls back to the synthetic Geographic/Schematic SVG views
   (which keep the discrete traffic-light scales).
@@ -619,6 +634,25 @@ eyeballed in the browser.
   cable-cabinet logic, and curated-library selection all live in `gridgen` now (see
   `gridgen/docs/`). To refresh the dataset, regenerate with `gridgen` and re-commit
   the snapshot + bump the pin in `data/DATASET.md`. See `docs/GRIDGEN_EXTRACTION.md`.
+- **Reference feeders in the catalog** (2026-07-17): `reference_import.py`
+  converts the pandapower-shipped IEEE/CIGRE/Kerber networks (`ieee_33bw`,
+  `ieee_european_lv`, `cigre_mv`, `cigre_lv`, 3 Kerber LV nets) to GridInputs —
+  always available (source `"reference"`, no dataset needed). Conversion is
+  EXACT (explicit line/trafo parameters, taps folded into the ratio, closed b-b
+  switches merged, one-sided open line switches become energized stub buses so
+  the cable charging current flows like pandapower models it); only the time
+  dimension is synthetic (`_daily` shape whose 19:00 peak == the published
+  case's nominal load — `tests/test_reference_import.py` pins netzsim ==
+  pandapower at the peak step to <2e-6 pu, plus the converted bus counts).
+  LV loads are `household: true` (loadgen/EV/PV + SLP estimator basis work);
+  no geo → synthetic diagram views. The NetzStudio picker groups the list into
+  three collapsible `Section`s: Referenznetze · Bibliothek · Eigene. The
+  step-3 structure preview draws geo-less grids as a SINGLE-LINE DIAGRAM:
+  `layout.compute_layouts_from_lists` (net-free variant of the live layouts,
+  same tidy tree) attaches `x/y` + `tx/ty` to preview buses, lines carry
+  `in_service` (open tie lines dashed), trafos get the classic two-ring
+  symbol (`StructureDiagram.tsx` schematic branch; geo grids keep the
+  street-polyline rendering).
 - **One merged grid workflow view** (`NetzStudio.tsx`, menu "Netz → Netz &
   Lasten…", 2026-07-06): pick a grid from the list (library + user grids) or
   **import a JSON file** (gridgen/gridedit → `POST /grids/import`, written to

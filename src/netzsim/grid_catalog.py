@@ -25,8 +25,10 @@ class GridEntry:
     category: str
     member: str                       # ding0 grid dir (source CSVs)
     source: str = "library"           # "library" (curated ding0) | "ding0" (raw)
+                                      # | "user" | "reference" (IEEE/CIGRE/Kerber)
     voltage: str | None = None        # "MV" | "LV"
     character: str | None = None      # "rural" | "suburban" | "urban"
+                                      # | reference origin: "ieee" | "cigre" | "kerber"
     nodes: int | None = None          # node count for this scope
     scope: str = "full"               # convert_ding0_csv scope: full | mv | lv
     lv_grid_id: str | None = None
@@ -34,6 +36,7 @@ class GridEntry:
     mv_grid: str | None = None         # path to a gridedit MV-layer JSON (format "gridedit-mv")
     lv_subgrids: list[dict] | None = None  # MV only: OSM LV grids of the same district
                                            # -> build the interconnected MV+LV network
+    ref_key: str | None = None         # reference feeder key (reference_import)
 
 
 class GridCatalog:
@@ -52,6 +55,20 @@ class GridCatalog:
         elif self.ding0_dir and self.ding0_dir.exists():
             self._scan_ding0()
         self._scan_user()
+        self._load_reference()
+
+    def _load_reference(self) -> None:
+        """The IEEE/CIGRE/Kerber reference feeders pandapower ships — always
+        available (no dataset needed), converted on first pick."""
+        from .reference_import import REFERENCE_GRIDS
+        for key, meta in REFERENCE_GRIDS.items():
+            self._entries[key] = GridEntry(
+                id=key, name=meta["name"],
+                category=f"{meta['origin']} · {meta['voltage']}",
+                member="", source="reference",
+                voltage=meta["voltage"], character=meta["origin"],
+                nodes=meta["nodes"], ref_key=key,
+            )
 
     def _load_manifest(self) -> None:
         data = json.loads(self.manifest.read_text())
@@ -164,7 +181,10 @@ class GridCatalog:
         key = (grid_id, steps)
         if key not in self._cache:
             e = self._entries[grid_id]
-            if e.mv_grid:
+            if e.ref_key:
+                from .reference_import import convert_reference
+                self._cache[key] = convert_reference(e.ref_key, steps=steps)
+            elif e.mv_grid:
                 from .gridedit_mv_import import convert_gridedit_mv
                 self._cache[key] = convert_gridedit_mv(e.mv_grid, name=e.name, steps=steps)
             elif e.osm_grid:
@@ -202,10 +222,22 @@ def preview(g: GridInputs) -> dict:
          "geo": b.get("geo"), "kind": b.get("kind")}
         for i, b in enumerate(g.grid_structure["buses"])
     ]
+    # grids without geo (IEEE/CIGRE/Kerber reference feeders) still get a
+    # drawable single-line diagram: the same synthetic layouts the live view
+    # uses, computed net-free from the input dicts
+    if not any(b["geo"] for b in buses):
+        from .layout import compute_layouts_from_lists
+        geo_pos, tree_pos = compute_layouts_from_lists(
+            len(buses), g.lines["lines"], g.lines["transformers"],
+            [int(s["bus"]) for s in g.substation["substations"]])
+        for i, b in enumerate(buses):
+            b["x"], b["y"] = geo_pos.get(i, [0.0, 0.0])
+            b["tx"], b["ty"] = tree_pos.get(i, [0.0, 0.0])
     lines = [
         {"name": ln.get("name"), "from_bus": ln["from_bus"],
          "to_bus": ln["to_bus"], "length_km": ln["length_km"],
-         "geometry": ln.get("geometry")}
+         "geometry": ln.get("geometry"),
+         "in_service": bool(ln.get("in_service", True))}
         for ln in g.lines["lines"]
     ]
     trafos = [
