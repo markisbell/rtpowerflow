@@ -56,6 +56,7 @@ async def lifespan(app: FastAPI):
     runtime.library = LoadLibrary(settings.lpg_library_dir)
     runtime.active = _active_meta(simulator.topology(), grid_id=None, source="data_dir")
     runtime.est_config = EstimationConfigModel()   # DSO-style defaults
+    runtime.gb = None   # gamebridge topology (contract v1) — set by /gb/net/reset
     # Real multi-day PV (optional): when the cache is present, PV follows measured
     # days and the UI offers a day slider.
     pv = load_pv_days(settings.real_pv_file, steps=settings.steps_per_day)
@@ -78,7 +79,8 @@ async def lifespan(app: FastAPI):
         runtime.recorder.start(_recording_meta())
     if settings.external_clock:
         # Puppet mode (gamebridge): the game owns the clock — the internal
-        # loop never starts; steps advance only via POST /gb/step.
+        # loop never starts; steps advance only via the contract step channel
+        # (WS /gb/ws, POST /gb/step fallback).
         log.info("External clock (puppet mode): internal tick loop disabled.")
     elif settings.autostart:
         runtime.engine.start_loop()

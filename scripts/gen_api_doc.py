@@ -34,6 +34,14 @@ GROUPS: list[tuple[str, str, list[str]]] = [
     ("Engine control", "Start/pause/seek the accelerated-tick loop and the "
                        "real-PV day calendar (`api/control.py`).",
      ["/control/", "/pv/days"]),
+    ("Gamebridge (co-simulation contract v1)",
+     "Puppet mode for an external game clock "
+     "(`NETZSIM_EXTERNAL_CLOCK=true`): handshake, topology load/patch and "
+     "the step path of the simgames contract v1 (`api/gamebridge.py`). The "
+     "step channel is the WebSocket **`/gb/ws`** (one step-request frame in, "
+     "one step-result frame out; `POST /gb/step` is the identically-behaving "
+     "debugging fallback).",
+     ["/gb/"]),
     ("Runtime equipment", "Batteries, overload controllers, rONTs and "
                           "per-node DERs, all placed while the simulation "
                           "runs (`api/equipment.py`).",

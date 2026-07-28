@@ -259,6 +259,12 @@ default to zeros if omitted.
 | POST | `/export/days` | Body `{days: n\|[..], name?, estimate?}` → replay whole days offline into a pack |
 | GET | `/export` | Bulk-export progress (steps done/total, ETA, error) |
 | POST | `/export/cancel` | Stop the running bulk export (partial pack is finalized) |
+| GET | `/gb/version` | Gamebridge handshake: contract version (`1.0`), backend id, solver, `external_clock` |
+| POST | `/gb/net/reset` | Load a game topology (simgames contract v1 §3.1): `native` five-doc GridInputs extended by zones/devices, `engine.reconfigure`, throwaway warmup solve → `warmup_solve_ms` |
+| POST | `/gb/net/patch` | Device ops (contract §3.2), tolerant per entry: `add_device` \| `remove_device` \| `set_device` |
+| POST | `/gb/step` | One externally clocked step: contract step-request body → contract step-result (idempotent last-`t` cache, 409 on out-of-order `t`); EMPTY body keeps the pre-contract debug path (native StepResult) |
+| GET | `/gb/result/latest` | Last contract step result (404 before the first step) — the crash-recovery read |
+| WS | `/gb/ws` | Contract step channel (ADR-003): one step-request frame in, one step-result frame out; out-of-order `t` → `error: "out_of_order"` frame |
 | WS | `/ws` | Live stream: one JSON `StepResult` per solved step |
 
 **`StepResult`** (see `simulator.py`): `step, day, time_of_day ("HH:MM"),
@@ -450,6 +456,40 @@ eyeballed in the browser.
   `ext_nodes[]` placements (values start fresh/stale on load,
   `test_scenario_persists_placements`); Benutzerhandbuch chapter „Externe
   Quellen" (ch:extern) + ui-extern screenshot, 51 pp. 158 tests total.
+- **Gamebridge / puppet mode (branch `gamebridge`): co-simulation contract
+  v1 IMPLEMENTED** (2026-07-28, simgames Phase 2; spec:
+  `simgames/docs/contract/v1.md` — authoritative). `NETZSIM_EXTERNAL_CLOCK=
+  true` disables the internal tick loop; the game clock drives
+  `engine.external_step()` (same per-tick body as the loop —
+  `test_external_clock_equivalence` pins 100-step identity). Contract
+  surface in `api/gamebridge.py` (see §5 `/gb/*` rows): `net/reset` extends
+  the document's verbatim `native` five-doc GridInputs with one zero-profile
+  load per ZONE and the game DEVICES (slack→ext_grid [created if native
+  lacks one], generator/pv/wind→zero-profile sgens with `GenProfile.kind
+  "game"` so real-PV day shapes NEVER override game setpoints [reset also
+  calls `sim.set_pv_days(None)`], coupling_load→zero-profile load), swaps
+  via `engine.reconfigure(autostart=False)` and fires ONE throwaway
+  `sim.run_step(0,0)` (numba JIT + warm-start priming; clock untouched,
+  nothing published) reported as `warmup_solve_ms`. Stepping is
+  sample-and-hold: held zone demands / device setpoints (clamped to
+  `p_max_kw`/`p_rated_kw` → `clamped` violations) / `coupling_in` are
+  written into the profile arrays at the CURRENT engine step index each
+  step; rows are resolved from ELEMENT indices per step so `net/patch`
+  add/remove (the `der.add_pv`/`remove_pv` array-hygiene pattern +
+  `der._der_invalidate`) can never desynchronize zones. Idempotent last-`t`
+  cache; any other non-successor `t` → HTTP 409 / WS `out_of_order` frame.
+  Contract results: zones `supplied` 1.0/0.0 by convergence + `detail.v_pu`,
+  device `output_kw` from the solved element tables (slack import-positive),
+  `coupling_out` `{}` (power has none in v1), violations from line/trafo
+  loading (>100 warning, >120 critical) and vm_pu outside 0.95–1.05
+  (critical outside 0.90–1.10). Gb state lives on `runtime.gb`
+  (`api/runtime.py`), cleared per lifespan. The native StepResult stream
+  (`/state`, `/ws`, `/history`) is untouched. Tests:
+  `tests/test_gamebridge.py` (8); the shared golden-file suite
+  `simgames/tests/contract/` (fixture `fixtures/power_fixture.json` + its
+  committed generator `gen_power_fixture.py`: 5-bus 0.4-kV NAYY-chain, 10
+  zones, 96-step day, double-peak demands, calibrated so the FINAL step sits
+  mid-band in the golden voltages) passes against the live backend.
 - Possible enhancements: transformer/line outage scenarios, controllable elements,
   per-step CSV/Parquet export, richer frontend, alerting on voltage/loading limits.
 - **Vertical MV/LV smart-grid integration — phases 0, 1.1, 1.2 are BUILT

@@ -15,6 +15,7 @@ if TYPE_CHECKING:  # annotations only — assigned in the app's lifespan
     from ..loadgen import LoadLibrary
     from ..recorder import Recorder
     from ..state import StateStore
+    from .gamebridge import GbState
     from .measurements import EstimationConfigModel
 
 API_VERSION = "0.2.0"
@@ -33,6 +34,9 @@ class App:
     pv_dates: list
     pv_peak_w: float
     est_config: "EstimationConfigModel"
+    # gamebridge (contract v1): the loaded game topology's zone/device mapping
+    # + step cache; None until the first POST /gb/net/reset (api/gamebridge.py)
+    gb: "GbState | None"
 
 
 runtime = App()

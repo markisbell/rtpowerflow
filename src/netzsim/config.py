@@ -54,7 +54,8 @@ class Settings(BaseSettings):
 
     # Puppet mode (gamebridge): an external application owns the clock. The
     # internal tick loop never starts (autostart is ignored); steps advance
-    # ONLY via POST /gb/step. See api/gamebridge.py.
+    # ONLY via the contract step channel (WS /gb/ws, POST /gb/step fallback).
+    # See api/gamebridge.py and simgames docs/contract/v1.md.
     external_clock: bool = False
 
     # Engine

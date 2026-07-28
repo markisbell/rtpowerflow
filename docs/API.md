@@ -168,6 +168,41 @@ Jump to a specific real-PV day (wraps within the available days).
 Real-PV day calendar for the day slider (empty when no cache is loaded).
 
 
+## Gamebridge (co-simulation contract v1)
+
+Puppet mode for an external game clock (`NETZSIM_EXTERNAL_CLOCK=true`): handshake, topology load/patch and the step path of the simgames contract v1 (`api/gamebridge.py`). The step channel is the WebSocket **`/gb/ws`** (one step-request frame in, one step-result frame out; `POST /gb/step` is the identically-behaving debugging fallback).
+
+### `GET /gb/version`
+
+Contract handshake (contract §2): the game requires identical MAJOR
+and game-minor <= backend-minor, and refuses to run on a mismatch.
+
+### `POST /gb/net/reset`
+
+Load a game topology (contract §3.1): validate the document, build the
+extended GridInputs, swap the grid via ``engine.reconfigure`` and fire the
+throwaway warmup solve. Clears ``last_t`` — the next step may carry any
+``t`` (the game clock continues across resets).
+
+### `POST /gb/net/patch`
+
+Device ops (contract §3.2), tolerant per entry: applied ops stay
+applied even if later ops fail. v1 scope is device ops only — node/edge/
+zone changes go through a full reset.
+
+### `POST /gb/step`
+
+Advance exactly one step under the external clock (contract §4) —
+the debugging fallback of the WS ``/gb/ws`` step channel, identical
+behavior. With an EMPTY body: the pre-contract debug path (advance one
+step, return the native StepResult / 409 while the internal clock runs).
+
+### `GET /gb/result/latest`
+
+The last contract step result (contract §4) — 404 before the first
+step. Together with idempotent re-send this is the crash-recovery path.
+
+
 ## Runtime equipment
 
 Batteries, overload controllers, rONTs and per-node DERs, all placed while the simulation runs (`api/equipment.py`).
