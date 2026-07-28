@@ -4,6 +4,7 @@ import { api } from "../api";
 import type { NodeProfiles, NodeSeriesKind, ProfileView } from "../types";
 import { voltageColor, V_BASE } from "../scales";
 import ProfileGraph, { type GSeries } from "./ProfileGraph";
+import ProfileLoading from "./ProfileLoading";
 
 const COLOR: Record<NodeSeriesKind, string> = {
   residential: "#4c8dff", ev: "#f2ae00", pv: "#3fb950",
@@ -71,7 +72,7 @@ export default function NodeProfile({ bus, name, now, day, view = "est", stamp =
       </div>
 
       {err && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.error", { msg: err })}</div>}
-      {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
+      {!err && !data && <ProfileLoading />}
       {!err && data && mode === "power" && (
         powerSeries.length
           ? <ProfileGraph series={powerSeries} scale={1000} unit="kW" dec={1} now={now}

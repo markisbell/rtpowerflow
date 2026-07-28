@@ -7,6 +7,15 @@
 > developer docs in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
 > [`docs/API.md`](docs/API.md) (generated — rerun `scripts/gen_api_doc.py`
 > after API changes).
+>
+> **Repository layout (since 2026-07-17): this is the STANDALONE `rtpowerflow`
+> repo** — the netzsim content lives at the repo root and `origin` is
+> `github.com/markisbell/rtpowerflow`. Push normally: `git push origin master`.
+> (Historically this was the `EchtzeitNetzSimulator/` subtree of a *local-only*
+> `Forschung_GA` monorepo, pushed via `git subtree split` + a worktree-merge;
+> that indirection is gone — there is no subtree dance anymore.) The sibling
+> tools `ezaregler`, `gridedit`, `gridgen` are separate repos living next to
+> this one under the same parent folder.
 
 ---
 
@@ -45,7 +54,7 @@ It is **three applications** that run together via one `docker-compose.yml`
 ## 2. Directory layout
 
 ```
-EchtzeitNetzSimulator/
+rtpowerflow/                  # repo root (origin: github.com/markisbell/rtpowerflow)
 ├── CLAUDE.md                 # this file
 ├── README.md                 # user-facing docs for app 1 (+ pointer to viz)
 ├── docker-compose.yml        # orchestrates ALL 4 services
@@ -879,6 +888,31 @@ work on the sparse rasters. Honesty tripwire:
 5 % metering, no PV knowledge → the estimator MUST miss > 60 % of the voltage
 rise (fails = truth is leaking). Note: the policy is an operator setting —
 deliberately NOT part of scenario recipes.
+
+**Day-graph cost, fixed 2026-07-28** (the graphs were unusable on districts —
+"they take forever and never appear"). Two independent defects, both in
+`sweeps.py`, both pinned by `tests/test_sweeps.py`:
+- *The WLS ran at the fine raster and the samples were discarded.* `daily_est`
+  drives its generator at the 15-min meter cadence but keeps only the pinned
+  `_est_sweep_min` tier — the `t % est_steps` check sat AFTER `estimator.run`,
+  so the district solved 96 WLS runs to keep 12. The check now runs BEFORE the
+  WLS, while `sweep_meters.observe` still ticks at the fine cadence (a TAF-7
+  device publishes the last COMPLETED 15-min window — skipping observation
+  would hand the WLS two-hour-old readings). Measured on `mv_rural_3150` with
+  `digital_stations`: **159.5 s → 23.7 s**, same 12 samples.
+- *Concurrent requests each swept the whole day.* Every open side-panel
+  section refetches on a view switch or day wrap, and each cold request ran
+  its own full sweep (3 concurrent on the district: **144 s each vs 18 s for
+  one**). `daily_curves`/`daily_est` now serialize on a per-Simulator
+  `threading.RLock` (double-checked against the cache). The lock lives in a
+  module-level `WeakKeyDictionary` in `sweeps.py`, NOT on the Simulator — the
+  bulk exporter deep-copies the live Simulator and a lock is not copyable.
+  Measured after: **18.3 s wall for 3 concurrent cold requests.**
+UI: `ProfileLoading.tsx` replaces the bare "lädt…" in all three profile
+components — after 2 s it says a whole day is being solved and counts seconds,
+so a 20-s sweep reads as work, not as a dead panel. `ui/nginx.conf` sets
+`proxy_read_timeout 600s` on `/api/` (nginx's 60-s default turned a long sweep
+into a 504 in the Docker deployment — the graph then never appeared at all).
 
 ### Session recording (CSV export of live runs, 2026-07-07 — round 1: backend)
 
