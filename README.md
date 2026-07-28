@@ -96,6 +96,61 @@ One `docker-compose.yml` orchestrates the whole stack:
 
 ---
 
+## Installation
+
+**Requirements:** Python ≥ 3.10 and Node.js ≥ 18 (≥ 20 if you want to run the UI
+tests) — or just Docker, which needs neither. On Linux `install.sh` brings both
+along itself. The grid dataset (ding0 MV districts, street-routed LV grids, the
+LPG load library) is committed under `data/`, so nothing else has to be fetched.
+
+```bash
+git clone https://github.com/markisbell/rtpowerflow.git
+cd rtpowerflow
+```
+
+### Linux — one command
+
+```bash
+./install.sh                 # equivalently: bash install.sh
+```
+
+This sets up a fresh machine end to end: system packages through the
+distribution's package manager (apt · dnf · pacman · zypper), the Python
+dependencies into a project-local `.venv`, **Node.js** (from the distribution
+when it ships ≥ 20, otherwise the official SHA256-verified nodejs.org tarball
+into `.tools/` — that path needs no root at all), and the UI's npm packages.
+It finishes with a smoke test that boots the backend and asks `/health`.
+Re-running updates only what is missing.
+
+| Option | Effect |
+|--------|--------|
+| `--dev` | also install pytest/httpx, so `pytest` runs |
+| `--no-root` | never use sudo — nothing is installed system-wide |
+| `--python python3.12` | pin the interpreter used for the venv |
+| `--node-version v22.20.0` | pin the locally installed Node version |
+| `--build-tools` | add compilers (only needed if a wheel must be built from source) |
+| `--skip-ui` · `--recreate` · `--no-verify` | backend only · rebuild from scratch · skip the smoke test |
+
+### Windows
+
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+```
+
+`start_netzsim.bat` then runs `npm install` for the UI by itself on first start.
+
+### Docker — needs neither Python nor Node
+
+```bash
+docker compose up --build
+```
+
+Brings up the whole stack at once: UI :8080 · netzsim :8000 · InfluxDB :8086 ·
+Grafana :3000.
+
+---
+
 ## Run it
 
 ### Windows: double-click launcher (recommended here)
@@ -114,34 +169,19 @@ automatically moves to the next free port and wires the UI proxy to match. Pin
 ports explicitly with `NETZSIM_PORT` / `NETZSIM_UI_PORT` (environment or
 `.env`); an already-running netzsim is recognized and reused.
 
-### Linux: one-command installer
+### Linux: launcher scripts
 
 ```bash
-bash install.sh        # then: ./start_netzsim.sh
+./start_netzsim.sh     # backend + UI in the background, logs and PIDs in .run/
+./stop_netzsim.sh      # ends only THIS project's servers
 ```
 
-`install.sh` sets up a fresh machine end to end: system packages through the
-distribution's package manager (apt · dnf · pacman · zypper), the Python
-dependencies into a project-local `.venv`, **Node.js** (from the distribution
-when it ships ≥ 20, otherwise the official SHA256-verified nodejs.org tarball
-into `.tools/` — that path needs no root), and the UI's npm packages. It closes
-with a smoke test that boots the backend and asks `/health`. Re-running updates
-only what is missing. The grid dataset already lives in `data/`, so nothing else
-is downloaded.
-
-| Option | Effect |
-|--------|--------|
-| `--dev` | also install pytest/httpx, so `pytest` runs |
-| `--no-root` | never use sudo — nothing is installed system-wide |
-| `--python python3.12` | pin the interpreter used for the venv |
-| `--build-tools` | add compilers (only needed if a wheel must be built from source) |
-| `--skip-ui` · `--recreate` · `--no-verify` | backend only · rebuild from scratch · skip the smoke test |
-
-`start_netzsim.sh` starts both servers in the background (logs + PIDs under
-`.run/`) and picks free ports exactly like the Windows launcher — a *foreign*
-app on :8000 pushes the backend to :8001 and the UI proxy follows; a running
-netzsim is recognized via `/health` and reused. `stop_netzsim.sh` ends only
-*this* project's servers (matched by working directory, not by port).
+(Set up once with [`./install.sh`](#linux--one-command).) `start_netzsim.sh`
+picks free ports exactly like the Windows launcher — a *foreign* app on :8000
+pushes the backend to :8001 and the UI proxy follows; a running netzsim is
+recognized via `/health` and reused. `stop_netzsim.sh` matches by working
+directory rather than by port, so a parallel stack stays untouched. Options:
+`--no-browser`, `--backend-only`.
 
 > **Behind an HTTP proxy** (`http_proxy` set, e.g. on a campus network) the
 > scripts bypass the proxy for localhost. Without that, the proxy answers the
