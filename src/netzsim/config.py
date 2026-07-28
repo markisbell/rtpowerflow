@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     steps_per_day: int = 1440
     autostart: bool = True
 
+    # Puppet mode (gamebridge): an external application owns the clock. The
+    # internal tick loop never starts (autostart is ignored); steps advance
+    # ONLY via POST /gb/step. See api/gamebridge.py.
+    external_clock: bool = False
+
     # Engine
     history_size: int = 1440
     warm_start: bool = True

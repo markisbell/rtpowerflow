@@ -38,6 +38,7 @@ class RealtimeEngine:
         self._task: asyncio.Task | None = None
         self._running = asyncio.Event()
         self._stopped = False
+        self._ext_lock = asyncio.Lock()  # serializes external (puppet-mode) steps
 
     # -- lifecycle ------------------------------------------------------- #
     def start_loop(self) -> None:
@@ -134,7 +135,43 @@ class RealtimeEngine:
             "n_days": self.sim.n_days,
         }
 
+    # -- external clock (puppet mode / gamebridge) ------------------------ #
+    async def external_step(self):
+        """Advance exactly one step under an EXTERNAL clock.
+
+        The gamebridge (api/gamebridge.py) calls this once per game sim-step.
+        It runs the identical per-tick body as the internal loop (solve →
+        publish → advance/wrap), so an externally clocked run produces the
+        same result sequence as the accelerated tick would. Refused while the
+        internal loop is ticking — two clocks must never race; concurrent
+        external calls are serialized by the lock.
+        """
+        if self.status["running"]:
+            raise RuntimeError("internal clock is running — pause it first")
+        async with self._ext_lock:
+            return await self._advance_once()
+
     # -- main loop ------------------------------------------------------- #
+    async def _advance_once(self):
+        """One tick: solve the current step, publish, advance/wrap the clock.
+
+        The single shared per-step body of the internal loop and
+        ``external_step`` — keep every behavioral change in here so the two
+        clock modes cannot drift apart.
+        """
+        result = await asyncio.to_thread(self.sim.run_step, self.step, self.day)
+        await self.store.publish(result)
+
+        if not result.converged:
+            log.warning("Step %s (day %s) did not converge.", self.step, self.day)
+
+        self.step += 1
+        if self.step >= self.steps_per_day:
+            self.step = 0
+            self.day += 1
+            log.info("Day %s complete; repeating profiles.", self.day)
+        return result
+
     async def _run(self) -> None:
         log.info("Realtime engine started (%.3fs/step).", self.interval)
         while not self._stopped:
@@ -142,17 +179,7 @@ class RealtimeEngine:
             if self._stopped:
                 break
 
-            result = await asyncio.to_thread(self.sim.run_step, self.step, self.day)
-            await self.store.publish(result)
-
-            if not result.converged:
-                log.warning("Step %s (day %s) did not converge.", self.step, self.day)
-
-            self.step += 1
-            if self.step >= self.steps_per_day:
-                self.step = 0
-                self.day += 1
-                log.info("Day %s complete; repeating profiles.", self.day)
+            await self._advance_once()
 
             try:
                 await asyncio.sleep(self.interval)

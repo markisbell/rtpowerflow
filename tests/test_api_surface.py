@@ -42,6 +42,9 @@ EXPECTED_ROUTES = {
     ("POST", "/control/interval"),
     ("POST", "/control/seekday"),
     ("GET", "/pv/days"),
+    # gamebridge: external game clock (puppet mode), see api/gamebridge.py
+    ("GET", "/gb/version"),
+    ("POST", "/gb/step"),
     # session recording + bulk export
     ("GET", "/recording"),
     ("POST", "/recording/start"),

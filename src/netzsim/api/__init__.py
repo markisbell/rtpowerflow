@@ -23,7 +23,17 @@ from ..realpv import load_prices, load_pv_days
 from ..recorder import Recorder
 from ..simulator import Simulator
 from ..state import StateStore
-from . import control, core, equipment, ext, grids, measurements, recordings, scenarios
+from . import (
+    control,
+    core,
+    equipment,
+    ext,
+    gamebridge,
+    grids,
+    measurements,
+    recordings,
+    scenarios,
+)
 from .measurements import EstimationConfigModel
 from .runtime import API_VERSION, App, _active_meta, _recording_meta, runtime
 
@@ -66,7 +76,11 @@ async def lifespan(app: FastAPI):
     runtime.exporter = BulkExporter(settings.recordings_dir)
     if settings.record:                       # continuous operation (env opt-in)
         runtime.recorder.start(_recording_meta())
-    if settings.autostart:
+    if settings.external_clock:
+        # Puppet mode (gamebridge): the game owns the clock — the internal
+        # loop never starts; steps advance only via POST /gb/step.
+        log.info("External clock (puppet mode): internal tick loop disabled.")
+    elif settings.autostart:
         runtime.engine.start_loop()
     yield
     await runtime.engine.stop()
@@ -87,6 +101,7 @@ app.add_middleware(
 
 app.include_router(core.router)
 app.include_router(control.router)
+app.include_router(gamebridge.router)
 app.include_router(recordings.router)
 app.include_router(equipment.router)
 app.include_router(ext.router)
