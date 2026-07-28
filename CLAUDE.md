@@ -259,7 +259,7 @@ default to zeros if omitted.
 | POST | `/export/days` | Body `{days: n\|[..], name?, estimate?}` → replay whole days offline into a pack |
 | GET | `/export` | Bulk-export progress (steps done/total, ETA, error) |
 | POST | `/export/cancel` | Stop the running bulk export (partial pack is finalized) |
-| GET | `/gb/version` | Gamebridge handshake: contract version (`1.0`), backend id, solver, `external_clock` |
+| GET | `/gb/version` | Gamebridge handshake: contract version (`1.1`), backend id, solver, `external_clock` |
 | POST | `/gb/net/reset` | Load a game topology (simgames contract v1 §3.1): `native` five-doc GridInputs extended by zones/devices, `engine.reconfigure`, throwaway warmup solve → `warmup_solve_ms` |
 | POST | `/gb/net/patch` | Device ops (contract §3.2), tolerant per entry: `add_device` \| `remove_device` \| `set_device` |
 | POST | `/gb/step` | One externally clocked step: contract step-request body → contract step-result (idempotent last-`t` cache, 409 on out-of-order `t`); EMPTY body keeps the pre-contract debug path (native StepResult) |

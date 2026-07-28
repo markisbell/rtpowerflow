@@ -123,7 +123,7 @@ def test_gb_endpoints(monkeypatch):
     with TestClient(app) as client:
         version = client.get("/gb/version").json()
         assert version["backend"] == "netzsim"
-        assert version["contract"] == "1.0"
+        assert version["contract"] == "1.1"
         assert "pandapower" in version["solver"]
 
         step0 = client.get("/status").json()["step"]
@@ -384,3 +384,234 @@ def test_gb_reset_rejects_bad_documents():
         # a failed reset must not have replaced a previously loaded topology
         assert client.post("/gb/net/reset", json=good).status_code == 200
         assert client.post("/gb/step", json=_step_req(0)).status_code == 200
+
+
+# --------------------------------------------------------------------------- #
+# Contract 1.1 (spec §3.1 battery row + §4 'edges'): game-dispatched battery
+# devices and the per-edge overlay quantities. dt_s is 900 s (0.25 h)
+# throughout, so the SoC arithmetic below stays exact: energy per step =
+# p_kw / 4 kWh; charging stores with efficiency 0.95, discharging is lossless.
+# --------------------------------------------------------------------------- #
+
+
+def _topology5(devices: "list[dict] | None" = None) -> dict:
+    """A 5-bus net WITH a transformer: b0 (20 kV) -T0- b1 -L0- b2 -L1- b3
+    -L2- b4 (0.4-kV NAYY chain), 2 zones, slack@b0 + battery bat1@b2
+    (e_kwh 10, p_max_kw 50 → SoC starts at 5 kWh)."""
+    buses = [{"name": "b0", "vn_kv": 20.0}] + \
+            [{"name": f"b{i}", "vn_kv": 0.4} for i in range(1, 5)]
+    native = {
+        "grid_structure": {"name": "gb_test5", "f_hz": 50.0, "buses": buses},
+        "lines": {
+            "lines": [
+                {"name": f"l{i}{i + 1}", "from_bus": i, "to_bus": i + 1,
+                 "length_km": 0.2, "std_type": "NAYY 4x150 SE"}
+                for i in range(1, 4)
+            ],
+            "transformers": [
+                {"name": "t0", "hv_bus": 0, "lv_bus": 1,
+                 "std_type": "0.25 MVA 20/0.4 kV"}],
+        },
+        "load": {"steps": STEPS, "loads": []},
+        "generation": {"steps": STEPS, "generation": []},
+        "substation": {"steps": STEPS, "substations": []},
+    }
+    return {
+        "contract": "1.1",
+        "network_kind": "power",
+        "name": "gb_test5",
+        "steps_per_day": STEPS,
+        "native": native,
+        "zones": [{"id": "z0", "node": "b2"}, {"id": "z1", "node": "b4"}],
+        "devices": devices if devices is not None else [
+            {"id": "slack", "kind": "slack", "node": "b0",
+             "params": {"vm_pu": 1.0}},
+            {"id": "bat1", "kind": "battery", "node": "b2",
+             "params": {"e_kwh": 10, "p_max_kw": 50}},
+        ],
+    }
+
+
+def _clamps(res: dict) -> "list[dict]":
+    return [v for v in res["violations"] if v["kind"] == "clamped"]
+
+
+def test_gb_battery_dispatch_clamps_and_soc_trajectory():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        r = client.post("/gb/net/reset", json=_topology5())
+        assert r.status_code == 200, r.text
+        assert r.json()["warnings"] == []      # battery is implemented, not idle
+
+        # t=0: discharge request 100 kW -> ±p_max_kw 50 -> SoC bound
+        # 5 kWh * 3600/900 = 20 kW; SoC after: 5 - 20*0.25 = 0
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 30.0}},
+            device_setpoints={"bat1": {"p_kw": 100.0}})).json()
+        bat = res["devices"]["bat1"]
+        assert bat["output_kw"] == pytest.approx(20.0)
+        assert bat["soc"] == pytest.approx(0.0)
+        clamp = _clamps(res)
+        assert clamp and clamp[0]["element"] == "device:bat1"
+        assert clamp[0]["severity"] == "info" and clamp[0]["value"] == 100.0
+        # the realized discharge feeds the solved net: slack = 30 - 20 + losses
+        assert res["devices"]["slack"]["output_kw"] == pytest.approx(10.0, abs=3.0)
+
+        # t=1: charge request -100 -> -p_max 50 -> headroom bound
+        # (10 - 0) * 3600/900 = 40 kW; SoC after: 0.95 * 40 * 0.25 = 9.5 kWh
+        res = client.post("/gb/step", json=_step_req(
+            1, device_setpoints={"bat1": {"p_kw": -100.0}})).json()
+        bat = res["devices"]["bat1"]
+        assert bat["output_kw"] == pytest.approx(-40.0)
+        assert bat["soc"] == pytest.approx(0.95)
+        assert _clamps(res)
+        # charging draws from the grid: slack = 30 (held) + 40 + losses
+        assert res["devices"]["slack"]["output_kw"] == pytest.approx(70.0, abs=5.0)
+
+        # t=2: charge -4 kW, but headroom only (10 - 9.5) * 4 = 2 kW;
+        # SoC after: 9.5 + 0.95 * 2 * 0.25 = 9.975 kWh
+        res = client.post("/gb/step", json=_step_req(
+            2, device_setpoints={"bat1": {"p_kw": -4.0}})).json()
+        assert res["devices"]["bat1"]["output_kw"] == pytest.approx(-2.0)
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(0.9975)
+        assert _clamps(res)
+
+        # t=3: in-bounds discharge -> no clamp; SoC: 9.975 - 10*0.25 = 7.475
+        res = client.post("/gb/step", json=_step_req(
+            3, device_setpoints={"bat1": {"p_kw": 10.0}})).json()
+        assert res["devices"]["bat1"]["output_kw"] == pytest.approx(10.0)
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(0.7475)
+        assert not _clamps(res)
+
+
+def test_gb_battery_idempotent_resend_does_not_double_integrate():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=_topology5()).status_code == 200
+        # t=0: discharge 10 kW -> SoC 5 - 2.5 = 2.5 kWh
+        res = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"bat1": {"p_kw": 10.0}})).json()
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(0.25)
+        # idempotent re-send: byte-equal cached result, NO second integration
+        again = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"bat1": {"p_kw": 10.0}}))
+        assert again.status_code == 200 and again.json() == res
+        # t=1 continues from 2.5 kWh (held 10-kW discharge drains it exactly);
+        # had the re-send double-integrated, SoC would already be 0 and the
+        # discharge would clamp to 0 kW here.
+        res1 = client.post("/gb/step", json=_step_req(1)).json()
+        assert res1["devices"]["bat1"]["output_kw"] == pytest.approx(10.0)
+        assert res1["devices"]["bat1"]["soc"] == pytest.approx(0.0)
+        assert not _clamps(res1)
+
+
+def test_gb_battery_set_device_resizes_and_clamps_soc():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=_topology5()).status_code == 200
+        # shrink e_kwh 10 -> 4: the stored 5 kWh is clamped to 4 -> soc 1.0
+        r = client.post("/gb/net/patch", json=[
+            {"op": "set_device", "id": "bat1", "params": {"e_kwh": 4}}])
+        assert r.json() == {"applied": ["bat1"], "errors": []}
+        res = client.post("/gb/step", json=_step_req(0)).json()
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(1.0)
+        # shrink p_max_kw -> 8: a 20-kW discharge clamps to 8 kW
+        r = client.post("/gb/net/patch", json=[
+            {"op": "set_device", "id": "bat1", "params": {"p_max_kw": 8}}])
+        assert r.json()["applied"] == ["bat1"]
+        res = client.post("/gb/step", json=_step_req(
+            1, device_setpoints={"bat1": {"p_kw": 20.0}})).json()
+        assert res["devices"]["bat1"]["output_kw"] == pytest.approx(8.0)
+        assert res["devices"]["bat1"]["soc"] == pytest.approx((4.0 - 2.0) / 4.0)
+        assert _clamps(res)
+        # invalid resize is a tolerant per-entry error; the state stays sane
+        r = client.post("/gb/net/patch", json=[
+            {"op": "set_device", "id": "bat1", "params": {"e_kwh": -1}}])
+        assert r.status_code == 200
+        assert r.json()["applied"] == [] and len(r.json()["errors"]) == 1
+        res = client.post("/gb/step", json=_step_req(
+            2, device_setpoints={"bat1": {"p_kw": 0.0}})).json()
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(0.5)
+
+
+def test_gb_battery_patch_add_remove():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=_topology()).status_code == 200
+        probe = {"id": "bat_probe", "kind": "battery", "node": "b2",
+                 "params": {"e_kwh": 8, "p_max_kw": 20}}
+        r = client.post("/gb/net/patch", json=[{"op": "add_device", "device": probe}])
+        assert r.json() == {"applied": ["bat_probe"], "errors": []}
+        # charge -12 kW: draws 3 kWh, stores 2.85 -> soc (4 + 2.85) / 8
+        res = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"bat_probe": {"p_kw": -12.0}})).json()
+        assert res["devices"]["bat_probe"]["output_kw"] == pytest.approx(-12.0)
+        assert res["devices"]["bat_probe"]["soc"] == pytest.approx(6.85 / 8.0)
+        r = client.post("/gb/net/patch", json=[
+            {"op": "remove_device", "id": "bat_probe"}])
+        assert r.json()["applied"] == ["bat_probe"]
+        res = client.post("/gb/step", json=_step_req(1)).json()
+        assert "bat_probe" not in res["devices"]
+        assert res["status"] == "converged"
+
+
+def test_gb_battery_requires_positive_params():
+    from fastapi.testclient import TestClient
+
+    slack = {"id": "slack", "kind": "slack", "node": "b0",
+             "params": {"vm_pu": 1.0}}
+    with TestClient(app) as client:
+        # no params at all
+        bad = _topology5(devices=[slack, {"id": "bat1", "kind": "battery",
+                                          "node": "b2"}])
+        assert client.post("/gb/net/reset", json=bad).status_code == 400
+        # e_kwh must be > 0
+        bad = _topology5(devices=[slack, {"id": "bat1", "kind": "battery",
+                                          "node": "b2",
+                                          "params": {"e_kwh": 0, "p_max_kw": 10}}])
+        assert client.post("/gb/net/reset", json=bad).status_code == 400
+        # add_device via patch enforces the same rule (tolerant per entry)
+        assert client.post("/gb/net/reset", json=_topology5()).status_code == 200
+        r = client.post("/gb/net/patch", json=[{"op": "add_device", "device": {
+            "id": "bat2", "kind": "battery", "node": "b3",
+            "params": {"e_kwh": 5}}}])
+        assert r.status_code == 200
+        assert r.json()["applied"] == [] and len(r.json()["errors"]) == 1
+
+
+def test_gb_edges_field():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.get("/gb/version").json()["contract"] == "1.1"
+        assert client.post("/gb/net/reset", json=_topology5()).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 40.0}, "z1": {"value": 20.0}})).json()
+        # ALL native lines and trafos, ids in native element order (spec §4)
+        assert set(res["edges"]) == {"L0", "L1", "L2", "T0"}
+        for entry in res["edges"].values():
+            lp = entry["loading_percent"]
+            assert isinstance(lp, (int, float)) and not isinstance(lp, bool)
+            assert lp >= 0.0
+            assert isinstance(entry["p_from_kw"], (int, float))
+        # plausible physics: the trafo carries the whole 60-kW demand
+        # (+ losses) -> roughly a quarter of its 250-kVA rating
+        assert res["edges"]["T0"]["p_from_kw"] == pytest.approx(60.0, abs=6.0)
+        assert 5.0 < res["edges"]["T0"]["loading_percent"] < 60.0
+        # the tail segment b3-b4 carries only z1's 20 kW
+        assert res["edges"]["L2"]["p_from_kw"] == pytest.approx(20.0, abs=3.0)
+        assert res["edges"]["L0"]["p_from_kw"] > res["edges"]["L2"]["p_from_kw"]
+        # edges mirror the solved native tables exactly
+        state = client.get("/state").json()
+        assert res["edges"]["L0"]["loading_percent"] == \
+            state["lines"][0]["loading_percent"]
+        assert res["edges"]["T0"]["loading_percent"] == \
+            state["trafos"][0]["loading_percent"]
+        # idempotent re-send carries the identical edges
+        again = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 40.0}, "z1": {"value": 20.0}})).json()
+        assert again["edges"] == res["edges"]

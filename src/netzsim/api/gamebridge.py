@@ -38,6 +38,23 @@ How the contract maps onto netzsim:
 - Real-PV day shapes are detached from the game grid (``set_pv_days(None)``):
   the game computes PV/wind availability itself and sends setpoints —
   generation *models* live game-side, network *physics* backend-side.
+- BATTERY devices (contract §3.1, Phase 3) are game-dispatched, NOT netzsim's
+  autonomous battery machinery: each maps onto a zero-profile sgen row plus
+  gb-level state ``{soc_kwh, e_kwh, p_max_kw}`` on the :class:`GbDevice`. The
+  signed step setpoint ``p_kw`` (+ discharges into the grid, − charges) is
+  clamped to ±``p_max_kw`` AND to the SoC energy bounds over ``dt_s``
+  (discharge ≤ soc_kwh·3600/dt_s, charge ≤ (e_kwh−soc_kwh)·3600/dt_s); any
+  clamping is a ``clamped``/info violation. The realized value goes into the
+  sgen profile column (negative sgen p_mw = charging draw). SoC integrates
+  AFTER the solve, only on real solves (the idempotent cached-result path
+  returns before anything is applied, so a re-sent ``t`` can never
+  double-integrate): charging stores with efficiency 0.95, discharging is
+  lossless — the round-trip loss is booked entirely on the charge side. SoC
+  starts at 0.5·e_kwh on reset; ``set_device`` may resize ``e_kwh``/
+  ``p_max_kw`` (SoC is clamped to the new ``e_kwh``).
+- Contract 1.1: every step result carries ``edges`` — per-edge solved
+  quantities (``loading_percent``, ``p_from_kw``) for ALL native lines
+  (``L<idx>``) and trafos (``T<idx>``), straight from the solved tables.
 """
 from __future__ import annotations
 
@@ -63,15 +80,21 @@ from .runtime import API_VERSION, runtime
 
 router = APIRouter(prefix="/gb", tags=["gamebridge"])
 
-CONTRACT_VERSION = "1.0"
+CONTRACT_VERSION = "1.1"
 NETWORK_KIND = "power"
 
 # Device kinds this backend accepts (contract §3.1 table, "power" rows).
-# battery is DECLARED in v1 but implemented in Phase 3 — accepted, idle.
 _GEN_KINDS = ("generator", "pv", "wind")
 _POWER_KINDS = ("slack", *_GEN_KINDS, "coupling_load", "battery")
 _ALL_KINDS = (*_POWER_KINDS, "chp", "heat_pump", "boiler", "storage_heat")
 _CAP_PARAM = {"generator": "p_max_kw", "pv": "p_rated_kw", "wind": "p_rated_kw"}
+
+# Battery physics (contract §3.1 battery row; see module doc): charging books
+# the full round-trip loss (0.95), discharging is lossless. SoC starts at half
+# capacity on reset — the game re-sends its authoritative topology on recovery
+# anyway (ADR-002), so the backend does not persist SoC across resets.
+_CHARGE_EFF = 0.95
+_SOC_INIT_FRAC = 0.5
 
 # Violation thresholds (contract §4): line/trafo loading % and vm_pu band.
 _OVERLOAD_WARN = 100.0
@@ -102,7 +125,16 @@ class GbDevice:
     bus: int
     params: dict
     table: Optional[str]              # "sgen" | "load" | "ext_grid" | None
-    elem: Optional[int]               # pandapower element index (None: battery)
+    elem: Optional[int]               # pandapower element index
+    batt: Optional[dict] = None       # battery state {soc_kwh, e_kwh, p_max_kw}
+
+
+def _new_batt_state(params: dict) -> dict:
+    """Fresh battery state from validated params: SoC starts at half capacity
+    (module doc; the game's topology is authoritative across resets)."""
+    e_kwh = float(params["e_kwh"])
+    return {"soc_kwh": _SOC_INIT_FRAC * e_kwh, "e_kwh": e_kwh,
+            "p_max_kw": float(params["p_max_kw"])}
 
 
 @dataclass
@@ -165,6 +197,12 @@ def _device_error(dev: Any, bus_of: "dict[str, int] | None" = None) -> str | Non
         return f"device kind {kind!r} is not a power-network device (contract §3.1)"
     if "params" in dev and dev["params"] is not None and not isinstance(dev["params"], dict):
         return "'params' must be an object"
+    if kind == "battery":
+        params = dev.get("params") or {}
+        for key in ("e_kwh", "p_max_kw"):
+            v = params.get(key)
+            if not _is_num(v) or v <= 0:
+                return f"battery devices need params.{key} > 0 (contract §3.1)"
     node = dev.get("node")
     if not isinstance(node, str) or not node:
         return "power devices need a 'node' (bus name in native.grid_structure)"
@@ -309,9 +347,11 @@ def _extend_native(doc: dict) -> "tuple[dict, dict, list, list, list]":
                     "vm_pu": [float(params.get("vm_pu", 1.0))] * steps})
             claimed.add(row)
             dev_rows.append((dev, bus, "ext_grid", row))
-        elif kind in _GEN_KINDS:
+        elif kind in _GEN_KINDS or kind == "battery":
             # GenProfile.kind "game": never follows the real-PV day shapes —
             # the game computes availability itself and sends setpoints.
+            # A battery is a game-dispatched sgen too: + discharges into the
+            # grid, − (negative sgen p_mw) is the charging draw (module doc).
             row = len(gen_doc[gen_key])
             gen_doc[gen_key].append({"name": f"GBD_{dev['id']}", "bus": bus,
                                      "p_mw": [0.0] * steps, "kind": "game"})
@@ -321,10 +361,6 @@ def _extend_native(doc: dict) -> "tuple[dict, dict, list, list, list]":
             load_doc[load_key].append({"name": f"GBD_{dev['id']}", "bus": bus,
                                        "p_mw": [0.0] * steps, "household": False})
             dev_rows.append((dev, bus, "load", row))
-        else:  # battery — declared in v1, implemented in Phase 3
-            warnings.append(f"device '{dev['id']}': kind 'battery' is declared "
-                            "in contract v1 but implemented in Phase 3 — idle")
-            dev_rows.append((dev, bus, None, None))
 
     docs = dict(grid=grid, lines=lines, load=load_doc,
                 generation=gen_doc, substation=sub_doc)
@@ -380,9 +416,11 @@ async def net_reset(request: Request):
             elem = int(sim.prof.load_idx[row])
         elif table == "ext_grid":
             elem = int(sim.prof.ext_idx[row])
+        params = dict(dev.get("params") or {})
         devices[dev["id"]] = GbDevice(
             id=dev["id"], kind=dev["kind"], node=dev["node"], bus=bus,
-            params=dict(dev.get("params") or {}), table=table, elem=elem)
+            params=params, table=table, elem=elem,
+            batt=_new_batt_state(params) if dev["kind"] == "battery" else None)
 
     # JIT warmup (contract §0.5): one throwaway solve so numba compilation
     # never lands on a live step. run_step is called DIRECTLY — the engine
@@ -453,10 +491,23 @@ def _apply_patch_op(gb: GbState, sim, op: Any) -> str:
         if not isinstance(params, dict):
             raise ValueError("set_device needs a 'params' object")
         dev = gb.devices[did]
+        if dev.kind == "battery":
+            # e_kwh / p_max_kw may be resized (contract §3.1); reject values
+            # that would corrupt the SoC state instead of silently absorbing.
+            for key in ("e_kwh", "p_max_kw"):
+                if key in params and (not _is_num(params[key]) or params[key] <= 0):
+                    raise ValueError(f"battery params.{key} must be > 0")
         dev.params.update(params)
         if dev.kind == "slack" and _is_num(params.get("vm_pu")):
             row = sim.prof.ext_idx.index(dev.elem)
             sim.prof.ext_vm[row, :] = float(params["vm_pu"])
+        elif dev.kind == "battery" and dev.batt is not None:
+            if "p_max_kw" in params:
+                dev.batt["p_max_kw"] = float(params["p_max_kw"])
+            if "e_kwh" in params:
+                dev.batt["e_kwh"] = float(params["e_kwh"])
+                # a shrunk capacity clamps the stored energy (module doc)
+                dev.batt["soc_kwh"] = min(dev.batt["soc_kwh"], dev.batt["e_kwh"])
         return did
     raise ValueError(f"unknown op {name!r}")
 
@@ -470,7 +521,7 @@ def _create_device_element(gb: GbState, sim, dev: dict) -> GbDevice:
     params = dict(dev.get("params") or {})
     table: str | None = None
     elem: int | None = None
-    if kind in _GEN_KINDS:
+    if kind in _GEN_KINDS or kind == "battery":
         elem = int(pp.create_sgen(sim.net, bus=bus, p_mw=0.0, q_mvar=0.0,
                                   name=f"GBD_{dev['id']}"))
         sim.prof.sgen_idx.append(elem)
@@ -493,9 +544,9 @@ def _create_device_element(gb: GbState, sim, dev: dict) -> GbDevice:
         sim._load_households.append(1)
         der._der_invalidate(sim)
         table = "load"
-    # battery: declared in v1, implemented in Phase 3 — no element yet
     return GbDevice(id=dev["id"], kind=kind, node=dev["node"], bus=bus,
-                    params=params, table=table, elem=elem)
+                    params=params, table=table, elem=elem,
+                    batt=_new_batt_state(params) if kind == "battery" else None)
 
 
 def _drop_device_element(sim, dev: GbDevice) -> None:
@@ -525,14 +576,27 @@ def _drop_device_element(sim, dev: GbDevice) -> None:
 
 # ----------------------------------------------------------------- step path
 
-def _apply_held(gb: GbState, sim, col: int) -> "list[dict]":
+def _apply_held(gb: GbState, sim, col: int,
+                dt_s: int) -> "tuple[list[dict], dict[str, float]]":
     """Write every held zone demand / device setpoint / coupling value into
     the profile arrays at the CURRENT step column (sample-and-hold), clamping
-    generator setpoints to their rating; returns the ``clamped`` violations.
+    generator setpoints to their rating and battery setpoints to ±p_max_kw
+    AND the SoC energy bounds over ``dt_s``. Returns ``(violations,
+    batt_realized)`` — the ``clamped`` violations plus each battery's realized
+    signed kW (needed for the post-solve SoC integration and the result).
     Rows are resolved from element indices per call, so patched tables can
     never desynchronize the mapping."""
     prof = sim.prof
     violations: "list[dict]" = []
+    batt_realized: "dict[str, float]" = {}
+
+    def _clamp(dev_id: str, requested: float, p_kw: float) -> float:
+        if p_kw != requested:
+            violations.append({"element": f"device:{dev_id}",
+                               "kind": "clamped", "severity": "info",
+                               "value": _r(requested)})
+        return p_kw
+
     for z in gb.zones.values():
         row = prof.load_idx.index(z.load_idx)
         prof.load_p[row, col] = gb.zone_demand_kw[z.id] / 1000.0
@@ -544,19 +608,55 @@ def _apply_held(gb: GbState, sim, col: int) -> "list[dict]":
             cap = dev.params.get(_CAP_PARAM[dev.kind])
             if _is_num(cap):
                 p_kw = min(p_kw, float(cap))
-            if p_kw != requested:
-                violations.append({"element": f"device:{dev.id}",
-                                   "kind": "clamped", "severity": "info",
-                                   "value": _r(requested)})
+            p_kw = _clamp(dev.id, requested, p_kw)
+            prof.sgen_p[prof.sgen_idx.index(dev.elem), col] = p_kw / 1000.0
+        elif dev.kind == "battery" and dev.batt is not None \
+                and dev.elem in prof.sgen_idx:
+            # Signed dispatch (contract §3.1): + discharges into the grid,
+            # − charges. Clamp to ±p_max_kw AND to what the SoC allows over
+            # dt_s: discharge ≤ soc_kwh·3600/dt_s, charge ≤ headroom·3600/dt_s
+            # (charging stores with efficiency 0.95 at integration, so the
+            # headroom bound can never overfill the store).
+            requested = float(held.get("p_kw", 0.0))
+            b, dt_h = dev.batt, dt_s / 3600.0
+            p_kw = max(-float(b["p_max_kw"]),
+                       min(requested, float(b["p_max_kw"])))
+            p_kw = min(p_kw, float(b["soc_kwh"]) / dt_h)
+            p_kw = max(p_kw, -(float(b["e_kwh"]) - float(b["soc_kwh"])) / dt_h)
+            p_kw = _clamp(dev.id, requested, p_kw)
+            batt_realized[dev.id] = p_kw
+            # realized value into the sgen profile: negative p_mw = charging draw
             prof.sgen_p[prof.sgen_idx.index(dev.elem), col] = p_kw / 1000.0
         elif dev.kind == "coupling_load" and dev.elem in prof.load_idx:
             p_kw = float(held.get("p_kw", 0.0))
             prof.load_p[prof.load_idx.index(dev.elem), col] = p_kw / 1000.0
-    return violations
+    return violations, batt_realized
+
+
+def _integrate_soc(gb: GbState, batt_realized: "dict[str, float]",
+                   dt_s: int) -> None:
+    """Advance each battery's SoC by its realized dispatch over ``dt_s`` —
+    AFTER the solve, and only on real solves (the idempotent cached-result
+    path returns before ``_apply_held``, so a re-sent ``t`` never
+    double-integrates). Charging stores with efficiency 0.95, discharging is
+    lossless (module doc); the guard clamp only mops up float dust — the
+    bounds in ``_apply_held`` already keep SoC inside [0, e_kwh]."""
+    dt_h = dt_s / 3600.0
+    for did, p_kw in batt_realized.items():
+        dev = gb.devices.get(did)
+        if dev is None or dev.batt is None:
+            continue
+        b = dev.batt
+        if p_kw >= 0.0:                       # discharge: lossless
+            b["soc_kwh"] -= p_kw * dt_h
+        else:                                 # charge: 0.95 efficiency
+            b["soc_kwh"] += -p_kw * dt_h * _CHARGE_EFF
+        b["soc_kwh"] = min(max(b["soc_kwh"], 0.0), float(b["e_kwh"]))
 
 
 def _contract_result(t: int, native: StepResult, gb: GbState, sim,
-                     clamped: "list[dict]") -> dict:
+                     clamped: "list[dict]",
+                     batt_realized: "dict[str, float]") -> dict:
     """Build the contract step result (schemas/step-result.schema.json) from
     the solved native StepResult + the pandapower result tables."""
     converged = native.converged
@@ -573,8 +673,14 @@ def _contract_result(t: int, native: StepResult, gb: GbState, sim,
     devices: "dict[str, dict]" = {}
     for dev in gb.devices.values():
         out = soc = None
-        if dev.kind == "battery":       # declared in v1, implemented Phase 3
-            out, soc = 0.0, 0.5
+        if dev.kind == "battery" and dev.batt is not None:
+            # output_kw: realized signed dispatch (post-clamp); soc: the
+            # post-integration fill fraction. On a failed solve nothing was
+            # delivered (SoC did not advance either — see _gb_step).
+            if converged:
+                out = _r(batt_realized.get(dev.id, 0.0))
+            e_kwh = float(dev.batt["e_kwh"])
+            soc = _r(dev.batt["soc_kwh"] / e_kwh) if e_kwh > 0 else None
         elif converged and dev.elem is not None:
             try:
                 if dev.table == "sgen":
@@ -611,13 +717,38 @@ def _contract_result(t: int, native: StepResult, gb: GbState, sim,
                 else "warning",
                 "value": v})
 
+    # edges (contract §4, since 1.1): per-edge solved quantities for the
+    # game's line-loading overlay — ALL native lines (L<idx>) and trafos
+    # (T<idx>) straight from the solved tables (a failed solve collected no
+    # line/trafo entries, so the field is {} then).
+    edges: "dict[str, dict]" = {}
+    for ln in native.lines:
+        edges[f"L{ln['index']}"] = _edge_entry(ln.get("loading_percent"),
+                                               ln.get("p_from_mw"))
+    for tr in native.trafos:
+        edges[f"T{tr['index']}"] = _edge_entry(tr.get("loading_percent"),
+                                               tr.get("p_hv_mw"))
+
     return {"t": t,
             "status": "converged" if converged else "failed",
             "solve_ms": native.solve_ms,
             "zones": zones,
             "devices": devices,
+            "edges": edges,
             "coupling_out": {},   # power has no coupling outputs in v1
             "violations": violations}
+
+
+def _edge_entry(loading_percent: "float | None",
+                p_from_mw: "float | None") -> dict:
+    """One ``edges`` entry; non-finite values were already nulled by ``_r``
+    upstream and are omitted (the schema types both fields as numbers)."""
+    entry: dict = {}
+    if loading_percent is not None:
+        entry["loading_percent"] = loading_percent
+    if p_from_mw is not None:
+        entry["p_from_kw"] = _r(p_from_mw * 1000.0)
+    return entry
 
 
 async def _gb_step(req: Any) -> "tuple[int, dict]":
@@ -666,14 +797,20 @@ async def _gb_step(req: Any) -> "tuple[int, dict]":
     sim = engine.sim
     # the column external_step is about to solve (engine.step is pre-advance)
     col = engine.step % engine.steps_per_day
-    clamped = _apply_held(gb, sim, col)
+    clamped, batt_realized = _apply_held(gb, sim, col, dt_s)
     try:
         native = await engine.external_step()
     except RuntimeError as exc:   # internal clock running — two clocks never race
         return 409, {"t": t, "status": "error", "error": "internal_clock_running",
                      "detail": str(exc)}
 
-    result = _contract_result(t, native, gb, sim, clamped)
+    # SoC advances only on real, CONVERGED solves: the idempotent cached path
+    # returned above (never double-integrates), and a failed solve delivered
+    # nothing.
+    if native.converged:
+        _integrate_soc(gb, batt_realized, dt_s)
+
+    result = _contract_result(t, native, gb, sim, clamped, batt_realized)
     gb.last_t, gb.last_result = t, result
     return 200, result
 
