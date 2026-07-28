@@ -114,6 +114,40 @@ automatically moves to the next free port and wires the UI proxy to match. Pin
 ports explicitly with `NETZSIM_PORT` / `NETZSIM_UI_PORT` (environment or
 `.env`); an already-running netzsim is recognized and reused.
 
+### Linux: one-command installer
+
+```bash
+bash install.sh        # then: ./start_netzsim.sh
+```
+
+`install.sh` sets up a fresh machine end to end: system packages through the
+distribution's package manager (apt · dnf · pacman · zypper), the Python
+dependencies into a project-local `.venv`, **Node.js** (from the distribution
+when it ships ≥ 20, otherwise the official SHA256-verified nodejs.org tarball
+into `.tools/` — that path needs no root), and the UI's npm packages. It closes
+with a smoke test that boots the backend and asks `/health`. Re-running updates
+only what is missing. The grid dataset already lives in `data/`, so nothing else
+is downloaded.
+
+| Option | Effect |
+|--------|--------|
+| `--dev` | also install pytest/httpx, so `pytest` runs |
+| `--no-root` | never use sudo — nothing is installed system-wide |
+| `--python python3.12` | pin the interpreter used for the venv |
+| `--build-tools` | add compilers (only needed if a wheel must be built from source) |
+| `--skip-ui` · `--recreate` · `--no-verify` | backend only · rebuild from scratch · skip the smoke test |
+
+`start_netzsim.sh` starts both servers in the background (logs + PIDs under
+`.run/`) and picks free ports exactly like the Windows launcher — a *foreign*
+app on :8000 pushes the backend to :8001 and the UI proxy follows; a running
+netzsim is recognized via `/health` and reused. `stop_netzsim.sh` ends only
+*this* project's servers (matched by working directory, not by port).
+
+> **Behind an HTTP proxy** (`http_proxy` set, e.g. on a campus network) the
+> scripts bypass the proxy for localhost. Without that, the proxy answers the
+> `/health` identity checks instead of the backend and the launcher never finds
+> its own server.
+
 ### Local (Python ≥ 3.10)
 
 ```bash

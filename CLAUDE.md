@@ -53,6 +53,9 @@ EchtzeitNetzSimulator/
 ├── pyproject.toml            # netzsim package (src layout, console script)
 ├── requirements.txt          # netzsim runtime deps
 ├── .env.example              # documents all NETZSIM_* env vars
+├── install.sh                # LINUX installer: system pkgs + .venv + Node + npm + smoke test
+├── start_netzsim.sh          # Linux launcher (twin of start_netzsim.bat; logs/PIDs in .run/)
+├── stop_netzsim.sh           # Linux stopper (matches by working directory, not by port)
 ├── data/                     # the 5 input JSON files (sample set committed)
 │   ├── grid_structure.json
 │   ├── lines.json
@@ -61,7 +64,8 @@ EchtzeitNetzSimulator/
 │   └── substation.json
 ├── scripts/
 │   ├── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
-│   └── pick_ports.ps1            # dev-launcher port picker (reuse only if /health says netzsim)
+│   ├── pick_ports.ps1            # dev-launcher port picker (reuse only if /health says netzsim)
+│   └── pick_ports.sh             # ... the Linux twin (ss-based, --noproxy for localhost)
 │                                 # (grid GENERATION lives in the separate ../gridgen repo)
 ├── src/netzsim/              # the simulation package (pure CONSUMER — no generation)
 │   ├── config.py             # pydantic-settings (env NETZSIM_*)
@@ -351,6 +355,27 @@ solver status.
 ---
 
 ## 8. How to run
+
+**Linux (one command, 2026-07-28):** `bash install.sh` → `./start_netzsim.sh`.
+`install.sh` installs system packages (apt/dnf/pacman/zypper abstraction),
+the `.venv` from requirements.txt, Node (distro if ≥ 20, else the SHA256-
+verified nodejs.org tarball into `.tools/`, rootless) and `ui/node_modules`,
+then smoke-tests the backend via `/health`. Flags: `--dev --no-root --python
+--node-version --build-tools --skip-ui --recreate --no-verify`; run from a
+pipe it clones the repo first. `start_netzsim.sh` / `stop_netzsim.sh` /
+`scripts/pick_ports.sh` mirror the .bat/.ps1 trio (background processes, PIDs
++ logs in `.run/`, identity-checked port picking). **Four traps found while
+testing this on Ubuntu 24.04 — all handled, don't reintroduce:** (1) with
+`http_proxy` set (campus net) curl sends even 127.0.0.1 through the proxy →
+every localhost call needs `--noproxy '*'`, else squid answers the identity
+checks; (2) a bare `/dev/tcp` connect has NO timeout and can hang forever
+(WSL2) → probe with `ss`, fall back to `timeout 1 bash -c …`; (3) uvicorn
+accepts the socket before the app is ready, so "does it answer?" and "is it
+netzsim?" must be ONE request classified once — two requests race and falsely
+report a foreign app on the port; (4) npm ≥ 11 skips postinstall scripts
+(esbuild) — the platform binary still arrives via optionalDependencies, the
+installer verifies `esbuild --version` anyway. Under WSL, `npm`/`node` may
+resolve to the Windows install under `/mnt/c` — those are rejected on purpose.
 
 **Local (app 1 only):**
 ```bash

@@ -4,6 +4,10 @@ __pycache__/
 .venv-bench/
 venv/
 .env
+# Linux-Starter: PIDs + Server-Protokolle (start_netzsim.sh)
+.run/
+# projektlokale Werkzeuge, die install.sh bei Bedarf holt (z. B. Node.js)
+.tools/
 *.egg-info/
 .pytest_cache/
 dist/
