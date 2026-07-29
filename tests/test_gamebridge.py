@@ -277,6 +277,20 @@ def test_gb_step_contract_path():
         assert client.get("/status").json()["step"] == 3
 
 
+def test_gb_zone_demand_is_signed_net_load():
+    """Contract §4 power note: zone demand is the SIGNED net load — negative
+    means the zone exports (rooftop PV backfeed through the district trafo)."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=_topology()).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": -50.0}, "z1": {"value": 0.0}})).json()
+        assert res["status"] == "converged"
+        # slack sees the export: background 5 - 50 => ~-45 kW (import-positive)
+        assert res["devices"]["slack"]["output_kw"] == pytest.approx(-45.0, abs=3.0)
+
+
 def test_gb_ws_step_channel():
     from fastapi.testclient import TestClient
 

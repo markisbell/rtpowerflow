@@ -782,7 +782,9 @@ async def _gb_step(req: Any) -> "tuple[int, dict]":
     # itself and sends setpoints (generation models live game-side).
     for zid, entry in (req.get("zone_demand") or {}).items():
         if zid in gb.zones and isinstance(entry, dict) and _is_num(entry.get("value")):
-            gb.zone_demand_kw[zid] = max(0.0, float(entry["value"]))
+            # SIGNED net load (contract §4 power note): negative = the zone
+            # exports — rooftop PV backfeed through the district transformer
+            gb.zone_demand_kw[zid] = float(entry["value"])
     for did, sp in (req.get("device_setpoints") or {}).items():
         if did in gb.devices and isinstance(sp, dict):
             held = gb.held.setdefault(did, {})
