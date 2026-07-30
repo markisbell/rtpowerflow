@@ -130,10 +130,14 @@ class GbDevice:
 
 
 def _new_batt_state(params: dict) -> dict:
-    """Fresh battery state from validated params: SoC starts at half capacity
-    (module doc; the game's topology is authoritative across resets)."""
+    """Fresh battery state from validated params. SoC starts at half capacity
+    unless the game replays a saved fraction via the optional ``soc`` param
+    (0..1, clamped; Phase 8 save/load + rebuild continuity — without it every
+    topology reset silently recharged the fleet to 50%)."""
     e_kwh = float(params["e_kwh"])
-    return {"soc_kwh": _SOC_INIT_FRAC * e_kwh, "e_kwh": e_kwh,
+    frac = params.get("soc")
+    frac = min(max(float(frac), 0.0), 1.0) if _is_num(frac) else _SOC_INIT_FRAC
+    return {"soc_kwh": frac * e_kwh, "e_kwh": e_kwh,
             "p_max_kw": float(params["p_max_kw"])}
 
 

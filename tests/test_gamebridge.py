@@ -450,6 +450,31 @@ def _clamps(res: dict) -> "list[dict]":
     return [v for v in res["violations"] if v["kind"] == "clamped"]
 
 
+def test_gb_battery_initial_soc_param():
+    """Optional `soc` param (0..1, clamped) sets the initial state of charge
+    — the game replays saved SoC across resets (Phase 8)."""
+    from fastapi.testclient import TestClient
+
+    topo = _topology5()
+    for dev in topo["devices"]:
+        if dev["kind"] == "battery":
+            dev["params"]["soc"] = 0.2
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=topo).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"bat1": {"p_kw": 0.0}})).json()
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(0.2, abs=1e-6)
+    # out-of-range values clamp instead of erroring
+    for dev in topo["devices"]:
+        if dev["kind"] == "battery":
+            dev["params"]["soc"] = 7.0
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=topo).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"bat1": {"p_kw": 0.0}})).json()
+        assert res["devices"]["bat1"]["soc"] == pytest.approx(1.0, abs=1e-6)
+
+
 def test_gb_battery_dispatch_clamps_and_soc_trajectory():
     from fastapi.testclient import TestClient
 
