@@ -2,7 +2,7 @@ name: docker
 
 on:
   push:
-    branches: [master]
+    branches: ["**"]   # gamebridge builds branch-tagged images too (parity with the sibling backends)
     tags: ["v*"]
   pull_request:
     branches: [master]
