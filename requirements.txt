@@ -2,6 +2,7 @@
 # (the select_subnet top-level removal already broke CI once, 2026-07-08)
 pandapower>=3.0,<4
 numpy>=1.24
+numba                     # pandapower's fast solver path (validated with 0.66); without it every runpp warns + runs slow
 pandas>=2.0
 fastapi>=0.110
 uvicorn[standard]>=0.29
