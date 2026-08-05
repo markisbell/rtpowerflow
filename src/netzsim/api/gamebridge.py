@@ -55,6 +55,22 @@ How the contract maps onto netzsim:
 - Contract 1.1: every step result carries ``edges`` — per-edge solved
   quantities (``loading_percent``, ``p_from_kw``) for ALL native lines
   (``L<idx>``) and trafos (``T<idx>``), straight from the solved tables.
+- Contract 1.2: GRID_FORMING devices — an SoC-limited slack for microgrid
+  islands (a battery inverter in grid-forming mode). Maps onto its own
+  ext_grid exactly like ``slack`` (params ``vm_pu``), but carries battery
+  state (params ``e_kwh``/``p_max_kw`` required, optional ``soc`` replay).
+  Setpoints are advisory (the power flow decides); SoC integrates AFTER
+  each converged solve from the SOLVED ext_grid flow (positive = the
+  former supplies its island = discharge, lossless; negative = charge,
+  efficiency 0.95 — same physics as ``battery``). The backend REPORTS and
+  never enforces: ``soc`` rides the device result, exhaustion is a
+  ``storage_empty``/critical violation (still discharging at SoC 0),
+  ``storage_full``/warning (still charging at 100 %), and flow beyond
+  ``p_max_kw`` is an ``overload`` violation on ``device:<id>`` (percent
+  of rating) — the game's EMS supervises (curtails, sheds, collapses).
+  Like ``slack``, grid_forming is part of the topology: ``net/patch``
+  may retune it (``vm_pu``/``e_kwh``/``p_max_kw``/``soc``) but never
+  add/remove it.
 """
 from __future__ import annotations
 
@@ -80,12 +96,12 @@ from .runtime import API_VERSION, runtime
 
 router = APIRouter(prefix="/gb", tags=["gamebridge"])
 
-CONTRACT_VERSION = "1.1"
+CONTRACT_VERSION = "1.2"
 NETWORK_KIND = "power"
 
 # Device kinds this backend accepts (contract §3.1 table, "power" rows).
 _GEN_KINDS = ("generator", "pv", "wind")
-_POWER_KINDS = ("slack", *_GEN_KINDS, "coupling_load", "battery")
+_POWER_KINDS = ("slack", *_GEN_KINDS, "coupling_load", "battery", "grid_forming")
 _ALL_KINDS = (*_POWER_KINDS, "chp", "heat_pump", "boiler", "storage_heat")
 _CAP_PARAM = {"generator": "p_max_kw", "pv": "p_rated_kw", "wind": "p_rated_kw"}
 
@@ -201,12 +217,12 @@ def _device_error(dev: Any, bus_of: "dict[str, int] | None" = None) -> str | Non
         return f"device kind {kind!r} is not a power-network device (contract §3.1)"
     if "params" in dev and dev["params"] is not None and not isinstance(dev["params"], dict):
         return "'params' must be an object"
-    if kind == "battery":
+    if kind in ("battery", "grid_forming"):
         params = dev.get("params") or {}
         for key in ("e_kwh", "p_max_kw"):
             v = params.get(key)
             if not _is_num(v) or v <= 0:
-                return f"battery devices need params.{key} > 0 (contract §3.1)"
+                return f"{kind} devices need params.{key} > 0 (contract §3.1)"
     node = dev.get("node")
     if not isinstance(node, str) or not node:
         return "power devices need a 'node' (bus name in native.grid_structure)"
@@ -331,9 +347,10 @@ def _extend_native(doc: dict) -> "tuple[dict, dict, list, list, list]":
             _bad(f"device '{dev.get('id')}': {err}")
         kind, bus = dev["kind"], bus_of[dev["node"]]
         params = dev.get("params") or {}
-        if kind == "slack":
+        if kind in ("slack", "grid_forming"):
             # Map onto a native substation (ext_grid) if one exists — same
-            # bus preferred — else create one from the device (contract §3.1).
+            # bus preferred — else create one from the device (contract §3.1;
+            # grid_forming is 1.2's SoC-limited island slack, module doc).
             row = next((i for i, s in enumerate(sub_doc[sub_key])
                         if i not in claimed and isinstance(s, dict)
                         and s.get("bus") == bus), None)
@@ -424,7 +441,8 @@ async def net_reset(request: Request):
         devices[dev["id"]] = GbDevice(
             id=dev["id"], kind=dev["kind"], node=dev["node"], bus=bus,
             params=params, table=table, elem=elem,
-            batt=_new_batt_state(params) if dev["kind"] == "battery" else None)
+            batt=_new_batt_state(params)
+            if dev["kind"] in ("battery", "grid_forming") else None)
 
     # JIT warmup (contract §0.5): one throwaway solve so numba compilation
     # never lands on a live step. run_step is called DIRECTLY — the engine
@@ -472,7 +490,7 @@ def _apply_patch_op(gb: GbState, sim, op: Any) -> str:
             raise ValueError(err)
         if dev["id"] in gb.devices:
             raise ValueError(f"duplicate device {dev['id']}")
-        if dev["kind"] == "slack":
+        if dev["kind"] in ("slack", "grid_forming"):
             raise ValueError("the slack is part of the topology — use /gb/net/reset")
         gb.devices[dev["id"]] = _create_device_element(gb, sim, dev)
         return dev["id"]
@@ -481,7 +499,7 @@ def _apply_patch_op(gb: GbState, sim, op: Any) -> str:
         if not isinstance(did, str) or did not in gb.devices:
             raise ValueError(f"unknown device {did}")
         dev = gb.devices[did]
-        if dev.kind == "slack":
+        if dev.kind in ("slack", "grid_forming"):
             raise ValueError("the slack cannot be removed — use /gb/net/reset")
         _drop_device_element(sim, dev)
         del gb.devices[did]
@@ -495,23 +513,28 @@ def _apply_patch_op(gb: GbState, sim, op: Any) -> str:
         if not isinstance(params, dict):
             raise ValueError("set_device needs a 'params' object")
         dev = gb.devices[did]
-        if dev.kind == "battery":
+        if dev.kind in ("battery", "grid_forming"):
             # e_kwh / p_max_kw may be resized (contract §3.1); reject values
             # that would corrupt the SoC state instead of silently absorbing.
             for key in ("e_kwh", "p_max_kw"):
                 if key in params and (not _is_num(params[key]) or params[key] <= 0):
-                    raise ValueError(f"battery params.{key} must be > 0")
+                    raise ValueError(f"{dev.kind} params.{key} must be > 0")
         dev.params.update(params)
-        if dev.kind == "slack" and _is_num(params.get("vm_pu")):
+        if dev.kind in ("slack", "grid_forming") and _is_num(params.get("vm_pu")):
             row = sim.prof.ext_idx.index(dev.elem)
             sim.prof.ext_vm[row, :] = float(params["vm_pu"])
-        elif dev.kind == "battery" and dev.batt is not None:
+        if dev.kind in ("battery", "grid_forming") and dev.batt is not None:
             if "p_max_kw" in params:
                 dev.batt["p_max_kw"] = float(params["p_max_kw"])
             if "e_kwh" in params:
                 dev.batt["e_kwh"] = float(params["e_kwh"])
                 # a shrunk capacity clamps the stored energy (module doc)
                 dev.batt["soc_kwh"] = min(dev.batt["soc_kwh"], dev.batt["e_kwh"])
+            if "soc" in params and _is_num(params["soc"]):
+                # explicit SoC replay via patch (grid_forming save/load path
+                # mirrors reset's params.soc)
+                frac = min(max(float(params["soc"]), 0.0), 1.0)
+                dev.batt["soc_kwh"] = frac * float(dev.batt["e_kwh"])
         return did
     raise ValueError(f"unknown op {name!r}")
 
@@ -658,9 +681,39 @@ def _integrate_soc(gb: GbState, batt_realized: "dict[str, float]",
         b["soc_kwh"] = min(max(b["soc_kwh"], 0.0), float(b["e_kwh"]))
 
 
+def _integrate_forming(gb: GbState, sim, dt_s: int) -> "dict[str, float]":
+    """Advance each grid_forming device's SoC from its SOLVED ext_grid flow
+    (contract 1.2, module doc) — AFTER a converged solve, before the result
+    is built. Positive flow = the former supplies its island (discharge,
+    lossless); negative = charge at 0.95 (the ``battery`` physics). The
+    backend reports and never enforces: SoC clamps to [0, e_kwh] and the
+    result/violations carry the exhaustion signal. Returns the solved kW per
+    device for the result builder."""
+    dt_h = dt_s / 3600.0
+    flows: "dict[str, float]" = {}
+    for dev in gb.devices.values():
+        if dev.kind != "grid_forming" or dev.batt is None or dev.elem is None:
+            continue
+        try:
+            p_kw = float(sim.net.res_ext_grid.at[dev.elem, "p_mw"]) * 1000.0
+        except KeyError:
+            continue
+        if not np.isfinite(p_kw):
+            continue
+        flows[dev.id] = p_kw
+        b = dev.batt
+        if p_kw >= 0.0:                       # discharge: lossless
+            b["soc_kwh"] -= p_kw * dt_h
+        else:                                 # charge: 0.95 efficiency
+            b["soc_kwh"] += -p_kw * dt_h * _CHARGE_EFF
+        b["soc_kwh"] = min(max(b["soc_kwh"], 0.0), float(b["e_kwh"]))
+    return flows
+
+
 def _contract_result(t: int, native: StepResult, gb: GbState, sim,
                      clamped: "list[dict]",
-                     batt_realized: "dict[str, float]") -> dict:
+                     batt_realized: "dict[str, float]",
+                     forming_flows: "dict[str, float] | None" = None) -> dict:
     """Build the contract step result (schemas/step-result.schema.json) from
     the solved native StepResult + the pandapower result tables."""
     converged = native.converged
@@ -675,6 +728,7 @@ def _contract_result(t: int, native: StepResult, gb: GbState, sim,
         zones[z.id] = {"supplied": 1.0 if converged else 0.0, "detail": detail}
 
     devices: "dict[str, dict]" = {}
+    forming_viol: "list[dict]" = []
     for dev in gb.devices.values():
         out = soc = None
         if dev.kind == "battery" and dev.batt is not None:
@@ -685,6 +739,32 @@ def _contract_result(t: int, native: StepResult, gb: GbState, sim,
                 out = _r(batt_realized.get(dev.id, 0.0))
             e_kwh = float(dev.batt["e_kwh"])
             soc = _r(dev.batt["soc_kwh"] / e_kwh) if e_kwh > 0 else None
+        elif dev.kind == "grid_forming" and dev.batt is not None:
+            # SoC-limited island slack (contract 1.2): output is the SOLVED
+            # ext_grid flow, soc the post-integration fraction; the backend
+            # reports exhaustion/overload, the game's EMS supervises.
+            b = dev.batt
+            e_kwh = float(b["e_kwh"])
+            soc = _r(b["soc_kwh"] / e_kwh) if e_kwh > 0 else None
+            if converged and forming_flows is not None \
+                    and dev.id in forming_flows:
+                p_kw = forming_flows[dev.id]
+                out = _r(p_kw)
+                p_max = float(b["p_max_kw"])
+                pct = 100.0 * abs(p_kw) / p_max if p_max > 0 else 0.0
+                if pct > _OVERLOAD_WARN:
+                    forming_viol.append({
+                        "element": f"device:{dev.id}", "kind": "overload",
+                        "severity": "critical" if pct > _OVERLOAD_CRIT
+                        else "warning", "value": _r(pct)})
+                if b["soc_kwh"] <= 0.0 and p_kw > 0.0:
+                    forming_viol.append({
+                        "element": f"device:{dev.id}", "kind": "storage_empty",
+                        "severity": "critical", "value": 0.0})
+                elif b["soc_kwh"] >= e_kwh and p_kw < 0.0:
+                    forming_viol.append({
+                        "element": f"device:{dev.id}", "kind": "storage_full",
+                        "severity": "warning", "value": 1.0})
         elif converged and dev.elem is not None:
             try:
                 if dev.table == "sgen":
@@ -697,7 +777,7 @@ def _contract_result(t: int, native: StepResult, gb: GbState, sim,
                 out = None
         devices[dev.id] = {"output_kw": out, "soc": soc, "detail": {}}
 
-    violations = list(clamped)
+    violations = list(clamped) + forming_viol
     for ln in native.lines:
         lp = ln.get("loading_percent")
         if lp is not None and lp > _OVERLOAD_WARN:
@@ -812,11 +892,14 @@ async def _gb_step(req: Any) -> "tuple[int, dict]":
 
     # SoC advances only on real, CONVERGED solves: the idempotent cached path
     # returned above (never double-integrates), and a failed solve delivered
-    # nothing.
+    # nothing. grid_forming integrates from the SOLVED ext_grid flow.
+    forming_flows: "dict[str, float]" = {}
     if native.converged:
         _integrate_soc(gb, batt_realized, dt_s)
+        forming_flows = _integrate_forming(gb, sim, dt_s)
 
-    result = _contract_result(t, native, gb, sim, clamped, batt_realized)
+    result = _contract_result(t, native, gb, sim, clamped, batt_realized,
+                              forming_flows)
     gb.last_t, gb.last_result = t, result
     return 200, result
 

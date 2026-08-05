@@ -123,7 +123,7 @@ def test_gb_endpoints(monkeypatch):
     with TestClient(app) as client:
         version = client.get("/gb/version").json()
         assert version["backend"] == "netzsim"
-        assert version["contract"] == "1.1"
+        assert version["contract"] == "1.2"
         assert "pandapower" in version["solver"]
 
         step0 = client.get("/status").json()["step"]
@@ -626,7 +626,7 @@ def test_gb_edges_field():
     from fastapi.testclient import TestClient
 
     with TestClient(app) as client:
-        assert client.get("/gb/version").json()["contract"] == "1.1"
+        assert client.get("/gb/version").json()["contract"] == "1.2"
         assert client.post("/gb/net/reset", json=_topology5()).status_code == 200
         res = client.post("/gb/step", json=_step_req(
             0, zone_demand={"z0": {"value": 40.0}, "z1": {"value": 20.0}})).json()
@@ -654,3 +654,184 @@ def test_gb_edges_field():
         again = client.post("/gb/step", json=_step_req(
             0, zone_demand={"z0": {"value": 40.0}, "z1": {"value": 20.0}})).json()
         assert again["edges"] == res["edges"]
+
+
+# ---------------------------------------------------------------- grid_forming
+# Contract 1.2: the SoC-limited island slack (module doc). An off-grid
+# microgrid's forming battery is its ext_grid; SoC integrates AFTER each
+# converged solve from the SOLVED flow, the backend reports (soc,
+# storage_empty/full, device overload) and never enforces.
+
+def _topology_island(former_params: "dict | None" = None,
+                     with_pv: bool = True) -> dict:
+    """A 2-bus 0.4-kV OFF-GRID island: forming battery gf1@b0, zone z0@b1,
+    optional pv1@b1 for the charge direction. No grid connection at all —
+    the grid_forming device is the only slack."""
+    native = {
+        "grid_structure": {
+            "name": "gb_island", "f_hz": 50.0,
+            "buses": [{"name": "b0", "vn_kv": 0.4}, {"name": "b1", "vn_kv": 0.4}],
+        },
+        "lines": {
+            "lines": [{"name": "l01", "from_bus": 0, "to_bus": 1,
+                       "length_km": 0.1, "std_type": "NAYY 4x150 SE"}],
+            "transformers": [],
+        },
+        "load": {"steps": STEPS, "loads": []},
+        "generation": {"steps": STEPS, "generation": []},
+        "substation": {"steps": STEPS, "substations": []},
+    }
+    devices = [{"id": "gf1", "kind": "grid_forming", "node": "b0",
+                "params": {"vm_pu": 1.0, "e_kwh": 100, "p_max_kw": 50,
+                           **(former_params or {})}}]
+    if with_pv:
+        devices.append({"id": "pv1", "kind": "pv", "node": "b1",
+                        "params": {"p_rated_kw": 100}})
+    return {
+        "contract": "1.2",
+        "network_kind": "power",
+        "name": "gb_island",
+        "steps_per_day": STEPS,
+        "native": native,
+        "zones": [{"id": "z0", "node": "b1"}],
+        "devices": devices,
+    }
+
+
+def test_gb_grid_forming_island_solves_and_discharges():
+    """An off-grid island solves around its forming battery; the solved
+    ext_grid flow IS the discharge and SoC follows it (lossless)."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        r = client.post("/gb/net/reset", json=_topology_island())
+        assert r.status_code == 200, r.text
+        assert r.json()["warnings"] == []
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 20.0}})).json()
+        assert res["status"] == "converged"
+        assert res["zones"]["z0"]["supplied"] == 1.0
+        gf = res["devices"]["gf1"]
+        # solved flow = demand + line losses, discharge-positive
+        assert gf["output_kw"] == pytest.approx(20.0, abs=2.0)
+        # SoC integrated from exactly that flow: 50 kWh - out*0.25h over 100
+        assert gf["soc"] == pytest.approx(
+            (50.0 - gf["output_kw"] * 0.25) / 100.0, abs=1e-6)
+        assert not [v for v in res["violations"]
+                    if v["element"] == "device:gf1"]
+        # idempotent re-send never double-integrates the solved flow
+        again = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 20.0}}))
+        assert again.status_code == 200 and again.json() == res
+
+
+def test_gb_grid_forming_charges_from_island_surplus():
+    """PV surplus flows INTO the former (negative solved flow) and stores
+    with the battery physics' 0.95 charge efficiency."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset",
+                           json=_topology_island()).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 10.0}},
+            device_setpoints={"pv1": {"p_kw": 40.0}})).json()
+        gf = res["devices"]["gf1"]
+        assert gf["output_kw"] == pytest.approx(-30.0, abs=2.0)
+        assert gf["soc"] == pytest.approx(
+            (50.0 + -gf["output_kw"] * 0.25 * 0.95) / 100.0, abs=1e-6)
+
+
+def test_gb_grid_forming_exhaustion_reports_storage_empty():
+    """Discharging past the stored energy clamps SoC to 0 and raises the
+    storage_empty/critical violation — the game's EMS collapse signal."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset", json=_topology_island(
+            {"soc": 0.02})).status_code == 200   # 0.2 kWh left
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 20.0}})).json()
+        gf = res["devices"]["gf1"]
+        assert gf["soc"] == 0.0
+        kinds = {v["kind"] for v in res["violations"]
+                 if v["element"] == "device:gf1"}
+        assert "storage_empty" in kinds
+
+
+def test_gb_grid_forming_overload_and_full_violations():
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        # overload: 20-kW demand on a 10-kW former -> ~200 % -> critical
+        assert client.post("/gb/net/reset", json=_topology_island(
+            {"p_max_kw": 10})).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 20.0}})).json()
+        over = [v for v in res["violations"]
+                if v["element"] == "device:gf1" and v["kind"] == "overload"]
+        assert over and over[0]["severity"] == "critical"
+        assert over[0]["value"] == pytest.approx(200.0, abs=25.0)
+        # full + still charging -> storage_full warning
+        assert client.post("/gb/net/reset", json=_topology_island(
+            {"soc": 1.0})).status_code == 200
+        res = client.post("/gb/step", json=_step_req(
+            0, device_setpoints={"pv1": {"p_kw": 40.0}})).json()
+        kinds = {v["kind"]: v["severity"] for v in res["violations"]
+                 if v["element"] == "device:gf1"}
+        assert kinds.get("storage_full") == "warning"
+
+
+def test_gb_grid_forming_patch_rules_match_slack():
+    """set_device retunes (incl. explicit soc replay); add/remove are
+    topology operations and refused like the slack's."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        assert client.post("/gb/net/reset",
+                           json=_topology_island()).status_code == 200
+        r = client.post("/gb/net/patch", json=[
+            {"op": "set_device", "id": "gf1",
+             "params": {"e_kwh": 4, "soc": 0.5}}])
+        assert r.json() == {"applied": ["gf1"], "errors": []}
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 0.0}})).json()
+        assert res["devices"]["gf1"]["soc"] == pytest.approx(0.5, abs=0.01)
+        r = client.post("/gb/net/patch", json=[
+            {"op": "remove_device", "id": "gf1"},
+            {"op": "add_device", "device": {
+                "id": "gf2", "kind": "grid_forming", "node": "b1",
+                "params": {"e_kwh": 5, "p_max_kw": 10}}}])
+        body = r.json()
+        assert body["applied"] == [] and len(body["errors"]) == 2
+        # invalid params rejected up front, like battery
+        bad = dict(_topology_island())
+        bad["devices"][0]["params"] = {"e_kwh": 0, "p_max_kw": 50}
+        assert client.post("/gb/net/reset", json=bad).status_code == 400
+
+
+def test_gb_grid_forming_parallel_to_main_grid():
+    """A doc carrying BOTH a grid slack and a separate off-grid island
+    (disconnected component) solves both around their own ext_grids."""
+    from fastapi.testclient import TestClient
+
+    topo = _topology_island(with_pv=False)
+    g = topo["native"]["grid_structure"]
+    g["buses"] += [{"name": "m0", "vn_kv": 0.4}, {"name": "m1", "vn_kv": 0.4}]
+    topo["native"]["lines"]["lines"].append(
+        {"name": "lm", "from_bus": 2, "to_bus": 3, "length_km": 0.1,
+         "std_type": "NAYY 4x150 SE"})
+    topo["zones"].append({"id": "zm", "node": "m1"})
+    topo["devices"].append(
+        {"id": "slack", "kind": "slack", "node": "m0", "params": {"vm_pu": 1.0}})
+    with TestClient(app) as client:
+        r = client.post("/gb/net/reset", json=topo)
+        assert r.status_code == 200, r.text
+        res = client.post("/gb/step", json=_step_req(
+            0, zone_demand={"z0": {"value": 15.0}, "zm": {"value": 25.0}})).json()
+        assert res["status"] == "converged"
+        assert res["zones"]["z0"]["supplied"] == 1.0
+        assert res["zones"]["zm"]["supplied"] == 1.0
+        # each slack carries ITS component's demand
+        assert res["devices"]["gf1"]["output_kw"] == pytest.approx(15.0, abs=2.0)
+        assert res["devices"]["slack"]["output_kw"] == pytest.approx(25.0, abs=2.0)
