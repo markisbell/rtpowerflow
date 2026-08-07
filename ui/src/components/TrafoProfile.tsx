@@ -4,6 +4,7 @@ import { api } from "../api";
 import type { ProfileView, TrafoProfiles } from "../types";
 import { loadingColor } from "../scales";
 import ProfileGraph, { type GLimit, type GSeries } from "./ProfileGraph";
+import ProfileLoading from "./ProfileLoading";
 
 // the meter's own readings, in every graph the same near-white "device" color
 const MEAS_COLOR = "#e6edf3";
@@ -74,7 +75,7 @@ export default function TrafoProfile({ trafo, name, now, day, view = "est", stam
         </div>
       )}
       {err && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.error", { msg: err })}</div>}
-      {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
+      {!err && !data && <ProfileLoading />}
       {!err && data && hasData && (
         <ProfileGraph series={series} limits={limits} scale={1000} unit="kVA" dec={1}
                       baseZero={!hasExport} now={now} yTitle={t("axis.apparent")} />

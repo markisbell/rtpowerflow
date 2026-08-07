@@ -345,7 +345,8 @@ const en = {
     CHR22: "Single woman 1 child with work", CHR52: "Student Flatsharing",
   },
 
-  common: { loading: "loading…", error: "error: {{msg}}" },
+  common: { loading: "loading…", error: "error: {{msg}}",
+            sweeping: "solving the whole day… {{s}} s" },
 
   tip: {
     line: "Line {{name}}", loadingPct: "loading {{v}} %", currentA: "I {{v}} A", powerKw: "P {{v}} kW",
@@ -725,7 +726,8 @@ const de: typeof en = {
     CHR22: "Alleinerziehende, 1 Kind, berufstätig", CHR52: "Studenten-WG",
   },
 
-  common: { loading: "lädt…", error: "Fehler: {{msg}}" },
+  common: { loading: "lädt…", error: "Fehler: {{msg}}",
+            sweeping: "Tagesverlauf wird gerechnet … {{s}} s" },
 
   tip: {
     line: "Leitung {{name}}", loadingPct: "Auslastung {{v}} %", currentA: "I {{v}} A", powerKw: "P {{v}} kW",

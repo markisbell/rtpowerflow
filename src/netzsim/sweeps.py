@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import threading
+import weakref
 
 import numpy as np
 import pandapower as pp
@@ -24,6 +26,32 @@ import pandapower as pp
 from . import battery as bat
 from .battery import Battery
 from .measurements import MeasurementSet, _r
+
+# One sweep at a time per Simulator. A day sweep is the most expensive thing
+# the service does (a whole day of power flows on an isolated net copy, plus
+# WLS runs for the estimated layer), and the UI happily asks for several at
+# once: every open side-panel section refetches on a view switch or a day
+# wrap. Without this, N requests for the SAME day each ran their own full
+# sweep and fought for the GIL — on the 475-bus district 3 concurrent cold
+# requests took 144 s each instead of the 18 s one costs. Serialized, the
+# first caller computes and the rest return from the cache it fills.
+#
+# The lock lives OUTSIDE the Simulator on purpose: the bulk exporter
+# deep-copies the live Simulator, and a lock object is not copyable. A copy
+# simply gets its own lock here on first use.
+_sweep_locks: "weakref.WeakKeyDictionary[object, threading.RLock]" = weakref.WeakKeyDictionary()
+_locks_guard = threading.Lock()
+
+
+def _sweep_lock(sim) -> threading.RLock:
+    """The per-Simulator sweep lock (reentrant: the estimated layer computes
+    the truth layer inside its own critical section)."""
+    with _locks_guard:
+        lock = _sweep_locks.get(sim)
+        if lock is None:
+            lock = threading.RLock()
+            _sweep_locks[sim] = lock
+        return lock
 
 
 def daily_curves(sim, day: int | None = None) -> dict:
@@ -42,6 +70,15 @@ def daily_curves(sim, day: int | None = None) -> dict:
     cached = sim._daily_by_day.get(d)
     if cached is not None:
         return cached
+    with _sweep_lock(sim):
+        cached = sim._daily_by_day.get(d)   # filled while we waited?
+        if cached is not None:
+            return cached
+        return _daily_curves_uncached(sim, d)
+
+
+def _daily_curves_uncached(sim, d: int) -> dict:
+    """The actual day sweep — always called under the sweep lock."""
     # Snapshot the LIVE net (not a rebuild from the input data): runtime
     # DER changes — added/resized PV, EV windows, removals — exist only on
     # the live net/profiles, and sim._loads_at/_sgens_at row indices refer
@@ -217,6 +254,15 @@ def daily_est(sim, day: int | None = None) -> dict:
     cached = truth.get("_est")
     if cached is not None and cached.get("_sig") == sig:
         return cached
+    with _sweep_lock(sim):
+        cached = truth.get("_est")          # computed while we waited?
+        if cached is not None and cached.get("_sig") == sig:
+            return cached
+        return _daily_est_uncached(sim, d, truth, sig)
+
+
+def _daily_est_uncached(sim, d: int, truth: dict, sig: tuple) -> dict:
+    """The actual WLS mini-sweep — always called under the sweep lock."""
     spd = sim.steps_per_day
     # without meters there is nothing to estimate: empty layer, so the
     # profile endpoints report the estimate as absent (None), not all-null
@@ -249,8 +295,18 @@ def daily_est(sim, day: int | None = None) -> dict:
                                        range(0, spd, est_steps)):
             if not solved:
                 continue
-            est = estimator.run(net, sweep_meters.observe(net, t),
-                                sim._sgen_day_mean(d), est_bats)
+            # Read the meters at the FINE cadence even when the estimate is
+            # sampled coarser: a TAF-7 device publishes the mean of the last
+            # COMPLETED 15-min window, so its window bookkeeping has to keep
+            # ticking — otherwise the WLS would be handed hours-old readings.
+            # Cheap array math; the WLS below is what costs seconds.
+            observed = sweep_meters.observe(net, t)
+            if t % est_steps:
+                # not an estimate sample: running the WLS here would only
+                # produce a result the raster throws away (on a district
+                # that was 96 runs for 12 kept samples — minutes of waiting)
+                continue
+            est = estimator.run(net, observed, sim._sgen_day_mean(d), est_bats)
             if est is None:
                 continue
             if sim._est_sweep_min is None:
@@ -266,11 +322,11 @@ def daily_est(sim, day: int | None = None) -> dict:
                                       else 60 if ms <= 480 else 120)
                 coarser = max(_raster_steps(sim, sim._est_sweep_min), meter_raster)
                 if coarser > est_steps:
-                    # keep only the samples on the coarser raster; the
-                    # generator keeps yielding the fine ones — skip them
                     est_steps = coarser
-            if t % est_steps != 0:
-                continue
+                    if t % est_steps:
+                        # this run pinned the tier but sits off it (the
+                        # earlier steps were unobservable) — drop the sample
+                        continue
             for e in est["buses"]:
                 est_vm[e["index"]][t] = e["vm_pu"]
             for e in est["lines"]:

@@ -4,6 +4,7 @@ import { api } from "../api";
 import type { LineProfiles, ProfileView } from "../types";
 import { loadingColor } from "../scales";
 import ProfileGraph from "./ProfileGraph";
+import ProfileLoading from "./ProfileLoading";
 
 // Per-line daily current graph with the line's rated current (ampacity) limit.
 // `view` mirrors the Live perspective. Lines carry no meters, so the Gemessen
@@ -37,7 +38,7 @@ export default function LineProfile({ line, name, now, day, view = "est", stamp 
         </div>
       )}
       {err && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.error", { msg: err })}</div>}
-      {!err && !data && <div className="muted" style={{ fontSize: "0.72rem" }}>{t("common.loading")}</div>}
+      {!err && !data && <ProfileLoading />}
       {!err && data && (hasData || hasEst) && (
         <ProfileGraph
           series={[...(hasData

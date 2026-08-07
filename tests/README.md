@@ -21,7 +21,7 @@ GitHub-side).
 | `test_simulator.py` | Smoke tests for the base pipeline: the 5 input JSONs load, the pandapower net builds, steps solve, and the day wraps 1439 → 0. If this is red, everything else is noise. |
 | `test_api_surface.py` | Regression net for the API: pins the **complete route inventory** (method + path — new endpoints must be added to `EXPECTED_ROUTES`) and smoke-tests one representative endpoint per router area over a real `TestClient`. Written before the `api.py` → `netzsim/api/` router split; also pins fastapi-0.139-proof route walking and the strict-mode gating of the day-graph endpoints. |
 | `test_api_validation.py` | Range constraints on API request models: raw calls must not inject physically nonsensical values (negative kWp, out-of-range penetrations) into the profile generators. |
-| `test_sweeps.py` | Regression net for the `sweeps.py` extraction from Simulator: battery day curves, the measured layer's TAF rastering, and that a deep-copied Simulator (the bulk exporter's path) sweeps independently of the original's caches. |
+| `test_sweeps.py` | Regression net for the `sweeps.py` extraction from Simulator: battery day curves, the measured layer's TAF rastering, and that a deep-copied Simulator (the bulk exporter's path) sweeps independently of the original's caches. Plus the two day-graph cost guards (2026-07-28): the WLS runs only at the pinned estimate raster (while the meters keep ticking at the fine TAF cadence), and concurrent requests share ONE sweep instead of each running their own. |
 
 ## Grid import & catalog
 
