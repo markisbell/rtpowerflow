@@ -47,9 +47,18 @@ printf '%s=== netzsim Starter ===%s\n' "$B" "$N"
 # Server im Hintergrund starten: sie sollen das Starterfenster ueberleben.
 # Die PID landet in .run/<name>.pid; Kindprozesse (esbuild) findet der Stopper
 # ueber die Kommandozeile — genau wie unter Windows.
+# setsid + stdin auf /dev/null: beim Schliessen des Terminals geht SIGHUP an
+# dessen Prozessgruppe, und npm/vite setzen EIGENE Signal-Handler — die
+# Oberflaeche stirbt dann trotz nohup still (das Backend ignoriert stdin und
+# ueberlebt). Eine eigene Session haengt an keinem Terminal mehr. Ohne fork
+# bleibt $! die richtige PID (der Aufrufer ist nie Prozessgruppenfuehrer).
 launch() {   # launch <name> <logfile> -- <befehl...>
     local name="$1" log="$2"; shift 3
-    nohup "$@" >"$log" 2>&1 &
+    if command -v setsid >/dev/null 2>&1; then
+        setsid nohup "$@" >"$log" 2>&1 </dev/null &
+    else
+        nohup "$@" >"$log" 2>&1 </dev/null &
+    fi
     echo $! > "$RUN/$name.pid"
     disown 2>/dev/null || true
 }
