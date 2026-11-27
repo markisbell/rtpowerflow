@@ -99,6 +99,19 @@ def test_grid_library_catalog_lists_and_converts_scopes():
     assert any("n_bus" in it for it in cat.list())
 
 
+def test_manifest_names_are_read_as_utf8(tmp_path):
+    # the manifest is UTF-8 on disk; Windows' locale default (cp1252) used to
+    # turn "Rural LV grid · 300266" into "Rural LV grid Â· 300266" on the wire
+    name = "Vorstädtisches NS-Netz · 265991"
+    manifest = tmp_path / "grid_library.json"
+    manifest.write_bytes(
+        ('{"grids": [{"id": "g1", "name": "%s", "source_dir": "x", '
+         '"voltage": "LV", "character": "suburban"}]}' % name).encode("utf-8"))
+    cat = GridCatalog(ding0_dir=str(tmp_path), library_manifest=str(manifest))
+    entry = next(it for it in cat.list() if it["id"] == "g1")
+    assert entry["name"] == name
+
+
 def test_absent_source_still_offers_reference_feeders():
     # no dataset at all -> the pandapower reference feeders (IEEE/CIGRE/
     # Kerber) remain: they ship with the code, not with the data snapshot

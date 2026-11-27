@@ -57,14 +57,20 @@ const uRow = (vmPu: number | null | undefined, vnKv: number) =>
 
 const STATION_COLOR = "#f2ae00"; // ding0 MVStation amber
 
+// Keyless OpenStreetMap standard tiles. (The CARTO basemaps used before answer
+// keyless requests with an "API KEY REQUIRED" placeholder tile — seen 2026-11.)
+// One provider serves both themes: the muted light / dark looks are CSS filters
+// on the tile layer (`.basemap-*` in styles.css), so the loading and voltage
+// ramps stay the only saturated colors on the map. Native tiles end at z19.
+const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILES = {
   light: {
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    cls: "basemap-light",
     bg: "#e9eaec",
     stroke: "#3a3a3a", // node outline on light bg
   },
   dark: {
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    cls: "basemap-dark",
     bg: "#0b0d11",
     stroke: "#0b0d11",
   },
@@ -187,7 +193,7 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     mapRef.current = map;
     map.zoomControl.setPosition("topleft");      // +/- in the upper-left corner
     L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution(
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     ).addTo(map);
 
     const stroke = (light ? TILES.light : TILES.dark).stroke;
@@ -296,7 +302,9 @@ export default function MapDiagram({ topo, latest, onSelectBus, onSelectLine, on
     if (!map) return;
     const theme = light ? TILES.light : TILES.dark;
     if (tileRef.current) map.removeLayer(tileRef.current);
-    tileRef.current = L.tileLayer(theme.url, { maxZoom: 20 }).addTo(map);
+    tileRef.current = L.tileLayer(TILE_URL, {
+      maxZoom: 20, maxNativeZoom: 19, className: theme.cls,
+    }).addTo(map);
     tileRef.current.bringToBack();
     map.getContainer().style.background = theme.bg;
     // node outlines need to flip with the background for contrast (keep cabinets green)

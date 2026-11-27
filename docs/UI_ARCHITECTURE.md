@@ -237,7 +237,7 @@ netzsim `:8000`.
    them (coords → `BusSpec.geo`; LV buses inherit their station's coord); the
    catalog exposes them (`source:"ding0"`, `geo:true`); `/network` emits `has_geo`
    + per-bus `geo`. The Live view defaults to a **Map** layout — `MapDiagram.tsx`
-   (Leaflet + CARTO/OSM dark tiles) draws the grid at its real coordinates with the
+   (Leaflet + keyless OSM standard tiles, muted per theme by a CSS filter) draws the grid at its real coordinates with the
    live power-flow overlay (loading colors, current width, transformer loading,
    voltages) restyled each WS tick. Verified end-to-end: ding0_1 renders near
    Waldkirch (Black Forest). *Live ding0 generation was abandoned — the OEP REST

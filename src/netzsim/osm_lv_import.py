@@ -43,7 +43,7 @@ def _pick_trafo(need_mva: float, hv_kv: float = MV_KV) -> tuple[str, float, int]
 
 def convert_osm_lv(path: str | Path, *, name: str | None = None,
                    steps: int = 1440, power_factor: float = 0.95) -> GridInputs:
-    g = json.loads(Path(path).read_text())
+    g = json.loads(Path(path).read_text(encoding="utf-8"))
     name = name or g.get("name", Path(path).stem)
 
     buses = [{"name": b["name"], "vn_kv": b["vn_kv"], "type": "b", "zone": "LV",

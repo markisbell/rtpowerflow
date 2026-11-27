@@ -71,7 +71,9 @@ class GridCatalog:
             )
 
     def _load_manifest(self) -> None:
-        data = json.loads(self.manifest.read_text())
+        # explicit UTF-8: on Windows read_text() falls back to the locale code
+        # page (cp1252) and turns the "·" in the grid names into mojibake
+        data = json.loads(self.manifest.read_text(encoding="utf-8"))
         base = self.ding0_dir or (self.manifest.parent / "ding0_grids")
         data_dir = self.manifest.parent
         for g in data.get("grids", []):

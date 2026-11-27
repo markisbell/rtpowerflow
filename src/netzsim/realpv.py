@@ -39,7 +39,7 @@ def load_prices(path: str | Path, dates: list[str]) -> np.ndarray | None:
     if not p.exists() or not dates:
         return None
     try:
-        pr = (json.loads(p.read_text()).get("prices") or {})
+        pr = (json.loads(p.read_text(encoding="utf-8")).get("prices") or {})
     except Exception:  # noqa: BLE001
         return None
     have = [pr[d] for d in dates if d in pr and len(pr[d]) == 24]
@@ -55,7 +55,7 @@ def load_pv_days(path: str | Path, steps: int = 1440) -> PvDays | None:
     if not p.exists():
         return None
     try:
-        doc = json.loads(p.read_text())
+        doc = json.loads(p.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001 — a bad cache should not break startup
         return None
     days = [d for d in (doc.get("days") or []) if d.get("shape")]

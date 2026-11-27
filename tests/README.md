@@ -5,7 +5,7 @@ pip install -e ".[dev]"   # or: pip install pytest httpx
 pytest                    # from the repo root (pythonpath=src via pyproject)
 ```
 
-The suite (currently 191 tests) follows one project rule: **regression tests
+The suite (currently 192 tests) follows one project rule: **regression tests
 are written BEFORE refactorings and features** — first pin the current
 behavior, then change the code, and the pinned test must stay green
 *unmodified* through the change. Several files below exist exactly for that

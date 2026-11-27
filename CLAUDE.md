@@ -742,8 +742,13 @@ eyeballed in the browser.
   grids (eDisGo CSV) with **real WGS84 lon/lat**. `ding0_import.convert_ding0_csv`
   carries coords onto `BusSpec.geo` (LV buses get their station's coord). When a
   grid has geo, `/network` sets `has_geo: true` and per-bus `geo: [lon, lat]`, and
-  the UI defaults to the **Map** view (`MapDiagram.tsx`, Leaflet + CARTO/OSM
-  tiles). The map mimics ding0's `plot_mv_topology` aesthetic: **light** CARTO
+  the UI defaults to the **Map** view (`MapDiagram.tsx`, Leaflet + keyless
+  **OpenStreetMap standard tiles** — since 2026-11-11; the CARTO basemaps used
+  before answer keyless requests with an "API KEY REQUIRED" placeholder tile.
+  One provider for both themes: the muted light/dark looks are CSS filters on
+  the tile layer, `.basemap-light` / `.basemap-dark` in styles.css; native
+  tiles end at z19, `maxNativeZoom: 19`). The map mimics ding0's
+  `plot_mv_topology` aesthetic: **light** greyscale
   basemap by default (Light/Dark toggle), lines on a **green→amber→red** ramp by
   loading (no blue — an idle line reads as healthy, not cold), buses on a
   **Reds** ramp by voltage Δ, amber MV/LV stations (`#f2ae00`), and two
@@ -825,7 +830,11 @@ eyeballed in the browser.
   road (else a straight segment); cable **cabinets** (`BusSpec.kind="cabinet"`) →
   topology `cabinet_buses` → green circles on the map. See `[[lv-grid-geo-next-step]]`.
 - **Windows dev env**: this was developed on Windows (`.venv/Scripts/python.exe`).
-  Use Bash-tool paths accordingly.
+  Use Bash-tool paths accordingly. **Always pass `encoding="utf-8"` to
+  `read_text`/`write_text`/`open`**: without it Windows Python (< 3.15) uses
+  the locale code page (cp1252) and e.g. the "·" in the manifest's grid names
+  reached the API as "Â·" (fixed 2026-11-11, pinned by
+  `test_manifest_names_are_read_as_utf8`).
 ```
 
 ---

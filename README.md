@@ -426,4 +426,4 @@ The committed grid **dataset** under `data/` is derived from
 generated with [ding0](https://github.com/openego/ding0) and this project's
 own street-routing — and the household profiles were generated with the
 [LoadProfileGenerator](https://www.loadprofilegenerator.de/). The map view
-uses CARTO/OSM tiles with attribution at runtime.
+uses OpenStreetMap standard tiles (keyless, with attribution) at runtime.
