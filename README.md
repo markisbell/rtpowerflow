@@ -43,6 +43,25 @@ development log.
 
 ---
 
+## Screenshots
+
+![Live map: evening EV charging overloads a suburban feeder; a popup shows the live values of the overloaded cable](docs/img/readme/01-live-overload.png)
+
+**Live view — an overload as it happens.** Reference scenario 2 at 19:00: half
+the households on one feeder charge an EV after work. The feeder cable turns
+red (popup: 105 % loading, 237 A), the overview reports the worst line at
+107.5 % and the lowest voltage at 212 V. Click any node, line or transformer
+for its live values.
+
+| | |
+|:--|:--|
+| ![The same moment in the estimation view, with a pinned day graph of the overloaded cable](docs/img/readme/02-three-views.png) | ![The measured view: only metered nodes are coloured, everything else is grey](docs/img/readme/04-observability.png) |
+| **What the operator can estimate.** Same moment, view *Schätzung*: the WLS state estimation reproduces the overload from the meters alone (107.1 % against a true 107.5 %, voltage error 0.44 V). The pinned day graph shows the cable's current against its 225 A rating, estimate overlaid. | **What the operator can measure.** Reference scenario 3 at 12:30, view *Gemessen*: 14 of 62 nodes carry a meter — everything else is grey, i.e. unknown. A mid-feeder cable is at 110 % at this very moment, and nothing on this screen shows it. |
+| ![The grid and loads workspace: grid picker, load and generation sliders, transformer loading preview](docs/img/readme/03-netz-und-lasten.png) | ![A medium-voltage district with 157 low-voltage cells; the grid traffic light dims 42 stations](docs/img/readme/05-district.png) |
+| **Grid & loads workspace.** Pick a grid (IEEE/CIGRE/Kerber reference feeders, the street-routed library, your own drawings), set EV and PV penetration, and check the result before starting: here 154 households peak at 230 kVA — 92 % of the 250 kVA transformer. | **Vertical integration.** Reference scenario 4: a medium-voltage district with 157 low-voltage cells. No single station sees the ring overload (107.7 %, estimated) — the MV coordinator does, broadcasts an EV signal of 75 %, and 42 controllable stations dim (red rings). |
+
+---
+
 ## The three applications
 
 One `docker-compose.yml` orchestrates the whole stack:
@@ -98,10 +117,48 @@ One `docker-compose.yml` orchestrates the whole stack:
 
 ## Installation
 
-**Requirements:** Python ≥ 3.10 and Node.js ≥ 18 (≥ 20 if you want to run the UI
-tests) — or just Docker, which needs neither. On Linux `install.sh` brings both
-along itself. The grid dataset (ding0 MV districts, street-routed LV grids, the
-LPG load library) is committed under `data/`, so nothing else has to be fetched.
+**On Windows there is an installer that needs nothing at all** — see
+[Windows — installer](#windows--installer-no-prerequisites) right below.
+
+**From source — requirements:** Python ≥ 3.10 and Node.js ≥ 18 (≥ 20 if you want
+to run the UI tests) — or just Docker, which needs neither. On Linux `install.sh`
+brings both along itself. The grid dataset (ding0 MV districts, street-routed LV
+grids, the LPG load library) is committed under `data/`, so nothing else has to
+be fetched.
+
+### Windows — installer (no prerequisites)
+
+Download **`netzsim-setup-<version>.exe`** from the
+[latest release](https://github.com/markisbell/rtpowerflow/releases/latest) and
+run it. That is everything a blank 64-bit Windows 10/11 PC needs: the installer
+carries its own Python runtime with every package, the pre-built UI and the
+whole dataset.
+
+- **No Python, no Node, no admin rights** — it installs per user into
+  `%LOCALAPPDATA%\Programs\netzsim` and adds **netzsim** to the start menu.
+- **No internet connection** needed to install or simulate; only the map
+  *background* tiles are fetched online (the grid itself is drawn regardless).
+- **Start:** the start-menu entry opens a console window — that window *is* the
+  simulator — and your browser on the UI. **Stop:** close the window (a running
+  recording is finalised first). Starting it a second time just opens the
+  browser on the instance that already runs.
+- Recordings, imported grids and saved scenarios live in `data\` inside the
+  install folder. An update keeps them; uninstalling removes the program and
+  leaves only files you created yourself.
+- **Settings:** copy `.env.example` to `.env` in the install folder — e.g.
+  `NETZSIM_PORT=8010`, `NETZSIM_HOST=0.0.0.0` (reachable from other devices) or
+  `NETZSIM_GRID_LIBRARY=./data/grid_library_full.json` (the full grid
+  library). `.env` survives updates; the data files that ship with netzsim are
+  replaced by an update, so customise through `.env` and files of your own
+  rather than by editing shipped ones.
+- Setup installs into a new or empty folder (or over an existing netzsim) — it
+  refuses a folder that holds something else.
+
+> The installer is not code-signed, so Windows SmartScreen may say *"Windows
+> protected your PC"* on the first run: choose **More info → Run anyway**. Every
+> release publishes the installer's SHA256 next to it (`.sha256`).
+
+The other ways below start from a checkout:
 
 ```bash
 git clone https://github.com/markisbell/rtpowerflow.git
@@ -131,7 +188,7 @@ Re-running updates only what is missing.
 | `--build-tools` | add compilers (only needed if a wheel must be built from source) |
 | `--skip-ui` · `--recreate` · `--no-verify` | backend only · rebuild from scratch · skip the smoke test |
 
-### Windows
+### Windows — from source (for development)
 
 ```powershell
 python -m venv .venv
@@ -153,7 +210,16 @@ Grafana :3000.
 
 ## Run it
 
-### Windows: double-click launcher (recommended here)
+### Windows: installed version
+
+Start **netzsim** from the start menu. One console window appears (the
+simulator: API and UI in a single process), the browser opens on it, and closing
+the window ends everything. If port 8000 is taken, the next free one is used; a
+second start just opens the browser on the instance that is already running.
+From a command line: `netzsim.bat [--port N] [--no-browser]` in the install
+folder.
+
+### Windows: double-click launcher (source checkout)
 
 `start_netzsim.bat` starts the backend (default :8000) and the Vite UI (default
 :5173) in their own console windows, runs `npm install` if needed, guards
@@ -291,6 +357,43 @@ pip install -e ".[dev]"   # or: pip install pytest httpx
 pytest                    # backend suite
 cd ui && npm run build    # type-check + build the frontend
 ```
+
+---
+
+## Building the Windows installer
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1
+# -> dist\netzsim-setup-<version>.exe   (about 60 MB, 250 MB installed)
+```
+
+`build.ps1` builds the UI, fetches the official CPython *embeddable package*
+(pinned version, SHA256-checked), installs `requirements.txt` into it, adds the
+sources, the built UI, the committed dataset and the third-party licence texts
+(`licenses\`), and lets
+[Inno Setup](https://jrsoftware.org/isinfo.php) wrap the result. The build
+machine needs Node.js, a Python of the same minor version as the bundled one,
+and Inno Setup — `packaging\windows\install_innosetup.ps1` installs the pinned
+compiler for the current user (checksum and signature verified).
+
+The installed product runs in **single-process mode**: `python -m
+netzsim.desktop` starts the backend with `NETZSIM_UI_DIST` set, which makes it
+serve the built React app itself and answer the UI's `/api/...` calls — no Vite,
+no nginx, no Node. The same works from a checkout after `npm run build`.
+
+`packaging\windows\smoke_test.ps1 -AppDir <folder>` is the acceptance test. It
+starts an installed (or staged) copy with a scrubbed environment — no Python or
+Node on the `PATH`, a foreign working directory — and checks UI delivery, the
+WebSocket stream, the catalog, a real power flow, state estimation and that
+`data\` is writable.
+
+**Releasing:** bump the version in `pyproject.toml` *and*
+`src/netzsim/__init__.py` (the build refuses a mismatch), commit, then push a
+matching tag (`git tag v0.2.0 && git push origin v0.2.0`). The
+[`windows-installer`](.github/workflows/windows-installer.yml) workflow builds,
+installs silently, runs the smoke test against the installed product,
+uninstalls, and attaches the installer plus its `.sha256` to the GitHub
+release.
 
 ---
 

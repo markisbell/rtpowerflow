@@ -1,0 +1,106 @@
+name: windows-installer
+
+# Builds the self-contained Windows installer (netzsim-setup-<version>.exe),
+# installs it on the runner, runs the end-to-end smoke test against the
+# INSTALLED product and - for a version tag - attaches it to the GitHub release.
+#
+#   git tag v0.1.0 && git push origin v0.1.0     -> release with the installer
+#   Actions tab -> "Run workflow"                -> installer as a build artifact
+#
+# The version is the one in the code: pyproject.toml and
+# src/netzsim/__init__.py must agree, and a tag must match them (v0.1.0 for
+# 0.1.0) - build.ps1 refuses any mismatch. Bump both files before tagging.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write            # create the release / upload the asset
+
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (UI build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      # must be the same minor version as the embedded runtime (build.ps1)
+      - name: Set up Python (runs pip for the bundled runtime)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Inno Setup (pinned, checksum + signature verified)
+        shell: pwsh
+        run: packaging/windows/install_innosetup.ps1
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          # a tag is cross-checked against the version in the code; a manual
+          # run simply builds the version the code carries
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            packaging/windows/build.ps1 -Clean -Version ($env:GITHUB_REF_NAME -replace '^v', '')
+          } else {
+            packaging/windows/build.ps1 -Clean
+          }
+
+      - name: Install it (silent, per user - no admin)
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist\netzsim-setup-*.exe | Select-Object -First 1
+          $dir = Join-Path $env:RUNNER_TEMP 'netzsim-installed'
+          $p = Start-Process $setup.FullName -Wait -PassThru `
+                 -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$dir"
+          if ($p.ExitCode -ne 0) { throw "setup exit code $($p.ExitCode)" }
+          "NETZSIM_INSTALLED=$dir" >> $env:GITHUB_ENV
+
+      - name: Smoke test the installed product
+        shell: pwsh
+        run: packaging/windows/smoke_test.ps1 -AppDir $env:NETZSIM_INSTALLED
+
+      - name: Uninstall cleanly
+        shell: pwsh
+        run: |
+          $un = Join-Path $env:NETZSIM_INSTALLED 'unins000.exe'
+          $p = Start-Process $un -Wait -PassThru -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($p.ExitCode -ne 0) { throw "uninstall exit code $($p.ExitCode)" }
+          for ($i = 0; $i -lt 60 -and (Test-Path (Join-Path $env:NETZSIM_INSTALLED 'python')); $i++) { Start-Sleep 1 }
+          if (Test-Path (Join-Path $env:NETZSIM_INSTALLED 'python')) { throw 'uninstall left the runtime behind' }
+
+      - name: Upload the installer (build artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: netzsim-setup
+          path: dist/netzsim-setup-*.exe
+          if-no-files-found: error
+
+      - name: Attach to the GitHub release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -ne 0) { gh release create $tag --title "netzsim $tag" --generate-notes }
+          $setup = Get-ChildItem dist\netzsim-setup-*.exe | Select-Object -First 1
+          # the installer is not code-signed: publish its checksum next to it
+          # (bare LF line end: "sha256sum -c" on Linux/macOS chokes on CRLF)
+          $sha = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
+          [IO.File]::WriteAllText("$($setup.FullName).sha256", "$sha  $($setup.Name)`n")
+          gh release upload $tag $setup.FullName "$($setup.FullName).sha256" --clobber

@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     recordings_dir: Path = Path("./data/recordings")
     record: bool = False
 
+    # Built React UI (the folder holding index.html, i.e. ui/dist). When set,
+    # the backend serves the single-page app itself at "/" and answers its
+    # "/api/..." calls (prefix stripped, exactly like nginx / the Vite proxy
+    # do) — ONE process, ONE port, no Node at runtime. This is how the Windows
+    # installer runs (see netzsim.desktop). Unset (default) = API only; the UI
+    # then comes from Vite (dev) or nginx (Docker) as before.
+    ui_dist: Path | None = None
+
     # CORS (comma-separated origins; "*" allows any)
     cors_origins: str = "*"
 
@@ -69,6 +77,9 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     log_level: str = "info"
+    # uvicorn's per-request access log. The desktop launcher switches it off:
+    # its console window is the product's surface, and the UI polls every 2 s.
+    access_log: bool = True
 
 
 settings = Settings()

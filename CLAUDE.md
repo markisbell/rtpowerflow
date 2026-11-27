@@ -74,7 +74,11 @@ rtpowerflow/                  # repo root (origin: github.com/markisbell/rtpower
 ├── scripts/
 │   ├── generate_sample_data.py   # regenerates data/ (5-bus, 1440-step example)
 │   ├── pick_ports.ps1            # dev-launcher port picker (reuse only if /health says netzsim)
-│   └── pick_ports.sh             # ... the Linux twin (ss-based, --noproxy for localhost)
+│   ├── pick_ports.sh             # ... the Linux twin (ss-based, --noproxy for localhost)
+│   └── readme_screenshots.mjs    # regenerates docs/img/readme/*.png (the README gallery): a
+│                                 #   Playwright tour over scenarios 2/3/4 driving the system
+│                                 #   Chrome; playwright-core is resolved from the CWD (install
+│                                 #   it in a scratch dir, not in ui/) — see the script header
 │                                 # (grid GENERATION lives in the separate ../gridgen repo)
 ├── src/netzsim/              # the simulation package (pure CONSUMER — no generation)
 │   ├── config.py             # pydantic-settings (env NETZSIM_*)
@@ -123,7 +127,12 @@ rtpowerflow/                  # repo root (origin: github.com/markisbell/rtpower
 │   │   ├── assign.py         # assign_to_loads: archetype/variant -> per-load household profiles
 │   │   ├── pv.py             # assign_pv: synthetic clear-sky rooftop PV (sgen)
 │   │   └── ev.py             # assign_ev: synthetic additive EV home-charging loads
-│   └── main.py               # uvicorn entry point (console script: `netzsim`)
+│   ├── main.py               # uvicorn entry point (console script: `netzsim`)
+│   └── desktop.py            # single-process launcher (API + built UI, free port, opens the
+│                             #   browser) — what the Windows installer's start-menu entry runs
+├── packaging/windows/        # the Windows installer: build.ps1 (stage + Inno Setup),
+│                             #   netzsim.iss, smoke_test.ps1 (end-to-end, scrubbed env),
+│                             #   install_innosetup.ps1 (pinned compiler), netzsim.ico
 ├── data/                     # committed grid dataset (see data/DATASET.md) — from ../gridgen
 │   ├── lpg_library/          # committed LPG profiles (index.json + {CHRxx}.json)
 │   ├── ding0_grids/          # committed ding0 MV grids (eDisGo CSV, real lat/lon)
@@ -409,6 +418,99 @@ docker compose up --build
 The `netzsim` service serves grids from the committed dataset under the mounted
 `./data` (ding0 MV grids, street-routed LV grids, the manifest, the LPG library —
 see `data/DATASET.md`); no external archive is needed.
+
+**Windows installer (2026-11-27)** — `packaging/windows/build.ps1` →
+`dist\netzsim-setup-<version>.exe`, built for a BLANK PC (no Python, no Node,
+no admin, no internet except map tiles). Design, in the order the pieces
+depend on each other:
+- **Single-process mode.** `NETZSIM_UI_DIST` (`config.ui_dist`) makes the
+  backend serve the built React UI itself: `api/webui.py` is a pure ASGI
+  wrapper (`UiMiddleware`) that answers `GET /` with `index.html`
+  (`Cache-Control: no-cache`), serves the exact set of shipped build files,
+  strips the `/api` prefix (as nginx/Vite do for REST; WebSocket scopes are
+  stripped too, but the UI itself opens `/ws`, which passes through
+  unchanged) and moves the built-in monitor to `/monitor`. Being a wrapper, it leaves the route table
+  — and the pinned inventory in `test_api_surface` — untouched. Unset
+  (default) nothing changes for Vite/nginx. `tests/test_webui.py` pins it.
+- **`netzsim.desktop`** = the launcher (`python -m netzsim.desktop`): chdir
+  to the app root (relative `./data` defaults + `.env`), probe ports upward
+  from `--port` / `NETZSIM_PORT` (environment, else the app folder's `.env` —
+  read via `dotenv_values`, because the launcher needs host/port BEFORE the
+  settings module may be imported) / 8000, start uvicorn IN-PROCESS
+  (`main.build_server`, handle kept), open the browser at `127.0.0.1` (never
+  `localhost` — IPv6 could hit a foreign app on the same port; the bind host
+  follows `NETZSIM_HOST`). It imports nothing from `netzsim` before the env
+  is set and holds the mutex `netzsim-desktop-running` (Inno `AppMutex`).
+  **One instance:** `find_running` scans the WHOLE probe range for a netzsim
+  that serves the UI before any free port is taken (an instance started
+  while :8000 was busy sits higher up); a second start during the first
+  one's cold start sees `ERROR_ALREADY_EXISTS` on the mutex and waits for it
+  instead of launching a twin. **Console window = the product's surface:**
+  QuickEdit is switched off (`SetConsoleMode` — a click into the window
+  would otherwise freeze every console write and with it the event loop),
+  the access log defaults to off (`NETZSIM_ACCESS_LOG`, `config.access_log`),
+  and a `SetConsoleCtrlHandler` turns closing the window into a graceful
+  uvicorn stop (`should_exit`, ≤ 4.5 s of Windows' ~5 s grace) so the
+  lifespan shutdown finalises an active recording. Startup failures (uvicorn
+  `SystemExit`, `server.started` false) keep the window open with the error.
+- **Bundled runtime** = the official CPython *embeddable package*
+  (3.14.10, SHA256 pinned to python.org's release page) + `pip install
+  --target` of `requirements.txt` with a host Python of the SAME minor
+  version. `python314._pth` lists `Lib\site-packages` and `..\src`; the
+  embeddable runtime ignores `PYTHONHOME`/`PYTHONPATH`/user site, which is
+  the isolation a shipped runtime needs (the smoke test sets both to garbage
+  on purpose). `--no-compile` (bytecode would embed the build machine's
+  paths); tests of numpy/scipy/pandas/networkx are pruned (−38 MB). Why not
+  3.12: its last Windows binary is 3.12.10, several security releases behind.
+- **Payload layout mirrors the repo** (`src\netzsim`, `ui\dist`, `data`,
+  `docs`), so `/manual` (`parents[3]/docs`) and every relative default work
+  unchanged. `data\` = `git ls-files data` — never local recordings/own grids.
+- **Inno Setup** (`netzsim.iss`, works with 6.3+ and 7; keep it ASCII):
+  per-user (`PrivilegesRequired=lowest`, `{localappdata}\Programs\netzsim`)
+  so `data\` stays writable; `[InstallDelete]` wipes `python`/`src`/`ui` on
+  update (never `data`); uninstall keeps files the user created under `data\`.
+  Because of that wipe, `[Code] PrepareToInstall` refuses (exit 7) a target
+  folder that is non-empty and not a netzsim install (root marker
+  `netzsim.bat`/`netzsim.ico`, and no `pyproject.toml` = not a checkout).
+  Shipped data files are overwritten by an update → customise via `.env`.
+- **Payload hygiene** (`build.ps1`): pictures under `data\` stay out (they
+  are reference material, not dataset — the tracked control-room photo is
+  not ours to redistribute); `collect_ui_licenses.py` copies the licence
+  texts of the UI's production dependency tree (from `package-lock.json`)
+  into `licenses\ui\` — the minified bundle has lost them, MIT/BSD want them
+  shipped; Python and its packages bring theirs (`python\LICENSE.txt`,
+  `*.dist-info`). `licenses\README.txt` is the map.
+- **Build guards** (`build.ps1`): pyproject.toml, `netzsim.__version__` and
+  a `-Version` (the tag) must all agree (a tag without the bump fails
+  instead of shipping a mislabelled exe); the import probe runs with `-B` and the stage is purged
+  of `__pycache__` (a .pyc records the build folder's path); the git check
+  is `rev-parse --is-inside-work-tree` (worktrees have a `.git` FILE).
+  `webui.pin_web_types()` pins the MIME table — on Windows `mimetypes` reads
+  the registry, and a `.js` → `text/plain` entry leaves the UI blank.
+- **`smoke_test.ps1 -AppDir <dir>`** is the acceptance test: scrubbed
+  environment (PATH = System32 only, foreign CWD), then UI delivery, `/api`
+  prefix, WebSocket, catalog, manual, a real solve on a library grid and on
+  IEEE-33, WLS estimation, a recording written into `data\`. CI
+  (`.github/workflows/windows-installer.yml`, tag `v*` or manual) builds,
+  installs silently, runs it against the INSTALLED product, uninstalls, and
+  attaches the exe + `.sha256` to the release. Not code-signed → SmartScreen
+  warning on first run (README says so).
+- **Console hygiene** (the console window IS the installed product's
+  surface): without numba — optional, not in `requirements.txt` — pandapower
+  logs a four-line "numba cannot be imported" warning on EVERY power flow;
+  `main._OnceFilter` on the `pandapower.auxiliary` logger lets it through
+  once. Verified on this machine: build 58 MB / 251 MB installed (5.3k
+  files), silent install 12 s, cold start ~14 s, all 17 smoke checks pass —
+  also from an install path with spaces and umlauts; setup refuses (exit 1)
+  while the simulator runs; update keeps `data\` files, uninstall leaves only
+  user-created ones; closing the console window finalised a running
+  recording (metadata.json written, exit after 0.3 s); QuickEdit bit cleared
+  (console mode 0x01b7). NOT yet exercised: the GitHub workflow (first run
+  happens with the first pushed tag). Harness gotchas earned: `Start-Process -ArgumentList`
+  does NOT quote elements with spaces (pass ONE pre-quoted string for
+  `/DIR="…"`); never pipe the smoke test into `Select-Object -First` (kills it
+  before its cleanup); Windows PowerShell 5.1 passes a piped JSON array on as
+  ONE object (assign `ConvertFrom-Json` first).
 
 **Tests:**
 ```bash

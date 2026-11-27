@@ -94,6 +94,18 @@ app.include_router(measurements.router)
 app.include_router(grids.router)
 app.include_router(scenarios.router)
 
+# Single-process mode (Windows installer, see netzsim.desktop): the backend
+# serves the built React UI itself. A misconfigured path must not take the
+# API down with it — the simulator stays usable through Vite/nginx.
+if settings.ui_dist is not None:
+    from .webui import attach_ui
+
+    try:
+        attach_ui(app, settings.ui_dist)
+        log.info("Serving the UI from %s", settings.ui_dist)
+    except FileNotFoundError as exc:
+        log.error("NETZSIM_UI_DIST ignored: %s", exc)
+
 # Back-compat facade: everything external code imported from the old
 # single-module ``netzsim.api`` stays importable from the package root.
 from .equipment import (  # noqa: E402

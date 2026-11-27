@@ -5,7 +5,7 @@ pip install -e ".[dev]"   # or: pip install pytest httpx
 pytest                    # from the repo root (pythonpath=src via pyproject)
 ```
 
-The suite (currently 158 tests) follows one project rule: **regression tests
+The suite (currently 191 tests) follows one project rule: **regression tests
 are written BEFORE refactorings and features** — first pin the current
 behavior, then change the code, and the pinned test must stay green
 *unmodified* through the change. Several files below exist exactly for that
@@ -21,6 +21,7 @@ GitHub-side).
 | `test_simulator.py` | Smoke tests for the base pipeline: the 5 input JSONs load, the pandapower net builds, steps solve, and the day wraps 1439 → 0. If this is red, everything else is noise. |
 | `test_api_surface.py` | Regression net for the API: pins the **complete route inventory** (method + path — new endpoints must be added to `EXPECTED_ROUTES`) and smoke-tests one representative endpoint per router area over a real `TestClient`. Written before the `api.py` → `netzsim/api/` router split; also pins fastapi-0.139-proof route walking and the strict-mode gating of the day-graph endpoints. |
 | `test_api_validation.py` | Range constraints on API request models: raw calls must not inject physically nonsensical values (negative kWp, out-of-range penetrations) into the profile generators. |
+| `test_webui.py` | Single-process mode (what the Windows installer runs): with a UI build folder configured the backend serves the React app at `/` uncached, delivers exactly the shipped build files (nothing outside the folder), strips the `/api` prefix like nginx does for REST (and for WebSockets too — the UI itself connects to `/ws`, which passes through unchanged), and keeps the built-in monitor at `/monitor`; JS/CSS/SVG keep their web MIME types even when the machine's table says otherwise (Windows registry). Plus the desktop launcher: port selection (skips a port held by a foreign app), finding a running instance further up the port range before taking a free port, and reading host/port from the app folder's `.env`. Uses a throw-away dist folder — no real UI build needed. |
 | `test_sweeps.py` | Regression net for the `sweeps.py` extraction from Simulator: battery day curves, the measured layer's TAF rastering, and that a deep-copied Simulator (the bulk exporter's path) sweeps independently of the original's caches. Plus the two day-graph cost guards (2026-07-28): the WLS runs only at the pinned estimate raster (while the meters keep ticking at the fine TAF cadence), and concurrent requests share ONE sweep instead of each running their own. |
 
 ## Grid import & catalog
