@@ -505,8 +505,13 @@ depend on each other:
   while the simulator runs; update keeps `data\` files, uninstall leaves only
   user-created ones; closing the console window finalised a running
   recording (metadata.json written, exit after 0.3 s); QuickEdit bit cleared
-  (console mode 0x01b7). NOT yet exercised: the GitHub workflow (first run
-  happens with the first pushed tag). Harness gotchas earned: `Start-Process -ArgumentList`
+  (console mode 0x01b7). The GitHub workflow ran green on a hosted runner
+  (manual run on master, 2026-11-27, 3.5 min: build, silent install, smoke
+  test, uninstall, artifact upload — PowerShell 7 there, 5.1 locally); its
+  release-attach step only runs for a tag. Before pushing a release, the
+  same chain can be rehearsed locally from a clean `git worktree` of the
+  commit (`build.ps1 -Clean`, install, `smoke_test.ps1`, uninstall).
+  Harness gotchas earned: `Start-Process -ArgumentList`
   does NOT quote elements with spaces (pass ONE pre-quoted string for
   `/DIR="…"`); never pipe the smoke test into `Select-Object -First` (kills it
   before its cleanup); Windows PowerShell 5.1 passes a piped JSON array on as
